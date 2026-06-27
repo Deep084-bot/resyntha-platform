@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* ── Dark-first design tokens ─────────────────────────────────── */
+/* Navy / Slate palette inspired by Linear, Cursor, GitHub Dark    */
+
+@theme {
+  /* Surface hierarchy */
+  --color-surface-base: #0b0e14;
+  --color-surface-elevated: #11161e;
+  --color-surface-card: #151b25;
+  --color-surface-hover: #1a2230;
+  --color-surface-active: #1e2736;
+
+  /* Borders */
+  --color-border-default: #1e293b;
+  --color-border-muted: #1a2230;
+  --color-border-accent: #3b82f6;
+
+  /* Text */
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-text-accent: #60a5fa;
+
+  /* Accent */
+  --color-accent-default: #3b82f6;
+  --color-accent-hover: #2563eb;
+  --color-accent-muted: #1d4ed8;
+
+  /* Feedback */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  /* Sidebar */
+  --color-sidebar-base: #0a0d14;
+  --color-sidebar-hover: #131a24;
+  --color-sidebar-active: #18202e;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-active: #e2e8f0;
+
+  /* Fonts */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ── Shadcn-style CSS custom properties ───────────────────────── */
+:root {
+  --background: #0b0e14;
+  --foreground: #e2e8f0;
+  --card: #11161e;
+  --card-foreground: #e2e8f0;
+  --popover: #11161e;
+  --popover-foreground: #e2e8f0;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #e2e8f0;
+  --muted: #1a2230;
+  --muted-foreground: #94a3b8;
+  --accent: #3b82f6;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #3b82f6;
+  --radius: 0.5rem;
+}
+
+/* ── Base layer ───────────────────────────────────────────────── */
+* {
+  border-color: var(--color-border-default);
+}
+
+body {
+  background-color: var(--color-surface-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
