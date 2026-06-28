@@ -10,9 +10,13 @@ from app.modules.artifact.service.service import ArtifactService
 from app.modules.investigation.service.service import InvestigationService
 from app.modules.investigation.timeline.models import TimelineStage, TimelineStatus
 from app.modules.investigation.timeline.service import TimelineService
+from app.modules.paper.repository.repository import PaperRepository
 from app.modules.paper.service.service import PaperService
 from app.modules.retrieval.schemas.request import RetrieveRequest
-from app.modules.retrieval.schemas.response import RetrieveResponse
+from app.modules.retrieval.schemas.response import (
+    PersistedPaperResponse,
+    RetrieveResponse,
+)
 from app.observability.logger import get_logger
 from app.pipeline import PipelineContext, PipelineDefinition
 from app.pipeline.stages import (
@@ -97,3 +101,17 @@ async def retrieve_papers(
         artifact_id=artifact.id,
         paper_count=paper_count,
     )
+
+
+@router.get(
+    "/investigations/{investigation_id}/papers",
+    response_model=list[PersistedPaperResponse],
+)
+async def list_papers(
+    investigation_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> list[PersistedPaperResponse]:
+    """Return all papers attached to an investigation."""
+    repo = PaperRepository(db)
+    papers = repo.list_by_investigation(investigation_id)
+    return [PersistedPaperResponse.model_validate(p) for p in papers]
