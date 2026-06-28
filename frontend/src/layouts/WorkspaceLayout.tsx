@@ -11,6 +11,7 @@ const tabs = [
   { label: "Timeline", to: "timeline" },
   { label: "Artifacts", to: "artifacts" },
   { label: "Papers", to: "papers" },
+  { label: "Executions", to: "executions" },
   { label: "Analysis", to: "analysis" },
 ] as const;
 

@@ -49,6 +49,20 @@ export type ArtifactStatus =
   | "ready"
   | "failed";
 
+export type ExecutionStatus =
+  | "pending"
+  | "running"
+  | "failed"
+  | "completed"
+  | "cancelled";
+
+export type ExecutionStageStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "skipped";
+
 /* ── Domain models ──────────────────────────────────────────── */
 
 export interface Investigation {
@@ -104,10 +118,35 @@ export interface RetrieveRequest {
   paper_limit?: number;
 }
 
-export interface RetrieveResponse {
+export interface RetrieveAcceptedResponse {
+  execution_id: string;
+  status: string;
+  queue_position?: number | null;
+}
+
+export interface Execution {
+  id: string;
   investigation_id: string;
-  artifact_id: string;
-  paper_count: number;
+  status: ExecutionStatus;
+  trigger: string;
+  created_by: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExecutionStage {
+  id: string;
+  execution_id: string;
+  stage_name: string;
+  status: ExecutionStageStatus;
+  attempt: number;
+  started_at: string;
+  completed_at: string | null;
+  duration_ms: number | null;
+  error_message: string | null;
+  created_at: string;
 }
 
 /* ── Status mappers (API → StatusBadge) ─────────────────────── */
@@ -151,6 +190,34 @@ export function mapArtifactStatus(s: ArtifactStatus): StatusVariant {
   return ARTIFACT_MAP[s];
 }
 
+const EXECUTION_MAP: Record<ExecutionStatus, StatusVariant> = {
+  pending: "pending",
+  running: "running",
+  failed: "failure",
+  completed: "success",
+  cancelled: "skipped",
+};
+
+export function mapExecutionStatus(s: ExecutionStatus): StatusVariant {
+  return EXECUTION_MAP[s];
+}
+
+const STAGE_MAP: Record<ExecutionStageStatus, StatusVariant> = {
+  pending: "pending",
+  running: "running",
+  completed: "success",
+  failed: "failure",
+  skipped: "skipped",
+};
+
+export function mapStageStatus(s: ExecutionStageStatus): StatusVariant {
+  return STAGE_MAP[s];
+}
+
+export function isExecutionTerminal(s: ExecutionStatus): boolean {
+  return s === "completed" || s === "failed" || s === "cancelled";
+}
+
 /* ── Query key factory ──────────────────────────────────────── */
 
 export const queryKeys = {
@@ -164,5 +231,10 @@ export const queryKeys = {
   },
   papers: {
     byInvestigation: (id: string) => ["investigations", id, "papers"] as const,
+  },
+  executions: {
+    byInvestigation: (id: string) => ["investigations", id, "executions"] as const,
+    detail: (id: string) => ["executions", id] as const,
+    stages: (id: string) => ["executions", id, "stages"] as const,
   },
 } as const;

@@ -8,6 +8,7 @@ import { PipelinePage } from "@/pages/Pipeline";
 import { SettingsPage } from "@/pages/Settings";
 import { WorkspaceAnalysisPage } from "@/pages/WorkspaceAnalysis";
 import { WorkspaceArtifactsPage } from "@/pages/WorkspaceArtifacts";
+import { WorkspaceExecutionsPage } from "@/pages/WorkspaceExecutions";
 import { WorkspaceOverviewPage } from "@/pages/WorkspaceOverview";
 import { WorkspacePapersPage } from "@/pages/WorkspacePapers";
 import { WorkspaceTimelinePage } from "@/pages/WorkspaceTimeline";
@@ -26,6 +27,7 @@ const routes: RouteObject[] = [
           { path: "timeline", element: <WorkspaceTimelinePage /> },
           { path: "artifacts", element: <WorkspaceArtifactsPage /> },
           { path: "papers", element: <WorkspacePapersPage /> },
+          { path: "executions", element: <WorkspaceExecutionsPage /> },
           { path: "analysis", element: <WorkspaceAnalysisPage /> },
         ],
       },

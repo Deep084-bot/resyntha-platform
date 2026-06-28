@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Plus, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -134,6 +134,7 @@ function InvestigationRow({
 }
 
 function CreateModal({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
   const titleRef = useRef<HTMLInputElement>(null);
   const topicRef = useRef<HTMLTextAreaElement>(null);
   const limitRef = useRef<HTMLInputElement>(null);
@@ -154,7 +155,10 @@ function CreateModal({ onClose }: { onClose: () => void }) {
           : undefined,
       },
       {
-        onSuccess: () => onClose(),
+        onSuccess: (investigation) => {
+          onClose();
+          navigate(`/investigations/${investigation.id}`);
+        },
       },
     );
   };

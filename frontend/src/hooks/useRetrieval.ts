@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { fetchPapers, triggerRetrieval } from "@/services/retrieval";
-import type { Paper, RetrieveRequest, RetrieveResponse } from "@/types";
+import type { Paper, RetrieveAcceptedResponse, RetrieveRequest } from "@/types";
 import { queryKeys } from "@/types";
 
 export function usePapers(investigationId: string | undefined) {
@@ -15,7 +15,7 @@ export function usePapers(investigationId: string | undefined) {
 export function useTriggerRetrieval(investigationId: string) {
   const qc = useQueryClient();
   return useMutation<
-    RetrieveResponse,
+    RetrieveAcceptedResponse,
     Error,
     RetrieveRequest
   >({

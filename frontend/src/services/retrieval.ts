@@ -1,11 +1,11 @@
 import api from "@/lib/api";
-import type { Paper, RetrieveRequest, RetrieveResponse } from "@/types";
+import type { Paper, RetrieveAcceptedResponse, RetrieveRequest } from "@/types";
 
 export async function triggerRetrieval(
   investigationId: string,
   body: RetrieveRequest,
-): Promise<RetrieveResponse> {
-  const { data } = await api.post<RetrieveResponse>(
+): Promise<RetrieveAcceptedResponse> {
+  const { data } = await api.post<RetrieveAcceptedResponse>(
     `/investigations/${investigationId}/retrieve`,
     body,
   );
