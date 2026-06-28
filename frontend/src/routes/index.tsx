@@ -9,9 +9,12 @@ import { SettingsPage } from "@/pages/Settings";
 import { WorkspaceAnalysisPage } from "@/pages/WorkspaceAnalysis";
 import { WorkspaceArtifactsPage } from "@/pages/WorkspaceArtifacts";
 import { WorkspaceExecutionsPage } from "@/pages/WorkspaceExecutions";
+import { WorkspaceKnowledgePage } from "@/pages/WorkspaceKnowledge";
 import { WorkspaceOverviewPage } from "@/pages/WorkspaceOverview";
 import { WorkspacePapersPage } from "@/pages/WorkspacePapers";
+import { WorkspaceResearchGapsPage } from "@/pages/WorkspaceResearchGaps";
 import { WorkspaceTimelinePage } from "@/pages/WorkspaceTimeline";
+import { WorkspaceValidationPage } from "@/pages/WorkspaceValidation";
 
 const routes: RouteObject[] = [
   {
@@ -28,7 +31,10 @@ const routes: RouteObject[] = [
           { path: "artifacts", element: <WorkspaceArtifactsPage /> },
           { path: "papers", element: <WorkspacePapersPage /> },
           { path: "executions", element: <WorkspaceExecutionsPage /> },
+          { path: "validation", element: <WorkspaceValidationPage /> },
+          { path: "knowledge", element: <WorkspaceKnowledgePage /> },
           { path: "analysis", element: <WorkspaceAnalysisPage /> },
+          { path: "gaps", element: <WorkspaceResearchGapsPage /> },
         ],
       },
       { path: "pipeline", element: <PipelinePage /> },

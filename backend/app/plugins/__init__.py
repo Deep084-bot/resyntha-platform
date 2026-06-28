@@ -11,18 +11,26 @@ to the existing pipeline stages without duplicating business logic.
 from app.plugins.base import PipelinePlugin
 from app.plugins.registry import PipelineRegistry, registry
 from app.plugins.wrappers import (
+    AnalyzePlugin,
     ArtifactPlugin,
+    ExtractPlugin,
+    GapDetectionPlugin,
     PersistPlugin,
     RetrievePlugin,
     TimelinePlugin,
+    ValidatePlugin,
 )
 
 __all__ = [
+    "AnalyzePlugin",
     "ArtifactPlugin",
+    "ExtractPlugin",
+    "GapDetectionPlugin",
     "PipelinePlugin",
     "PipelineRegistry",
     "PersistPlugin",
     "RetrievePlugin",
     "TimelinePlugin",
+    "ValidatePlugin",
     "registry",
 ]

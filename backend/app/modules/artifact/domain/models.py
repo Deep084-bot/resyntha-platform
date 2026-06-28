@@ -24,6 +24,8 @@ class ArtifactType(str, Enum):
     PAPER_COLLECTION = "paper_collection"
     VALIDATED_COLLECTION = "validated_collection"
     KNOWLEDGE_PACKAGE = "knowledge_package"
+    RESEARCH_LANDSCAPE = "research_landscape"
+    RESEARCH_GAP_REPORT = "research_gap_report"
     COMPARISON_MATRIX = "comparison_matrix"
     TREND_REPORT = "trend_report"
     OPPORTUNITY_REPORT = "opportunity_report"

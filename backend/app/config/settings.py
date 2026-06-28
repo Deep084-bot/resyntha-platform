@@ -55,9 +55,19 @@ class Settings(BaseSettings):
     )
 
     # ------------------------------------------------------------------
-    # AI / External services  (placeholders for future sprints)
+    # AI / External services
     # ------------------------------------------------------------------
+    # Primary LLM provider (default: groq)
+    LLM_PROVIDER: str = "groq"
+
+    # Groq (default provider)
     GROQ_API_KEY: str = ""
+    LLM_MODEL: str = "llama-3.3-70b-versatile"
+    LLM_MAX_TOKENS: int = 4096
+    LLM_TEMPERATURE: float = 0.3
+
+    # OpenAI (optional — requires separate install)
+    OPENAI_API_KEY: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -37,6 +37,8 @@ export type ArtifactType =
   | "paper_collection"
   | "validated_collection"
   | "knowledge_package"
+  | "research_landscape"
+  | "research_gap_report"
   | "comparison_matrix"
   | "trend_report"
   | "opportunity_report"
@@ -134,6 +136,7 @@ export interface Execution {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+  metadata: Record<string, unknown>;
 }
 
 export interface ExecutionStage {

@@ -15,6 +15,7 @@ Requires-Dist: arq
 Requires-Dist: python-dotenv
 Requires-Dist: structlog
 Requires-Dist: httpx
+Requires-Dist: groq
 Provides-Extra: dev
 Requires-Dist: pytest; extra == "dev"
 Requires-Dist: ruff; extra == "dev"

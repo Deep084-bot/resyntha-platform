@@ -27,6 +27,7 @@ class TimelineStage(PipelineStage):
     # Maps pipeline-level stage names to TimelineStage enum values.
     _STAGE_MAP: dict[str, TimelineStageEnum] = {
         "retrieving": TimelineStageEnum.RETRIEVING,
+        "validating": TimelineStageEnum.VALIDATING,
         "extracting": TimelineStageEnum.EXTRACTING,
         "analyzing": TimelineStageEnum.ANALYZING,
         "generating": TimelineStageEnum.GENERATING,

@@ -1,17 +1,18 @@
 """Retrieve stage — searches external providers for papers matching a query.
 
 Reads ``query`` and ``paper_limit`` from ``context.metadata``.
-Stores the canonical ``Paper`` list in ``context.artifacts["papers"]``.
+Stores the canonical ``Paper`` list in ``context.artifacts["papers"]``
+and retrieval metrics in ``context.metrics["retrieval"]``.
 """
 
+from app.modules.retrieval.service.service import RetrievalService
 from app.pipeline.context import PipelineContext
 from app.pipeline.result import PipelineResult
 from app.pipeline.stage import PipelineStage
-from app.modules.retrieval.service.service import RetrievalService
 
 
 class RetrieveStage(PipelineStage):
-    """Search Semantic Scholar and arXiv, normalise, deduplicate, rank."""
+    """Search external providers, normalise, deduplicate, rank."""
 
     consumes: list[str] = []
     produces: list[str] = ["papers"]
@@ -36,6 +37,9 @@ class RetrieveStage(PipelineStage):
             context.add_error("retrieve", "No query found in context metadata")
             return PipelineResult.FAILED
 
-        papers = await self._service.retrieve(query, paper_limit)
+        papers, metrics = await self._service.retrieve_with_metrics(
+            query, paper_limit,
+        )
         context.add_artifact("papers", papers)
+        context.record_metric("retrieval", metrics)
         return PipelineResult.SUCCESS

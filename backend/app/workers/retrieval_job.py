@@ -8,12 +8,14 @@ all inputs come from the job payload and the database.
 import os
 import socket
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from arq.connections import JobResult
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.database.session import SessionLocal
+from app.modules.analysis.service.service import AnalysisService
 from app.modules.artifact.service.service import ArtifactService
 from app.modules.execution.domain.models import ExecutionStatus
 from app.modules.execution.schemas.request import UpdateExecutionRequest
@@ -21,10 +23,14 @@ from app.modules.execution.service.service import (
     ExecutionService,
     ExecutionStageService,
 )
+from app.modules.extraction.llm import ProviderFactory
+from app.modules.extraction.service.service import ExtractionService
+from app.modules.gap_detection.service.service import GapDetectionService
 from app.modules.investigation.timeline.models import TimelineStage, TimelineStatus
 from app.modules.investigation.timeline.service import TimelineService
 from app.modules.paper.service.service import PaperService
 from app.modules.retrieval.service.service import RetrievalService
+from app.modules.validation.service.service import ValidationService
 from app.observability.logger import get_logger
 from app.pipeline import PipelineContext
 from app.plugins import registry
@@ -90,6 +96,14 @@ async def retrieval_job(
         artifact_service = ArtifactService(session)
         paper_service = PaperService(session)
         retrieval_service = RetrievalService()
+        validation_service = ValidationService()
+        llm_provider = ProviderFactory.create(get_settings().LLM_PROVIDER)
+        extraction_service = ExtractionService(
+            session=session,
+            llm_provider=llm_provider,
+        )
+        analysis_service = AnalysisService(session=session)
+        gap_detection_service = GapDetectionService(session=session)
 
         # ── Load state ───────────────────────────────────────────
         execution = execution_service.get_execution(execution_id)
@@ -102,7 +116,11 @@ async def retrieval_job(
             ExecutionStatus.FAILED,
             ExecutionStatus.CANCELLED,
         ):
-            logger.info("execution_already_terminal", execution_id=exec_id, status=execution.status.value)
+            logger.info(
+                "execution_already_terminal",
+                execution_id=exec_id,
+                status=execution.status.value,
+            )
             return JobResult()
 
         # ── Mark RUNNING (first attempt only) ────────────────────
@@ -117,6 +135,27 @@ async def retrieval_job(
                 stage=TimelineStage.RETRIEVING,
                 status=TimelineStatus.RUNNING,
                 message="Paper retrieval started",
+            )
+            timeline_service.record_event(
+                investigation_id=investigation_id,
+                execution_id=execution_id,
+                stage=TimelineStage.VALIDATING,
+                status=TimelineStatus.RUNNING,
+                message="Validation started",
+            )
+            timeline_service.record_event(
+                investigation_id=investigation_id,
+                execution_id=execution_id,
+                stage=TimelineStage.EXTRACTING,
+                status=TimelineStatus.RUNNING,
+                message="Knowledge extraction started",
+            )
+            timeline_service.record_event(
+                investigation_id=investigation_id,
+                execution_id=execution_id,
+                stage=TimelineStage.ANALYZING,
+                status=TimelineStatus.RUNNING,
+                message="Cross-paper analysis started",
             )
             session.commit()
 
@@ -146,15 +185,19 @@ async def retrieval_job(
             "retrieval",
             stage_recorder=stage_service,
             retrieval_service=retrieval_service,
+            validation_service=validation_service,
             paper_service=paper_service,
             artifact_service=artifact_service,
+            extraction_service=extraction_service,
+            analysis_service=analysis_service,
+            gap_detection_service=gap_detection_service,
             timeline_service=timeline_service,
         )
 
         # ── Execute ──────────────────────────────────────────────
-        start = datetime.now(timezone.utc)
+        start = datetime.now(UTC)
         final_context = await definition.run(context)
-        elapsed = (datetime.now(timezone.utc) - start).total_seconds()
+        elapsed = (datetime.now(UTC) - start).total_seconds()
 
         # ── Handle result ────────────────────────────────────────
         if final_context.execution_state.get("failed_at"):
@@ -174,6 +217,14 @@ async def retrieval_job(
                 errors=final_context.errors,
             )
             return JobResult()
+
+        # ── Persist retrieval metrics to execution metadata ───────
+        retrieval_metrics = final_context.metrics.get("retrieval")
+        if retrieval_metrics:
+            execution_service.update_metadata(
+                execution_id,
+                {"retrieval_metrics": retrieval_metrics},
+            )
 
         # ── Success ──────────────────────────────────────────────
         execution_service.update_execution(
