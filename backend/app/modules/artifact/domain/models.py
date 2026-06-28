@@ -56,6 +56,12 @@ class Artifact(Base):
         nullable=False,
         index=True,
     )
+    execution_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("executions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     artifact_type: Mapped[ArtifactType] = mapped_column(
         SAEnum(ArtifactType, name="artifact_type"),
         nullable=False,

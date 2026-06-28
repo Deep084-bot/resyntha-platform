@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: resyntha
+Version: 0.1.0
+Summary: Multi-Agent Research Intelligence Platform
+Requires-Python: >=3.12
+Requires-Dist: fastapi
+Requires-Dist: uvicorn[standard]
+Requires-Dist: sqlalchemy
+Requires-Dist: alembic
+Requires-Dist: psycopg[binary]
+Requires-Dist: pydantic
+Requires-Dist: pydantic-settings
+Requires-Dist: redis
+Requires-Dist: arq
+Requires-Dist: python-dotenv
+Requires-Dist: structlog
+Requires-Dist: httpx
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ruff; extra == "dev"

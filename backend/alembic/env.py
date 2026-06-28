@@ -12,6 +12,11 @@ from sqlalchemy import engine_from_config, pool
 from app.config import get_settings
 from app.database.base import Base
 
+# Import every ORM model so that Base.metadata is fully populated before
+# Alembic reads it.  Without this, autogenerate would produce empty
+# migrations because no tables would be registered.
+import app.database.model_registry  # noqa: F401
+
 # Alembic Config object, which provides access to values within .ini file.
 config = context.config
 

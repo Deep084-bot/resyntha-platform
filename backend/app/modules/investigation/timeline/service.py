@@ -35,6 +35,7 @@ class TimelineService:
         stage: TimelineStage,
         status: TimelineStatus,
         message: str,
+        execution_id: uuid.UUID | None = None,
     ) -> None:
         """Append a new event to the investigation's timeline.
 
@@ -42,6 +43,7 @@ class TimelineService:
         """
         event = InvestigationTimeline(
             investigation_id=investigation_id,
+            execution_id=execution_id,
             stage=stage,
             status=status,
             message=message,

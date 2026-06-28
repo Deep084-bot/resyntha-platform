@@ -22,6 +22,12 @@ class PipelineContext:
         Identifies the investigation this pipeline is running for.
         Every stage receives this.
 
+    ``execution_id``
+        Identifies the execution record this pipeline run belongs to.
+        Stages use it to associate artifacts and timeline events with
+        the correct execution.  ``None`` when the pipeline is invoked
+        outside of an execution context.
+
     ``current_stage``
         Set by the runner before each stage executes.  Stages can
         read it for logging or conditional behaviour.
@@ -53,6 +59,7 @@ class PipelineContext:
     """
 
     investigation_id: uuid.UUID
+    execution_id: uuid.UUID | None = None
     current_stage: str = ""
     artifacts: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
