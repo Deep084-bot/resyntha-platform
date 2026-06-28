@@ -6,31 +6,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database.dependencies import get_db
-from app.modules.artifact.service.service import ArtifactService
-from app.modules.execution.domain.models import ExecutionStatus
-from app.modules.execution.schemas.request import (
-    CreateExecutionRequest,
-    UpdateExecutionRequest,
-)
+from app.modules.execution.schemas.request import CreateExecutionRequest
 from app.modules.execution.service.service import ExecutionService
 from app.modules.investigation.service.service import InvestigationService
-from app.modules.investigation.timeline.models import TimelineStage, TimelineStatus
-from app.modules.investigation.timeline.service import TimelineService
 from app.modules.paper.repository.repository import PaperRepository
-from app.modules.paper.service.service import PaperService
 from app.modules.retrieval.schemas.request import RetrieveRequest
 from app.modules.retrieval.schemas.response import (
     PersistedPaperResponse,
-    RetrieveResponse,
+    RetrievalAcceptedResponse,
 )
 from app.observability.logger import get_logger
-from app.pipeline import PipelineContext, PipelineDefinition
-from app.pipeline.stages import (
-    ArtifactStage,
-    PersistStage,
-    RetrieveStage,
-    TimelineStage,
-)
+from app.workers.worker import enqueue_retrieval
 
 router = APIRouter(tags=["retrieval"])
 logger = get_logger(__name__)
@@ -38,22 +24,22 @@ logger = get_logger(__name__)
 
 @router.post(
     "/investigations/{investigation_id}/retrieve",
-    response_model=RetrieveResponse,
-    status_code=status.HTTP_201_CREATED,
+    response_model=RetrievalAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
 )
 async def retrieve_papers(
     investigation_id: uuid.UUID,
     body: RetrieveRequest,
     db: Session = Depends(get_db),
-) -> RetrieveResponse:
-    """Search for papers, persist them, create a paper-collection artifact,
-    and record timeline events.
+) -> RetrievalAcceptedResponse:
+    """Enqueue a retrieval pipeline job and return immediately.
 
-    Creates an Execution record to track the run and associates
-    artifacts and timeline events with that execution.
+    The actual work (searching providers, persisting papers, creating
+    artifacts, recording timeline) runs in an ARQ background worker.
+    Poll ``GET /investigations/{id}/executions`` to track progress.
     """
     logger.info(
-        "retrieval_requested",
+        "retrieval_enqueuing",
         investigation_id=str(investigation_id),
         query=body.query,
     )
@@ -63,77 +49,29 @@ async def retrieve_papers(
     if investigation is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-    # Create and start execution
+    # Create execution in PENDING — worker transitions to RUNNING.
     execution_service = ExecutionService(db)
     execution = execution_service.create_execution(
         investigation_id,
         CreateExecutionRequest(trigger="manual"),
     )
-    execution_service.update_execution(
-        execution.id,
-        UpdateExecutionRequest(status=ExecutionStatus.RUNNING),
+
+    await enqueue_retrieval(
+        execution_id=str(execution.id),
+        investigation_id=str(investigation_id),
+        query=body.query,
+        paper_limit=body.paper_limit,
     )
 
-    timeline_service = TimelineService(db)
-    timeline_service.record_event(
-        investigation_id=investigation_id,
+    logger.info(
+        "retrieval_enqueued",
+        execution_id=str(execution.id),
+        investigation_id=str(investigation_id),
+    )
+
+    return RetrievalAcceptedResponse(
         execution_id=execution.id,
-        stage=TimelineStage.RETRIEVING,
-        status=TimelineStatus.RUNNING,
-        message="Paper retrieval started",
-    )
-
-    context = PipelineContext(
-        investigation_id=investigation_id,
-        execution_id=execution.id,
-    )
-    context.set_metadata("query", body.query)
-    context.set_metadata("paper_limit", body.paper_limit)
-    context.set_metadata("timeline_stage", "retrieving")
-
-    definition = PipelineDefinition(
-        name="retrieve",
-        stages=[
-            RetrieveStage(),
-            PersistStage(PaperService(db)),
-            ArtifactStage(ArtifactService(db)),
-            TimelineStage(TimelineService(db)),
-        ],
-    )
-
-    final_context = await definition.run(context)
-
-    if final_context.execution_state.get("failed_at"):
-        timeline_service.record_event(
-            investigation_id=investigation_id,
-            execution_id=execution.id,
-            stage=TimelineStage.RETRIEVING,
-            status=TimelineStatus.FAILURE,
-            message="Retrieval failed",
-        )
-        execution_service.update_execution(
-            execution.id,
-            UpdateExecutionRequest(status=ExecutionStatus.FAILED),
-        )
-        logger.error(
-            "retrieval_failed",
-            investigation_id=str(investigation_id),
-            errors=final_context.errors,
-        )
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    execution_service.update_execution(
-        execution.id,
-        UpdateExecutionRequest(status=ExecutionStatus.COMPLETED),
-    )
-
-    artifact = final_context.get_artifact("artifact_response")
-    paper_count = final_context.metrics.get("paper_count", 0)
-
-    return RetrieveResponse(
-        investigation_id=investigation_id,
-        artifact_id=artifact.id,
-        paper_count=paper_count,
+        status="pending",
     )
 
 

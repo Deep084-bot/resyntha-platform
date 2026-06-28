@@ -10,8 +10,14 @@ from app.modules.execution.schemas.request import (
     CreateExecutionRequest,
     UpdateExecutionRequest,
 )
-from app.modules.execution.schemas.response import ExecutionResponse
-from app.modules.execution.service.service import ExecutionService
+from app.modules.execution.schemas.response import (
+    ExecutionResponse,
+    ExecutionStageResponse,
+)
+from app.modules.execution.service.service import (
+    ExecutionService,
+    ExecutionStageService,
+)
 from app.observability.logger import get_logger
 
 router = APIRouter(tags=["executions"])
@@ -20,6 +26,10 @@ logger = get_logger(__name__)
 
 def _get_service(db: Session = Depends(get_db)) -> ExecutionService:
     return ExecutionService(db)
+
+
+def _get_stage_service(db: Session = Depends(get_db)) -> ExecutionStageService:
+    return ExecutionStageService(db)
 
 
 @router.post(
@@ -87,3 +97,15 @@ async def update_execution(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     logger.info("execution_updated", id=str(execution_id), status=execution.status.value)
     return execution
+
+
+@router.get(
+    "/executions/{execution_id}/stages",
+    response_model=list[ExecutionStageResponse],
+)
+async def list_stages(
+    execution_id: uuid.UUID,
+    service: ExecutionStageService = Depends(_get_stage_service),
+) -> list[ExecutionStageResponse]:
+    """Return all stages for an execution, ordered by creation time."""
+    return list(service.list_stages(execution_id))

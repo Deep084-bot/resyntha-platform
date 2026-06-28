@@ -48,7 +48,11 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # CORS
     # ------------------------------------------------------------------
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+    CORS_ORIGINS: str = (
+        "http://localhost:5173,"
+        "http://localhost:3000,"
+        "http://localhost:8000"
+    )
 
     # ------------------------------------------------------------------
     # AI / External services  (placeholders for future sprints)

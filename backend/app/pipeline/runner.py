@@ -13,6 +13,7 @@ from datetime import datetime
 
 from app.pipeline.context import PipelineContext
 from app.pipeline.exceptions import PipelineException
+from app.pipeline.recorder import StageRecorder
 from app.pipeline.result import PipelineResult
 from app.pipeline.retry import RetryPolicy
 from app.pipeline.stage import PipelineStage
@@ -32,9 +33,11 @@ class PipelineRunner:
         self,
         stages: Sequence[PipelineStage],
         retry_policy: RetryPolicy | None = None,
+        stage_recorder: StageRecorder | None = None,
     ) -> None:
         self._stages = list(stages)
         self._retry_policy = retry_policy or RetryPolicy()
+        self._stage_recorder = stage_recorder
 
     async def run(self, context: PipelineContext) -> PipelineContext:
         """Execute every stage in order and return the updated context.
@@ -77,11 +80,17 @@ class PipelineRunner:
         start = datetime.utcnow()
 
         for attempt in range(self._retry_policy.max_retries + 1):
+            attempt_number = attempt + 1
             if attempt > 0:
                 await self._backoff(attempt)
                 context.add_error(
                     stage.name(),
                     f"Retry attempt {attempt}/{self._retry_policy.max_retries}",
+                )
+
+            if self._stage_recorder and context.execution_id is not None:
+                await self._stage_recorder.record_started(
+                    context.execution_id, stage.name(), attempt_number,
                 )
 
             try:
@@ -91,27 +100,55 @@ class PipelineRunner:
             except Exception as exc:
                 last_exception = exc
                 context.add_error(stage.name(), str(exc), exc)
+                if self._stage_recorder and context.execution_id is not None:
+                    await self._stage_recorder.record_failed(
+                        context.execution_id, stage.name(), str(exc),
+                    )
                 continue
 
             if result == PipelineResult.RETRY and attempt < self._retry_policy.max_retries:
+                if self._stage_recorder and context.execution_id is not None:
+                    await self._stage_recorder.record_failed(
+                        context.execution_id, stage.name(), "RETRY requested by stage",
+                    )
                 continue
 
             duration = (datetime.utcnow() - start).total_seconds()
             context.record_metric(f"{stage.name()}.duration_seconds", duration)
-            context.record_metric(f"{stage.name()}.attempts", attempt + 1)
+            context.record_metric(f"{stage.name()}.attempts", attempt_number)
 
             if result == PipelineResult.RETRY:
                 context.add_error(
                     stage.name(),
                     f"Stage returned RETRY {self._retry_policy.max_retries + 1} times",
                 )
+                if self._stage_recorder and context.execution_id is not None:
+                    await self._stage_recorder.record_failed(
+                        context.execution_id, stage.name(),
+                        f"RETRY exhausted after {self._retry_policy.max_retries + 1} attempts",
+                    )
                 return PipelineResult.FAILED
+
+            if self._stage_recorder and context.execution_id is not None:
+                if result == PipelineResult.SUCCESS:
+                    await self._stage_recorder.record_completed(
+                        context.execution_id, stage.name(),
+                    )
+                elif result == PipelineResult.SKIPPED:
+                    await self._stage_recorder.record_completed(
+                        context.execution_id, stage.name(),
+                    )
 
             return result
 
         duration = (datetime.utcnow() - start).total_seconds()
         context.record_metric(f"{stage.name()}.duration_seconds", duration)
         context.record_metric(f"{stage.name()}.attempts", self._retry_policy.max_retries + 1)
+        if self._stage_recorder and context.execution_id is not None:
+            await self._stage_recorder.record_failed(
+                context.execution_id, stage.name(),
+                last_exception and str(last_exception) or "All retry attempts exhausted",
+            )
         return PipelineResult.FAILED
 
     async def _backoff(self, attempt: int) -> None:

@@ -14,6 +14,7 @@ from collections.abc import Sequence
 
 from app.pipeline.context import PipelineContext
 from app.pipeline.exceptions import PipelineException
+from app.pipeline.recorder import StageRecorder
 from app.pipeline.retry import RetryPolicy
 from app.pipeline.runner import PipelineRunner
 from app.pipeline.stage import PipelineStage
@@ -35,9 +36,11 @@ class PipelineDefinition:
         self,
         name: str,
         stages: Sequence[PipelineStage],
+        stage_recorder: StageRecorder | None = None,
     ) -> None:
         self._name = name
         self._stages = list(stages)
+        self._stage_recorder = stage_recorder
 
     @property
     def name(self) -> str:
@@ -81,5 +84,9 @@ class PipelineDefinition:
         """
         self.validate(context)
         context.set_metadata("pipeline_name", self._name)
-        runner = PipelineRunner(stages=self._stages, retry_policy=retry_policy)
+        runner = PipelineRunner(
+            stages=self._stages,
+            retry_policy=retry_policy,
+            stage_recorder=self._stage_recorder,
+        )
         return await runner.run(context)

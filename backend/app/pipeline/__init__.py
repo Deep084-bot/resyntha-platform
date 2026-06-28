@@ -37,6 +37,7 @@ from app.pipeline.exceptions import (
     RetryExceededException,
     StageExecutionException,
 )
+from app.pipeline.recorder import StageRecorder
 from app.pipeline.result import PipelineResult
 from app.pipeline.retry import RetryPolicy
 from app.pipeline.runner import PipelineRunner
@@ -52,4 +53,5 @@ __all__ = [
     "RetryExceededException",
     "RetryPolicy",
     "StageExecutionException",
+    "StageRecorder",
 ]

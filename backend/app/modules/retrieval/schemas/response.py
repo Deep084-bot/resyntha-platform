@@ -44,3 +44,11 @@ class RetrieveResponse(BaseModel):
     investigation_id: uuid.UUID
     artifact_id: uuid.UUID
     paper_count: int
+
+
+class RetrievalAcceptedResponse(BaseModel):
+    """Returned immediately after enqueuing a retrieval job."""
+
+    execution_id: uuid.UUID
+    status: str = "pending"
+    queue_position: int | None = None

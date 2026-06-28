@@ -6,13 +6,24 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.modules.execution.domain.models import Execution, ExecutionStatus
-from app.modules.execution.repository.repository import ExecutionRepository
+from app.modules.execution.domain.models import (
+    Execution,
+    ExecutionStage,
+    ExecutionStageStatus,
+    ExecutionStatus,
+)
+from app.modules.execution.repository.repository import (
+    ExecutionRepository,
+    ExecutionStageRepository,
+)
 from app.modules.execution.schemas.request import (
     CreateExecutionRequest,
     UpdateExecutionRequest,
 )
-from app.modules.execution.schemas.response import ExecutionResponse
+from app.modules.execution.schemas.response import (
+    ExecutionResponse,
+    ExecutionStageResponse,
+)
 from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
@@ -88,3 +99,114 @@ class ExecutionService:
         updated = self._repository.update(execution)
         self._session.commit()
         return ExecutionResponse.model_validate(updated)
+
+    def update_metadata(
+        self,
+        execution_id: uuid.UUID,
+        metadata: dict,
+    ) -> bool:
+        """Merge metadata into an execution's JSONB column.
+
+        Returns ``True`` if the execution was found and updated.
+        """
+        execution = self._repository.get_by_id(execution_id)
+        if execution is None:
+            return False
+        current = execution._metadata or {}
+        current.update(metadata)
+        execution._metadata = current
+        self._repository.update(execution)
+        self._session.commit()
+        return True
+
+
+class ExecutionStageService:
+    """Encapsulates execution-stage business logic.
+
+    Implements ``StageRecorder`` protocol so the pipeline runner can
+    record stage lifecycle events without depending on SQLAlchemy.
+    """
+
+    def __init__(self, session: Session) -> None:
+        self._repository = ExecutionStageRepository(session)
+        self._session = session
+
+    async def record_started(
+        self,
+        execution_id: uuid.UUID,
+        stage_name: str,
+        attempt: int,
+    ) -> None:
+        """Record that a stage attempt has begun."""
+        stage = ExecutionStage(
+            execution_id=execution_id,
+            stage_name=stage_name,
+            status=ExecutionStageStatus.RUNNING,
+            attempt=attempt,
+            started_at=datetime.now(timezone.utc),
+        )
+        self._repository.create(stage)
+        self._session.commit()
+        logger.info(
+            "stage_started",
+            execution_id=str(execution_id),
+            stage=stage_name,
+            attempt=attempt,
+        )
+
+    async def record_completed(
+        self,
+        execution_id: uuid.UUID,
+        stage_name: str,
+    ) -> None:
+        """Record that a stage attempt completed successfully."""
+        stage = self._repository.get_active_stage(execution_id, stage_name)
+        if stage is None:
+            logger.warning(
+                "stage_not_found_for_completion",
+                execution_id=str(execution_id),
+                stage=stage_name,
+            )
+            return
+        now = datetime.now(timezone.utc)
+        stage.status = ExecutionStageStatus.COMPLETED
+        stage.completed_at = now
+        if stage.started_at:
+            stage.duration_ms = int(
+                (now - stage.started_at).total_seconds() * 1000
+            )
+        self._repository.update(stage)
+        self._session.commit()
+
+    async def record_failed(
+        self,
+        execution_id: uuid.UUID,
+        stage_name: str,
+        error_message: str,
+    ) -> None:
+        """Record that a stage attempt failed."""
+        stage = self._repository.get_active_stage(execution_id, stage_name)
+        if stage is None:
+            logger.warning(
+                "stage_not_found_for_failure",
+                execution_id=str(execution_id),
+                stage=stage_name,
+            )
+            return
+        now = datetime.now(timezone.utc)
+        stage.status = ExecutionStageStatus.FAILED
+        stage.completed_at = now
+        if stage.started_at:
+            stage.duration_ms = int(
+                (now - stage.started_at).total_seconds() * 1000
+            )
+        stage.error_message = error_message
+        self._repository.update(stage)
+        self._session.commit()
+
+    def list_stages(
+        self, execution_id: uuid.UUID,
+    ) -> Sequence[ExecutionStageResponse]:
+        """Return all stages for an execution, oldest first."""
+        stages = self._repository.list_by_execution(execution_id)
+        return [ExecutionStageResponse.model_validate(s) for s in stages]
