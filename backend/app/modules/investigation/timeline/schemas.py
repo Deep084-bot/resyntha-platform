@@ -1,5 +1,6 @@
 """Pydantic schemas for the Timeline sub-module."""
 
+import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
@@ -18,4 +19,5 @@ class TimelineEventResponse(BaseModel):
     stage: TimelineStage
     status: TimelineStatus
     message: str
+    execution_id: uuid.UUID | None = None
     created_at: datetime

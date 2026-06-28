@@ -7,6 +7,12 @@ from sqlalchemy.orm import Session
 
 from app.database.dependencies import get_db
 from app.modules.artifact.service.service import ArtifactService
+from app.modules.execution.domain.models import ExecutionStatus
+from app.modules.execution.schemas.request import (
+    CreateExecutionRequest,
+    UpdateExecutionRequest,
+)
+from app.modules.execution.service.service import ExecutionService
 from app.modules.investigation.service.service import InvestigationService
 from app.modules.investigation.timeline.models import TimelineStage, TimelineStatus
 from app.modules.investigation.timeline.service import TimelineService
@@ -42,6 +48,9 @@ async def retrieve_papers(
 ) -> RetrieveResponse:
     """Search for papers, persist them, create a paper-collection artifact,
     and record timeline events.
+
+    Creates an Execution record to track the run and associates
+    artifacts and timeline events with that execution.
     """
     logger.info(
         "retrieval_requested",
@@ -54,15 +63,30 @@ async def retrieve_papers(
     if investigation is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
+    # Create and start execution
+    execution_service = ExecutionService(db)
+    execution = execution_service.create_execution(
+        investigation_id,
+        CreateExecutionRequest(trigger="manual"),
+    )
+    execution_service.update_execution(
+        execution.id,
+        UpdateExecutionRequest(status=ExecutionStatus.RUNNING),
+    )
+
     timeline_service = TimelineService(db)
     timeline_service.record_event(
         investigation_id=investigation_id,
+        execution_id=execution.id,
         stage=TimelineStage.RETRIEVING,
         status=TimelineStatus.RUNNING,
         message="Paper retrieval started",
     )
 
-    context = PipelineContext(investigation_id=investigation_id)
+    context = PipelineContext(
+        investigation_id=investigation_id,
+        execution_id=execution.id,
+    )
     context.set_metadata("query", body.query)
     context.set_metadata("paper_limit", body.paper_limit)
     context.set_metadata("timeline_stage", "retrieving")
@@ -82,9 +106,14 @@ async def retrieve_papers(
     if final_context.execution_state.get("failed_at"):
         timeline_service.record_event(
             investigation_id=investigation_id,
+            execution_id=execution.id,
             stage=TimelineStage.RETRIEVING,
             status=TimelineStatus.FAILURE,
             message="Retrieval failed",
+        )
+        execution_service.update_execution(
+            execution.id,
+            UpdateExecutionRequest(status=ExecutionStatus.FAILED),
         )
         logger.error(
             "retrieval_failed",
@@ -92,6 +121,11 @@ async def retrieve_papers(
             errors=final_context.errors,
         )
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    execution_service.update_execution(
+        execution.id,
+        UpdateExecutionRequest(status=ExecutionStatus.COMPLETED),
+    )
 
     artifact = final_context.get_artifact("artifact_response")
     paper_count = final_context.metrics.get("paper_count", 0)

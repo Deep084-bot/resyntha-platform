@@ -38,9 +38,10 @@ class ArtifactService:
         investigation_id: uuid.UUID,
         request: CreateArtifactRequest,
     ) -> ArtifactResponse:
-        """Create a new artifact linked to an investigation."""
+        """Create a new artifact linked to an investigation and optionally an execution."""
         artifact = Artifact(
             investigation_id=investigation_id,
+            execution_id=request.execution_id,
             artifact_type=request.artifact_type,
             version=request.version,
             status=ArtifactStatus.PENDING,

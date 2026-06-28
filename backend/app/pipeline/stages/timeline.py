@@ -48,6 +48,7 @@ class TimelineStage(PipelineStage):
 
         self._timeline_service.record_event(
             investigation_id=investigation_id,
+            execution_id=context.execution_id,
             stage=timeline_stage,
             status=TimelineStatus.SUCCESS,
             message=message,

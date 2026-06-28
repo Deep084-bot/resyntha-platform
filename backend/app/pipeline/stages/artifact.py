@@ -44,6 +44,7 @@ class ArtifactStage(PipelineStage):
             investigation_id=investigation_id,
             request=CreateArtifactRequest(
                 artifact_type=ArtifactType.PAPER_COLLECTION,
+                execution_id=context.execution_id,
                 payload={
                     "paper_count": len(paper_ids),
                     "paper_ids": [str(pid) for pid in paper_ids],

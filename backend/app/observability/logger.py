@@ -7,13 +7,5 @@ IDs, tenant context) in the future.
 """
 
 import structlog
-from structlog.stdlib import BoundLogger
-
-
-def get_logger(name: str) -> BoundLogger:  # type: ignore[type-arg]
-    """Return a structured logger bound to *name* (typically ``__name__``).
-
-    The returned logger writes JSON-formatted records with timestamp,
-    log level, module name, and event name.
-    """
+def get_logger(name: str):
     return structlog.get_logger(name)

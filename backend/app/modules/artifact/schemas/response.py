@@ -15,6 +15,7 @@ class ArtifactResponse(BaseModel):
 
     id: uuid.UUID
     investigation_id: uuid.UUID
+    execution_id: uuid.UUID | None = None
     artifact_type: ArtifactType
     version: int
     status: ArtifactStatus

@@ -56,6 +56,12 @@ class InvestigationTimeline(Base):
         nullable=False,
         index=True,
     )
+    execution_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("executions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     stage: Mapped[TimelineStage] = mapped_column(
         SAEnum(TimelineStage, name="timeline_stage"),
         nullable=False,
