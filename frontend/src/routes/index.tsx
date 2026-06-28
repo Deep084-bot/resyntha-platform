@@ -19,7 +19,7 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: <InvestigationsPage /> },
       {
-        path: "workspace/:id",
+        path: "investigations/:id",
         element: <WorkspaceLayout />,
         children: [
           { index: true, element: <WorkspaceOverviewPage /> },
@@ -29,7 +29,6 @@ const routes: RouteObject[] = [
           { path: "analysis", element: <WorkspaceAnalysisPage /> },
         ],
       },
-      { path: "workspace", element: <WorkspaceOverviewPage /> },
       { path: "pipeline", element: <PipelinePage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <NotFoundPage /> },

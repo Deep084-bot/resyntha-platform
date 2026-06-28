@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Investigations", to: "/", icon: MagnifyingGlassIcon },
-  { label: "Workspace", to: "/workspace", icon: LayersIcon },
   { label: "Pipeline", to: "/pipeline", icon: PlayIcon },
   { label: "Settings", to: "/settings", icon: GearIcon },
 ];
@@ -28,7 +27,7 @@ export function Sidebar() {
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === "/" || item.to === "/workspace"}
+            end={item.to === "/"}
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
@@ -73,24 +72,6 @@ function MagnifyingGlassIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-      />
-    </svg>
-  );
-}
-
-function LayersIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.5}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3"
       />
     </svg>
   );

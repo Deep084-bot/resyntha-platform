@@ -1,8 +1,9 @@
 """Response schemas for the Retrieval API."""
 
 import uuid
+from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PaperResponse(BaseModel):
@@ -18,6 +19,23 @@ class PaperResponse(BaseModel):
     citation_count: int | None = None
     source: str = ""
     score: float = 0.0
+
+
+class PersistedPaperResponse(BaseModel):
+    """Public representation of a persisted paper (ORM model)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str
+    abstract: str | None = None
+    doi: str | None = None
+    venue: str | None = None
+    year: int | None = None
+    citation_count: int | None = None
+    url: str | None = None
+    created_at: datetime
+    updated_at: datetime
 
 
 class RetrieveResponse(BaseModel):

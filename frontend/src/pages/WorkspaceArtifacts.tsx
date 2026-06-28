@@ -1,16 +1,46 @@
+import { useParams } from "react-router-dom";
 import { FlaskConical } from "lucide-react";
 
 import { ArtifactCard } from "@/components/ui/artifact-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
-
-const artifacts = [
-  { title: "Paper Collection", type: "paper_collection", status: "success" as const, version: 1, timestamp: "Generated 5 min ago" },
-  { title: "Execution Plan", type: "execution_plan", status: "success" as const, version: 1, timestamp: "Generated 5 min ago" },
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { useArtifacts } from "@/hooks/useArtifacts";
+import { mapArtifactStatus } from "@/types";
 
 export function WorkspaceArtifactsPage() {
-  const hasArtifacts = artifacts.length > 0;
+  const { id } = useParams();
+  const { data: artifacts, isLoading, isError } = useArtifacts(id);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader
+          title="Artifacts"
+          description="Durable outputs produced during the investigation"
+        />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader
+          title="Artifacts"
+          description="Durable outputs produced during the investigation"
+        />
+        <p className="text-sm text-destructive">
+          Failed to load artifacts.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -19,10 +49,17 @@ export function WorkspaceArtifactsPage() {
         description="Durable outputs produced during the investigation"
       />
 
-      {hasArtifacts ? (
+      {artifacts && artifacts.length > 0 ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {artifacts.map((a) => (
-            <ArtifactCard key={a.title} {...a} />
+            <ArtifactCard
+              key={a.id}
+              title={a.artifact_type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+              type={a.artifact_type}
+              status={mapArtifactStatus(a.status)}
+              version={a.version}
+              timestamp={`Generated ${new Date(a.created_at).toLocaleDateString()}`}
+            />
           ))}
         </div>
       ) : (
