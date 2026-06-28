@@ -21,3 +21,4 @@ class Paper(BaseModel):
     citation_count: int | None = None
     source: str = ""
     score: float = 0.0
+    metadata: dict = {}

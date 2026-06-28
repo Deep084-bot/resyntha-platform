@@ -11,8 +11,11 @@ const tabs = [
   { label: "Timeline", to: "timeline" },
   { label: "Artifacts", to: "artifacts" },
   { label: "Papers", to: "papers" },
+  { label: "Validation", to: "validation" },
+  { label: "Knowledge", to: "knowledge" },
   { label: "Executions", to: "executions" },
   { label: "Analysis", to: "analysis" },
+  { label: "Gaps", to: "gaps" },
 ] as const;
 
 export function WorkspaceLayout() {

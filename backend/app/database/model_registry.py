@@ -13,16 +13,21 @@ lives here.
 """
 
 # investigation
-import app.modules.investigation.domain.models  # noqa: F401
-
-# investigation.timeline
-import app.modules.investigation.timeline.models  # noqa: F401
-
 # artifact
 import app.modules.artifact.domain.models  # noqa: F401
 
 # execution
 import app.modules.execution.domain.models  # noqa: F401
 
+# extraction
+import app.modules.extraction.domain.models  # noqa: F401
+import app.modules.investigation.domain.models  # noqa: F401
+
+# investigation.timeline
+import app.modules.investigation.timeline.models  # noqa: F401
+
 # paper
 import app.modules.paper.domain.models  # noqa: F401
+
+# validation
+import app.modules.validation.domain.models  # noqa: F401

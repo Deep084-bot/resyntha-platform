@@ -23,10 +23,14 @@ from collections.abc import Sequence
 from app.pipeline.definition import PipelineDefinition
 from app.plugins.base import PipelinePlugin
 from app.plugins.wrappers import (
+    AnalyzePlugin,
     ArtifactPlugin,
+    ExtractPlugin,
+    GapDetectionPlugin,
     PersistPlugin,
     RetrievePlugin,
     TimelinePlugin,
+    ValidatePlugin,
 )
 
 
@@ -65,7 +69,6 @@ class PipelineRegistry:
             raise KeyError(msg)
 
         stage_recorder = kwargs.pop("stage_recorder", None)
-        retry_policy = kwargs.pop("retry_policy", None)
 
         plugins = [cls(**kwargs) for cls in plugin_classes]
 
@@ -82,7 +85,11 @@ registry.register(
     "retrieval",
     [
         RetrievePlugin,
+        ValidatePlugin,
         PersistPlugin,
+        ExtractPlugin,
+        AnalyzePlugin,
+        GapDetectionPlugin,
         ArtifactPlugin,
         TimelinePlugin,
     ],

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { AlertCircle, CheckCircle2, Clock, SkipForward } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, Database, SkipForward } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +38,88 @@ function StageTimeline({ stages }: { stages: ExecutionStage[] }) {
           isActive={s.status === "running"}
         />
       ))}
+    </div>
+  );
+}
+
+function RetrievalMetrics({ execution }: { execution: Execution }) {
+  const retrievalMetrics = execution.metadata?.retrieval_metrics as Record<string, unknown> | undefined;
+  if (!retrievalMetrics) return null;
+
+  const providers = retrievalMetrics.providers as Record<string, Record<string, unknown>> | undefined;
+  const papersFetched = retrievalMetrics.papers_fetched as number;
+  const papersUnique = retrievalMetrics.papers_unique as number;
+  const duplicatesRemoved = retrievalMetrics.duplicates_removed as number;
+  const averageScore = retrievalMetrics.average_score as number;
+  const cacheEnabled = retrievalMetrics.cache_enabled as boolean;
+
+  return (
+    <div className="mt-4 border-t border-border pt-4">
+      <h4 className="mb-3 text-sm font-medium text-text-primary">Retrieval Metrics</h4>
+      <div className="mb-3 grid grid-cols-4 gap-3">
+        <StatBox
+          icon={Database}
+          label="Papers Fetched"
+          count={papersFetched ?? 0}
+          color="text-blue-500"
+        />
+        <StatBox
+          icon={CheckCircle2}
+          label="Unique"
+          count={papersUnique ?? 0}
+          color="text-success"
+        />
+        <StatBox
+          icon={AlertCircle}
+          label="Duplicates"
+          count={duplicatesRemoved ?? 0}
+          color="text-warning"
+        />
+        <StatBox
+          icon={Clock}
+          label="Avg Score"
+          count={averageScore ?? 0}
+          color="text-text-muted"
+        />
+      </div>
+      {providers && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-border text-text-muted">
+                <th className="pb-1 pr-3 font-medium">Provider</th>
+                <th className="pb-1 pr-3 font-medium">Papers</th>
+                <th className="pb-1 pr-3 font-medium">Latency (ms)</th>
+                <th className="pb-1 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(providers).map(([name, m]) => (
+                <tr key={name} className="border-b border-border/50">
+                  <td className="py-1 pr-3 font-mono text-text-primary text-xs">{name}</td>
+                  <td className="py-1 pr-3 text-text-primary">{m.papers_returned as number}</td>
+                  <td className="py-1 pr-3 text-text-primary">{m.response_time_ms as number}</td>
+                  <td className="py-1 text-text-primary">
+                    {m.success ? (
+                      <span className="text-success">OK</span>
+                    ) : (
+                      <span className="text-destructive" title={m.error as string}>
+                        FAIL
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div className="mt-2 flex items-center gap-2">
+        <span className="text-xs text-text-muted">Cache:</span>
+        <span className={`text-xs font-medium ${cacheEnabled ? "text-success" : "text-text-muted"}`}>
+          {cacheEnabled ? "Enabled" : "Disabled"}
+        </span>
+      </div>
     </div>
   );
 }
@@ -136,6 +218,9 @@ function ExecutionMonitor({ execution }: { execution: Execution }) {
             />
           </div>
         )}
+
+        {/* Retrieval metrics */}
+        <RetrievalMetrics execution={execution} />
       </CardContent>
     </Card>
   );

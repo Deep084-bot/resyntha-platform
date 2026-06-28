@@ -10,6 +10,7 @@ arq
 python-dotenv
 structlog
 httpx
+groq
 
 [dev]
 pytest
