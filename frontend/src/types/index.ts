@@ -244,4 +244,38 @@ export const queryKeys = {
     detail: (id: string) => ["executions", id] as const,
     stages: (id: string) => ["executions", id, "stages"] as const,
   },
+  copilot: {
+    chat: (id: string) => ["investigations", id, "copilot", "chat"] as const,
+  },
 } as const;
+
+/* ── Copilot types ──────────────────────────────────────────── */
+
+export interface CopilotMessageDisplay {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  sources?: Citation[];
+  suggested_questions?: string[];
+  created_at: string;
+}
+
+export interface Citation {
+  paper_title: string;
+  paper_id: string;
+  relevance: string;
+}
+
+export interface ChatRequest {
+  question: string;
+}
+
+export interface ChatResponse {
+  answer: string;
+  citations: Citation[];
+  confidence: number;
+  reasoning: string;
+  suggested_questions: string[];
+  message_id: string;
+  conversation_id: string;
+}

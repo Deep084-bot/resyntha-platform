@@ -16,6 +16,7 @@ const tabs = [
   { label: "Executions", to: "executions" },
   { label: "Analysis", to: "analysis" },
   { label: "Gaps", to: "gaps" },
+  { label: "Copilot", to: "copilot" },
 ] as const;
 
 export function WorkspaceLayout() {

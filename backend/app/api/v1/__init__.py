@@ -11,6 +11,7 @@ from app.modules.artifact.api.routes import router as artifact_router
 from app.modules.execution.api.routes import router as execution_router
 from app.modules.investigation.api.routes import router as investigation_router
 from app.modules.retrieval.api.routes import router as retrieval_router
+from app.modules.copilot.api.routes import router as copilot_router
 
 v1_router = APIRouter()
 v1_router.include_router(health_router)
@@ -18,6 +19,7 @@ v1_router.include_router(artifact_router)
 v1_router.include_router(execution_router)
 v1_router.include_router(investigation_router)
 v1_router.include_router(retrieval_router)
+v1_router.include_router(copilot_router)
 
 __all__ = [
     "v1_router",

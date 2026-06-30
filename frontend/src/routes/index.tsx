@@ -15,6 +15,7 @@ import { WorkspacePapersPage } from "@/pages/WorkspacePapers";
 import { WorkspaceResearchGapsPage } from "@/pages/WorkspaceResearchGaps";
 import { WorkspaceTimelinePage } from "@/pages/WorkspaceTimeline";
 import { WorkspaceValidationPage } from "@/pages/WorkspaceValidation";
+import { WorkspaceCopilotPage } from "@/pages/WorkspaceCopilot";
 
 const routes: RouteObject[] = [
   {
@@ -35,6 +36,7 @@ const routes: RouteObject[] = [
           { path: "knowledge", element: <WorkspaceKnowledgePage /> },
           { path: "analysis", element: <WorkspaceAnalysisPage /> },
           { path: "gaps", element: <WorkspaceResearchGapsPage /> },
+          { path: "copilot", element: <WorkspaceCopilotPage /> },
         ],
       },
       { path: "pipeline", element: <PipelinePage /> },

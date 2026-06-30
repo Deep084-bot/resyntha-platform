@@ -31,3 +31,6 @@ import app.modules.paper.domain.models  # noqa: F401
 
 # validation
 import app.modules.validation.domain.models  # noqa: F401
+
+# copilot
+import app.modules.copilot.domain.models  # noqa: F401
