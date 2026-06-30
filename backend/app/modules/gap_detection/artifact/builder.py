@@ -7,7 +7,7 @@ which the frontend Research Gaps tab renders.
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.modules.artifact.domain.models import Artifact, ArtifactType
 from app.modules.artifact.repository.repository import ArtifactRepository
@@ -20,10 +20,10 @@ logger = get_logger(__name__)
 class GapArtifactBuilder:
     """Creates a ``RESEARCH_GAP_REPORT`` artifact for an investigation."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: Session) -> None:
         self._artifact_repo = ArtifactRepository(session)
 
-    async def create_gap_report_artifact(
+    def create_gap_report_artifact(
         self,
         investigation_id: uuid.UUID,
         report: ResearchGapReport,
@@ -37,15 +37,10 @@ class GapArtifactBuilder:
             investigation_id=investigation_id,
             execution_id=execution_id,
             artifact_type=ArtifactType.RESEARCH_GAP_REPORT,
-            name=f"Research Gap Report — {report.summary.total_gaps} gaps",
-            description=(
-                f"Gap analysis of {report.summary.total_gaps} gaps "
-                f"({report.summary.high_confidence_gaps} high confidence)"
-            ),
             payload=payload,
         )
 
-        created = await self._artifact_repo.create(artifact)
+        created = self._artifact_repo.create(artifact)
         logger.info(
             "gap_report_artifact_created",
             artifact_id=str(created.id),

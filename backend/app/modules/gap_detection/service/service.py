@@ -13,7 +13,7 @@ No LLM calls — everything is deterministic rule matching.
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.modules.extraction.repository.repository import ExtractionRepository
 from app.modules.gap_detection.artifact.builder import GapArtifactBuilder
@@ -59,7 +59,7 @@ class GapDetectionService:
 
     def __init__(
         self,
-        session: AsyncSession,
+        session: Session,
         rules: list[type[BaseGapRule]] | None = None,
     ) -> None:
         self._session = session
@@ -67,7 +67,7 @@ class GapDetectionService:
         self._artifact_builder = GapArtifactBuilder(session)
         self._rule_classes = rules or _DEFAULT_RULES
 
-    async def detect_gaps(
+    def detect_gaps(
         self,
         investigation_id: uuid.UUID,
         execution_id: uuid.UUID | None = None,
@@ -76,7 +76,7 @@ class GapDetectionService:
 
         Returns the computed ``ResearchGapReport``.
         """
-        records = await self._extraction_repo.list_by_investigation(
+        records = self._extraction_repo.list_by_investigation(
             investigation_id,
         )
 
@@ -87,7 +87,7 @@ class GapDetectionService:
         for rule_cls in self._rule_classes:
             rule = rule_cls()
             try:
-                gaps = await rule.evaluate(ctx)
+                gaps = rule.evaluate(ctx)
                 if gaps:
                     triggered_rules += 1
                     all_gaps.extend(gaps)
@@ -100,13 +100,13 @@ class GapDetectionService:
 
         report = self._build_report(all_gaps)
 
-        await self._artifact_builder.create_gap_report_artifact(
+        self._artifact_builder.create_gap_report_artifact(
             investigation_id=investigation_id,
             report=report,
             execution_id=execution_id,
         )
 
-        await self._session.commit()
+        self._session.commit()
 
         logger.info(
             "gap_detection_complete",

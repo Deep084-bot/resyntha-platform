@@ -7,7 +7,6 @@ import {
   FileText,
   Hash,
   Lightbulb,
-  List,
   ListTree,
   Quote,
   Sparkles,
@@ -20,7 +19,6 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useArtifacts } from "@/hooks/useArtifacts";
 import { formatDateTime } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 interface RankedItem {
   name: string;
@@ -166,7 +164,7 @@ function DistributionCard({
     .slice(0, maxItems);
 
   if (entries.length === 0) return null;
-  const maxCount = entries[0][1];
+  const maxCount = entries[0]![1];
 
   return (
     <Card>

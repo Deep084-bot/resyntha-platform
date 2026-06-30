@@ -40,7 +40,7 @@ class EvaluationGapRule(BaseGapRule):
     SINGLE_METRIC_RATIO = 0.8
     MAX_RESULTS = 3
 
-    async def evaluate(self, ctx: RuleContext) -> list[Gap]:
+    def evaluate(self, ctx: RuleContext) -> list[Gap]:
         gaps: list[Gap] = []
 
         method_findings: dict[str, list[str]] = {}

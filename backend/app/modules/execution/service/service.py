@@ -36,6 +36,14 @@ class ExecutionService:
         self._repository = ExecutionRepository(session)
         self._session = session
 
+    def has_active_execution(self, investigation_id: uuid.UUID) -> bool:
+        """Return ``True`` if the investigation has a PENDING or RUNNING execution."""
+        executions = self._repository.list_by_investigation(investigation_id)
+        return any(
+            e.status in (ExecutionStatus.PENDING, ExecutionStatus.RUNNING)
+            for e in executions
+        )
+
     def create_execution(
         self,
         investigation_id: uuid.UUID,

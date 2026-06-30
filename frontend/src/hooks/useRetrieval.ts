@@ -9,6 +9,11 @@ export function usePapers(investigationId: string | undefined) {
     queryKey: queryKeys.papers.byInvestigation(investigationId!),
     queryFn: () => fetchPapers(investigationId!),
     enabled: !!investigationId,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (data && data.length > 0) return false;
+      return 10000;
+    },
   });
 }
 

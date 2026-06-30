@@ -10,10 +10,12 @@ import socket
 import uuid
 from datetime import UTC, datetime
 
-from arq.connections import JobResult
 from sqlalchemy.orm import Session
 
+from arq import Retry
+
 from app.config import get_settings
+import app.database.model_registry  # noqa: F401 — ensure all ORM models are loaded
 from app.database.session import SessionLocal
 from app.modules.analysis.service.service import AnalysisService
 from app.modules.artifact.service.service import ArtifactService
@@ -62,7 +64,7 @@ async def retrieval_job(
     investigation_id: uuid.UUID,
     query: str,
     paper_limit: int = 10,
-) -> JobResult:
+) -> None:
     """Execute the retrieval pipeline inside an ARQ worker.
 
     Parameters are loaded from the database — never trust a frontend
@@ -109,7 +111,7 @@ async def retrieval_job(
         execution = execution_service.get_execution(execution_id)
         if execution is None:
             logger.error("execution_not_found", execution_id=exec_id)
-            return JobResult()
+            return None
 
         if execution.status in (
             ExecutionStatus.COMPLETED,
@@ -121,7 +123,7 @@ async def retrieval_job(
                 execution_id=exec_id,
                 status=execution.status.value,
             )
-            return JobResult()
+            return None
 
         # ── Mark RUNNING (first attempt only) ────────────────────
         if attempt == 1:
@@ -161,7 +163,7 @@ async def retrieval_job(
 
             # ── Write worker metadata ────────────────────────────
             job_id = ctx.get("job_id", "")
-            queue_name = ctx.get("redis", {}).get("queue_name", "arq:default")
+            queue_name = "arq:default"
             execution_service.update_metadata(
                 execution_id,
                 {
@@ -216,15 +218,19 @@ async def retrieval_job(
                 duration_seconds=round(elapsed, 2),
                 errors=final_context.errors,
             )
-            return JobResult()
+            return None
 
         # ── Persist retrieval metrics to execution metadata ───────
+        logger.info("context_metrics_keys", keys=list(final_context.metrics.keys()))
         retrieval_metrics = final_context.metrics.get("retrieval")
         if retrieval_metrics:
+            logger.info("persisting_retrieval_metrics", metrics=retrieval_metrics)
             execution_service.update_metadata(
                 execution_id,
                 {"retrieval_metrics": retrieval_metrics},
             )
+        else:
+            logger.warning("no_retrieval_metrics_found", metrics_keys=list(final_context.metrics.keys()))
 
         # ── Success ──────────────────────────────────────────────
         execution_service.update_execution(
@@ -240,7 +246,7 @@ async def retrieval_job(
             duration_seconds=round(elapsed, 2),
             paper_count=paper_count,
         )
-        return JobResult()
+        return None
 
     except Exception as exc:
         session.rollback()
@@ -259,7 +265,7 @@ async def retrieval_job(
                 execution_id=exec_id,
                 attempt=attempt,
             )
-            return JobResult()
+            return None
 
         delay = 2 ** (attempt - 1) * 5
         logger.warning(
@@ -268,7 +274,7 @@ async def retrieval_job(
             attempt=attempt,
             delay_seconds=delay,
         )
-        return JobResult(retry_delay=delay)
+        raise Retry(defer=delay)
 
     finally:
         session.close()

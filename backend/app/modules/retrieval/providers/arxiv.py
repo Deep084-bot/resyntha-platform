@@ -17,7 +17,7 @@ from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
-SEARCH_URL = "http://export.arxiv.org/api/query"
+SEARCH_URL = "https://export.arxiv.org/api/query"
 ARXIV_NS = "http://www.w3.org/2005/Atom"
 ARXIV_NS_EXT = "http://arxiv.org/schemas/atom"
 

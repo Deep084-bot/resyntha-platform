@@ -6,6 +6,7 @@ export type StatusVariant =
   | "running"
   | "pending"
   | "skipped"
+  | "warning"
   | "default";
 
 interface StatusBadgeProps {
@@ -20,6 +21,7 @@ const colorMap: Record<StatusVariant, string> = {
   running: "bg-accent-default/10 text-accent-default",
   pending: "bg-warning/10 text-warning",
   skipped: "bg-text-muted/10 text-text-muted",
+  warning: "bg-warning/10 text-warning",
   default: "bg-secondary text-secondary-foreground",
 };
 
@@ -29,6 +31,7 @@ const dotMap: Record<StatusVariant, string> = {
   running: "bg-accent-default",
   pending: "bg-warning",
   skipped: "bg-text-muted",
+  warning: "bg-warning",
   default: "bg-text-muted",
 };
 

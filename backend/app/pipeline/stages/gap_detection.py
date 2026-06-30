@@ -47,7 +47,7 @@ class GapDetectionStage(PipelineStage):
         )
 
         try:
-            report = await self._gap_service.detect_gaps(
+            report = self._gap_service.detect_gaps(
                 investigation_id=investigation_id,
                 execution_id=execution_id,
             )

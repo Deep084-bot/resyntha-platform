@@ -29,7 +29,7 @@ class MethodCombinationGapRule(BaseGapRule):
     MIN_COMBINED_FREQ = 2
     MAX_RESULTS = 5
 
-    async def evaluate(self, ctx: RuleContext) -> list[Gap]:
+    def evaluate(self, ctx: RuleContext) -> list[Gap]:
         gaps: list[Gap] = []
 
         technique_counter: Counter[str] = Counter()

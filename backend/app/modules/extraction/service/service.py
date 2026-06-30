@@ -9,7 +9,7 @@ artifact.
 import uuid
 
 from pydantic import BaseModel, ValidationError
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.modules.extraction.domain.knowledge import ExtractionOutput
 from app.modules.extraction.domain.models import ExtractedKnowledge
@@ -41,7 +41,7 @@ class ExtractionService:
 
     def __init__(
         self,
-        session: AsyncSession,
+        session: Session,
         llm_provider: BaseLLMProvider,
         model: str | None = None,
     ) -> None:
@@ -62,7 +62,7 @@ class ExtractionService:
         Returns the list of created ``ExtractedKnowledge`` records
         and creates a ``KNOWLEDGE_PACKAGE`` artifact.
         """
-        papers = await self._paper_repository.list_by_investigation(
+        papers = self._paper_repository.list_by_investigation(
             investigation_id,
         )
         if not papers:
@@ -85,11 +85,11 @@ class ExtractionService:
                     title=paper.title[:100],
                 )
 
-        await self._create_knowledge_package_artifact(
+        self._create_knowledge_package_artifact(
             investigation_id, results, execution_id,
         )
 
-        await self._session.commit()
+        self._session.commit()
         logger.info(
             "extraction_complete",
             investigation_id=str(investigation_id),
@@ -153,9 +153,9 @@ class ExtractionService:
             tokens_used=usage.total_tokens,
         )
 
-        return await self._repository.create(knowledge)
+        return self._repository.create(knowledge)
 
-    async def _create_knowledge_package_artifact(
+    def _create_knowledge_package_artifact(
         self,
         investigation_id: uuid.UUID,
         results: list[ExtractedKnowledge],
@@ -164,7 +164,7 @@ class ExtractionService:
         """Create a ``KNOWLEDGE_PACKAGE`` artifact summarising results."""
         if not results:
             return
-        await self._artifact_builder.create_package(
+        self._artifact_builder.create_package(
             investigation_id=investigation_id,
             knowledge_records=results,
             execution_id=execution_id,

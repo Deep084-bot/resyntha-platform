@@ -13,7 +13,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.modules.analysis.artifact.builder import AnalysisArtifactBuilder
 from app.modules.analysis.cluster.clustering import Clusterer
@@ -40,14 +40,14 @@ class AnalysisService:
         Async SQLAlchemy session.
     """
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: Session) -> None:
         self._session = session
         self._extraction_repo = ExtractionRepository(session)
         self._artifact_builder = AnalysisArtifactBuilder(session)
         self._clusterer = Clusterer()
         self._calculator = StatisticsCalculator()
 
-    async def analyze(
+    def analyze(
         self,
         investigation_id: uuid.UUID,
         execution_id: uuid.UUID | None = None,
@@ -56,19 +56,19 @@ class AnalysisService:
 
         Returns the computed ``ResearchLandscape``.
         """
-        records = await self._extraction_repo.list_by_investigation(
+        records = self._extraction_repo.list_by_investigation(
             investigation_id,
         )
 
         landscape = self._compute_landscape(records)
 
-        await self._artifact_builder.create_landscape_artifact(
+        self._artifact_builder.create_landscape_artifact(
             investigation_id=investigation_id,
             landscape=landscape,
             execution_id=execution_id,
         )
 
-        await self._session.commit()
+        self._session.commit()
 
         logger.info(
             "analysis_complete",

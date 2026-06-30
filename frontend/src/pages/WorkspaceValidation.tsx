@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useArtifacts } from "@/hooks/useArtifacts";
 import { formatDateTime } from "@/lib/format";
-import { mapArtifactStatus, type Artifact, type ArtifactType } from "@/types";
+import type { Artifact } from "@/types";
 
 interface ValidatedPaper {
   paper: Record<string, unknown>;
@@ -148,7 +148,7 @@ export function WorkspaceValidationPage() {
       ? validationArtifacts.sort(
           (a, b) =>
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )[0]
+        )[0] ?? null
       : null;
 
   const payload = latestValidation?.payload as ValidationPayload | null;

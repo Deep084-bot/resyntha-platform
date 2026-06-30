@@ -54,5 +54,5 @@ class BaseGapRule(ABC):
     name: str = ""
 
     @abstractmethod
-    async def evaluate(self, ctx: RuleContext) -> list[Gap]:
+    def evaluate(self, ctx: RuleContext) -> list[Gap]:
         """Analyse the context and return detected gaps."""

@@ -29,7 +29,7 @@ class DatasetGapRule(BaseGapRule):
     MIN_TECHNIQUE_RATIO = 0.5
     MAX_RESULTS = 5
 
-    async def evaluate(self, ctx: RuleContext) -> list[Gap]:
+    def evaluate(self, ctx: RuleContext) -> list[Gap]:
         gaps: list[Gap] = []
 
         methodology_counter: Counter[str] = Counter()

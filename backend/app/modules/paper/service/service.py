@@ -71,6 +71,7 @@ class PaperService:
             Paper(
                 title=dto.title,
                 abstract=dto.abstract,
+                authors=list(dto.authors) if dto.authors else [],
                 doi=dto.doi,
                 venue=dto.venue,
                 year=dto.year,

@@ -127,6 +127,11 @@ function RetrievalMetrics({ execution }: { execution: Execution }) {
 function ExecutionMonitor({ execution }: { execution: Execution }) {
   const { data: stages, isLoading: stagesLoading } = useExecutionStages(execution.id);
   const isTerminal = execution.status === "completed" || execution.status === "failed" || execution.status === "cancelled";
+  const isRunning = execution.status === "running";
+  const meta = execution.metadata ?? {};
+
+  const workerHost = meta.worker_hostname as string | undefined;
+  const workerPid = meta.worker_pid as number | undefined;
 
   return (
     <Card>
@@ -137,6 +142,12 @@ function ExecutionMonitor({ execution }: { execution: Execution }) {
             status={mapExecutionStatus(execution.status)}
             label={execution.status}
           />
+          {isRunning && (
+            <span className="flex items-center gap-1 text-sm text-accent-default">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-accent-default" />
+              Running
+            </span>
+          )}
           {execution.started_at && execution.completed_at && (
             <span className="text-sm font-normal text-text-muted">
               {formatDuration(execution.started_at, execution.completed_at)}
@@ -164,6 +175,15 @@ function ExecutionMonitor({ execution }: { execution: Execution }) {
             <div>
               <span className="text-text-muted">Completed: </span>
               <span className="text-text-primary">{formatDateTime(execution.completed_at)}</span>
+            </div>
+          )}
+          {workerHost && (
+            <div>
+              <span className="text-text-muted">Worker: </span>
+              <span className="text-text-primary font-mono text-xs">{workerHost}</span>
+              {workerPid != null && (
+                <span className="text-text-muted ml-1">(PID {workerPid})</span>
+              )}
             </div>
           )}
         </div>

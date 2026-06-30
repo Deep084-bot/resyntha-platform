@@ -106,11 +106,14 @@ export interface Paper {
   id: string;
   title: string;
   abstract: string | null;
+  authors: string[];
   doi: string | null;
   venue: string | null;
   year: number | null;
   citation_count: number | null;
   url: string | null;
+  source: string;
+  score: number;
   created_at: string;
   updated_at: string;
 }
@@ -123,6 +126,7 @@ export interface RetrieveRequest {
 export interface RetrieveAcceptedResponse {
   execution_id: string;
   status: string;
+  message?: string | null;
   queue_position?: number | null;
 }
 

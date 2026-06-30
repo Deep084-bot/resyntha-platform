@@ -7,7 +7,7 @@ extracted knowledge that the frontend Knowledge tab can render.
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.modules.artifact.domain.models import Artifact, ArtifactType
 from app.modules.artifact.repository.repository import ArtifactRepository
@@ -20,10 +20,10 @@ logger = get_logger(__name__)
 class ExtractionArtifactBuilder:
     """Creates a ``KNOWLEDGE_PACKAGE`` artifact summarising an extraction run."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: Session) -> None:
         self._artifact_repo = ArtifactRepository(session)
 
-    async def create_package(
+    def create_package(
         self,
         investigation_id: uuid.UUID,
         knowledge_records: Sequence[ExtractedKnowledge],
@@ -56,15 +56,10 @@ class ExtractionArtifactBuilder:
             investigation_id=investigation_id,
             execution_id=execution_id,
             artifact_type=ArtifactType.KNOWLEDGE_PACKAGE,
-            name=f"Knowledge extraction — {len(knowledge_records)} papers",
-            description=(
-                "Structured knowledge extracted from investigation papers "
-                f"({len(knowledge_records)} papers)"
-            ),
             payload=payload,
         )
 
-        created = await self._artifact_repo.create(artifact)
+        created = self._artifact_repo.create(artifact)
         logger.info(
             "knowledge_package_artifact_created",
             artifact_id=str(created.id),

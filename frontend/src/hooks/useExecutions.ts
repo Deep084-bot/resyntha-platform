@@ -18,6 +18,12 @@ export function useExecutions(investigationId: string | undefined) {
     queryKey: queryKeys.executions.byInvestigation(investigationId!),
     queryFn: () => fetchExecutions(investigationId!),
     enabled: !!investigationId,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data || data.length === 0) return false;
+      const hasRunning = data.some((e) => !isExecutionTerminal(e.status));
+      return hasRunning ? 2000 : false;
+    },
   });
 }
 
@@ -67,18 +73,10 @@ export function useTriggerRetrievalWithPoll(investigationId: string) {
   >({
     mutationFn: (body) => triggerRetrieval(investigationId, body),
     onSuccess: () => {
-      qc.invalidateQueries({
-        queryKey: queryKeys.papers.byInvestigation(investigationId),
-      });
-      qc.invalidateQueries({
-        queryKey: queryKeys.investigations.timeline(investigationId),
-      });
-      qc.invalidateQueries({
-        queryKey: queryKeys.artifacts.byInvestigation(investigationId),
-      });
-      qc.invalidateQueries({
-        queryKey: queryKeys.investigations.detail(investigationId),
-      });
+      // Only invalidate the executions list — papers, artifacts, timeline
+      // are invalidated when the execution transitions to terminal via the
+      // effect in WorkspaceOverviewPage.  This avoids showing stale empty
+      // data before the pipeline actually completes.
       qc.invalidateQueries({
         queryKey: queryKeys.executions.byInvestigation(investigationId),
       });

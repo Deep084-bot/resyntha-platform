@@ -14,5 +14,5 @@ export async function fetchKnowledgeArtifact(
   return knowledgeArtifacts.sort(
     (a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  )[0];
+  )[0] ?? null;
 }

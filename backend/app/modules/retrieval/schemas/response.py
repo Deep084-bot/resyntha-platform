@@ -22,18 +22,25 @@ class PaperResponse(BaseModel):
 
 
 class PersistedPaperResponse(BaseModel):
-    """Public representation of a persisted paper (ORM model)."""
+    """Public representation of a persisted paper with investigation metadata.
 
-    model_config = ConfigDict(from_attributes=True)
+    ``id`` through ``updated_at`` come from the ``Paper`` ORM model.
+    ``source`` comes from ``PaperSource`` and ``score`` comes from
+    ``InvestigationPaper`` — both are populated manually in the API
+    endpoint.
+    """
 
     id: uuid.UUID
     title: str
     abstract: str | None = None
+    authors: list[str] = Field(default_factory=list)
     doi: str | None = None
     venue: str | None = None
     year: int | None = None
     citation_count: int | None = None
     url: str | None = None
+    source: str = ""
+    score: float = 0.0
     created_at: datetime
     updated_at: datetime
 
@@ -47,8 +54,9 @@ class RetrieveResponse(BaseModel):
 
 
 class RetrievalAcceptedResponse(BaseModel):
-    """Returned immediately after enqueuing a retrieval job."""
+    """Returned after attempting to enqueue a retrieval job."""
 
     execution_id: uuid.UUID
     status: str = "pending"
+    message: str | None = None
     queue_position: int | None = None

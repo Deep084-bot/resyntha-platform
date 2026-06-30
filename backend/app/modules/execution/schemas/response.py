@@ -11,7 +11,7 @@ from app.modules.execution.domain.models import ExecutionStageStatus, ExecutionS
 class ExecutionResponse(BaseModel):
     """Public representation of an execution."""
 
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+    model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     investigation_id: uuid.UUID
@@ -22,7 +22,7 @@ class ExecutionResponse(BaseModel):
     completed_at: datetime | None
     created_at: datetime
     updated_at: datetime
-    metadata: dict = Field(default={}, alias="_metadata")
+    metadata: dict = Field(default={}, validation_alias="_metadata")
 
 
 class ExecutionStageResponse(BaseModel):

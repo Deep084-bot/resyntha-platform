@@ -116,6 +116,7 @@ class RetrievalCoordinator:
         ]
 
         tasks = [p.search(query, limit) for p in providers_with_cache]
+        logger.info("coordinator_search_started", provider_count=len(self._providers), query=query)
         results: list[SearchResult] = await asyncio.gather(*tasks, return_exceptions=True)
 
         all_papers: list[Paper] = []
@@ -140,8 +141,10 @@ class RetrievalCoordinator:
                 "papers_returned": result.papers_returned,
                 "response_time_ms": result.response_time_ms,
             }
+            logger.info("provider_succeeded", provider=name, papers_returned=result.papers_returned, latency_ms=result.response_time_ms)
 
         papers_fetched = len(all_papers)
+        logger.info("coordinator_merge_started", total_papers=papers_fetched)
 
         merged = self._merger.merge(all_papers)
         deduped = self._resolver.resolve(merged)
@@ -166,5 +169,6 @@ class RetrievalCoordinator:
             papers_unique=len(ranked),
             duplicates_removed=duplicates_removed,
             average_score=avg_score,
+            cache_enabled=self._redis is not None,
         )
         return ranked, metrics

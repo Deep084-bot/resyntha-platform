@@ -20,6 +20,7 @@ class Paper(Base):
     )
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     abstract: Mapped[str | None] = mapped_column(Text, nullable=True)
+    authors: Mapped[list[str] | None] = mapped_column(JSONB, default=list, nullable=True)
     doi: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     venue: Mapped[str | None] = mapped_column(String(255), nullable=True)
     year: Mapped[int | None] = mapped_column(Integer, nullable=True)

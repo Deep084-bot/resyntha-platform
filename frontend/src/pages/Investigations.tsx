@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Search, X } from "lucide-react";
+import { MoreHorizontal, Plus, Search, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   useCreateInvestigation,
+  useDeleteInvestigation,
   useInvestigations,
 } from "@/hooks/useInvestigations";
 import { mapInvestigationStatus, type Investigation } from "@/types";
@@ -17,7 +18,9 @@ import { mapInvestigationStatus, type Investigation } from "@/types";
 export function InvestigationsPage() {
   const { data: investigations, isLoading, isError } = useInvestigations();
   const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Investigation | null>(null);
+  const [deletedId, setDeletedId] = useState<string | null>(null);
 
   const filtered = (investigations ?? []).filter((inv) =>
     inv.title.toLowerCase().includes(search.toLowerCase()),
@@ -35,11 +38,25 @@ export function InvestigationsPage() {
             Manage your research investigations
           </p>
         </div>
-        <Button onClick={() => setShowModal(true)}>
+        <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="h-4 w-4" />
           New Investigation
         </Button>
       </div>
+
+      {/* Deleted confirmation banner */}
+      {deletedId && (
+        <div className="rounded-md border border-success/30 bg-success/5 px-4 py-3 text-sm text-success">
+          Investigation deleted successfully.
+          <button
+            type="button"
+            onClick={() => setDeletedId(null)}
+            className="ml-2 underline hover:no-underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative max-w-md">
@@ -77,7 +94,7 @@ export function InvestigationsPage() {
               action={
                 <Button
                   variant="outline"
-                  onClick={() => setShowModal(true)}
+                  onClick={() => setShowCreateModal(true)}
                 >
                   <Plus className="h-4 w-4" />
                   New Investigation
@@ -87,16 +104,31 @@ export function InvestigationsPage() {
           ) : (
             <div className="space-y-2">
               {filtered.map((inv) => (
-                <InvestigationRow key={inv.id} investigation={inv} />
+                <InvestigationRow
+                  key={inv.id}
+                  investigation={inv}
+                  onDelete={() => setDeleteTarget(inv)}
+                />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {showModal && (
+      {showCreateModal && (
         <CreateModal
-          onClose={() => setShowModal(false)}
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          investigation={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDeleted={(id) => {
+            setDeleteTarget(null);
+            setDeletedId(id);
+          }}
         />
       )}
     </div>
@@ -105,15 +137,31 @@ export function InvestigationsPage() {
 
 function InvestigationRow({
   investigation,
+  onDelete,
 }: {
   investigation: Investigation;
+  onDelete: () => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
   return (
-    <Link
-      to={`/investigations/${investigation.id}`}
-      className="flex items-center justify-between rounded-lg border border-border bg-surface-card px-4 py-3 transition-colors hover:bg-surface-hover"
-    >
-      <div className="min-w-0 flex-1">
+    <div className="relative flex items-center justify-between rounded-lg border border-border bg-surface-card px-4 py-3 transition-colors hover:bg-surface-hover">
+      <Link
+        to={`/investigations/${investigation.id}`}
+        className="min-w-0 flex-1"
+      >
         <p className="text-sm font-medium text-text-primary truncate">
           {investigation.title}
         </p>
@@ -124,12 +172,127 @@ function InvestigationRow({
             year: "numeric",
           })}
         </p>
+      </Link>
+      <div className="flex items-center gap-2 shrink-0">
+        <StatusBadge
+          status={mapInvestigationStatus(investigation.status)}
+          label={investigation.status}
+        />
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((prev) => !prev);
+            }}
+            className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-surface-active"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-md border border-border bg-surface-card shadow-lg">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onDelete();
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Investigation
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-      <StatusBadge
-        status={mapInvestigationStatus(investigation.status)}
-        label={investigation.status}
-      />
-    </Link>
+    </div>
+  );
+}
+
+function DeleteConfirmModal({
+  investigation,
+  onClose,
+  onDeleted,
+}: {
+  investigation: Investigation;
+  onClose: () => void;
+  onDeleted: (id: string) => void;
+}) {
+  const navigate = useNavigate();
+  const deleteMutation = useDeleteInvestigation();
+
+  const handleDelete = () => {
+    deleteMutation.mutate(investigation.id, {
+      onSuccess: () => {
+        onDeleted(investigation.id);
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith(`/investigations/${investigation.id}`)) {
+          navigate("/", { replace: true });
+        }
+      },
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-md rounded-lg border border-border bg-surface-card p-6 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-text-primary">
+            Delete Investigation
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md p-1 text-text-muted hover:text-text-primary"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3 text-sm text-text-primary">
+            <p className="font-medium">{investigation.title}</p>
+          </div>
+          <p className="text-sm text-text-muted">
+            This will permanently delete this investigation and all associated
+            data including papers, artifacts, timeline events, execution
+            history, and knowledge extraction results. This action cannot be
+            undone.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Spinner size="sm" className="border-t-white" />
+                  Deleting…
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </div>
+          {deleteMutation.isError && (
+            <p className="text-xs text-destructive">
+              {deleteMutation.error.message}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

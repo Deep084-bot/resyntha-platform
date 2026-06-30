@@ -47,7 +47,7 @@ class AnalyzeStage(PipelineStage):
         )
 
         try:
-            landscape = await self._analysis_service.analyze(
+            landscape = self._analysis_service.analyze(
                 investigation_id=investigation_id,
                 execution_id=execution_id,
             )

@@ -17,7 +17,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { useArtifacts } from "@/hooks/useArtifacts";
 import { formatDateTime } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 interface ExtractedPaperKnowledge {
   paper_id: string;
@@ -66,12 +65,10 @@ function Section({
   title,
   items,
   icon,
-  emptyText = "No data",
 }: {
   title: string;
   items: string[];
   icon: React.ReactNode;
-  emptyText?: string;
 }) {
   if (items.length === 0) return null;
   return (
@@ -193,7 +190,7 @@ export function WorkspaceKnowledgePage() {
           (a, b) =>
             new Date(b.created_at).getTime() -
             new Date(a.created_at).getTime(),
-        )[0]
+        )[0] ?? null
       : null;
 
   const payload = latestKnowledge?.payload as KnowledgePackagePayload | null;

@@ -1,22 +1,40 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   BookOpen,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
   Search,
   ArrowUpDown,
+  FileText,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
-import { useLatestExecution, useTriggerRetrievalWithPoll } from "@/hooks/useExecutions";
+import { cn } from "@/lib/utils";
 import { usePapers } from "@/hooks/useRetrieval";
 import type { Paper } from "@/types";
 
-type SortKey = "year" | "citations" | "title";
+const PROVIDER_COLORS: Record<string, string> = {
+  semantic_scholar: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  arxiv: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+  openalex: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+};
+
+function ProviderBadge({ source }: { source: string }) {
+  if (!source) return null;
+  const display = source.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const colorClass = PROVIDER_COLORS[source] ?? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+  return (
+    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium leading-tight", colorClass)}>
+      {display}
+    </span>
+  );
+}
+
+type SortKey = "year" | "citations" | "title" | "score" | "source";
 
 export function WorkspacePapersPage() {
   const { id } = useParams();
@@ -45,7 +63,8 @@ export function WorkspacePapersPage() {
       result = result.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
-          (p.abstract ?? "").toLowerCase().includes(q),
+          (p.abstract ?? "").toLowerCase().includes(q) ||
+          p.authors.some((a) => a.toLowerCase().includes(q)),
       );
     }
 
@@ -59,6 +78,10 @@ export function WorkspacePapersPage() {
         cmp = (a.year ?? 0) - (b.year ?? 0);
       } else if (sortKey === "citations") {
         cmp = (a.citation_count ?? 0) - (b.citation_count ?? 0);
+      } else if (sortKey === "score") {
+        cmp = a.score - b.score;
+      } else if (sortKey === "source") {
+        cmp = a.source.localeCompare(b.source);
       } else {
         cmp = a.title.localeCompare(b.title);
       }
@@ -73,7 +96,6 @@ export function WorkspacePapersPage() {
       <SectionHeader
         title="Papers"
         description="Retrieved papers attached to this investigation"
-        action={<RetrieveForm investigationId={id!} />}
       />
 
       {/* Filters and sort */}
@@ -83,7 +105,7 @@ export function WorkspacePapersPage() {
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
             <input
               type="search"
-              placeholder="Search papers…"
+              placeholder="Search papers, authors…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full rounded-md border border-input bg-surface-base py-1.5 pl-8 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-ring"
@@ -111,6 +133,8 @@ export function WorkspacePapersPage() {
               <option value="year">Year</option>
               <option value="citations">Citations</option>
               <option value="title">Title</option>
+              <option value="score">Score</option>
+              <option value="source">Source</option>
             </select>
             <button
               type="button"
@@ -127,7 +151,7 @@ export function WorkspacePapersPage() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-lg" />
+            <Skeleton key={i} className="h-32 w-full rounded-lg" />
           ))}
         </div>
       ) : isError ? (
@@ -160,9 +184,17 @@ export function WorkspacePapersPage() {
 }
 
 function PaperCard({ paper }: { paper: Paper }) {
+  const [expanded, setExpanded] = useState(false);
+
   const doiUrl = paper.doi
     ? `https://doi.org/${paper.doi}`
     : null;
+
+  const authorsStr = paper.authors.length > 0
+    ? paper.authors.join(", ")
+    : null;
+
+  const abstractTruncated = paper.abstract && paper.abstract.length > 300;
 
   return (
     <div className="rounded-lg border border-border bg-surface-card p-4 transition-colors hover:bg-surface-hover">
@@ -172,44 +204,79 @@ function PaperCard({ paper }: { paper: Paper }) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-text-primary">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-text-primary leading-snug">
                 {paper.title}
               </p>
-              {paper.abstract && (
-                <p className="mt-1 text-xs text-text-muted line-clamp-2">
-                  {paper.abstract}
+              {authorsStr && (
+                <p className="mt-0.5 text-xs text-text-secondary">
+                  {authorsStr}
                 </p>
               )}
             </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {paper.score > 0 && (
+                <span className="inline-flex items-center rounded-md border border-border bg-surface-base px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
+                  Score: {paper.score.toFixed(1)}
+                </span>
+              )}
+              <ProviderBadge source={paper.source} />
+            </div>
+          </div>
+
+          {paper.abstract && (
+            <div className="mt-2">
+              <p className={cn(
+                "text-xs text-text-muted leading-relaxed",
+                !expanded && abstractTruncated && "line-clamp-3",
+              )}>
+                {paper.abstract}
+              </p>
+              {abstractTruncated && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded(!expanded)}
+                  className="mt-1 flex items-center gap-1 text-[10px] text-accent-default hover:underline"
+                >
+                  {expanded ? (
+                    <>Show less <ChevronUp className="h-3 w-3" /></>
+                  ) : (
+                    <>Show more <ChevronDown className="h-3 w-3" /></>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-text-muted">
+            {paper.venue && <span>{paper.venue}</span>}
+            {paper.year && <span>{paper.year}</span>}
+            {paper.citation_count !== null &&
+              paper.citation_count !== undefined && (
+                <span>{paper.citation_count} citations</span>
+              )}
+            {doiUrl && (
+              <a
+                href={doiUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-accent-default hover:underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                DOI
+              </a>
+            )}
             {paper.url && (
               <a
                 href={paper.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 rounded-md p-1 text-text-muted hover:text-text-primary"
+                className="inline-flex items-center gap-1 text-accent-default hover:underline"
               >
-                <ExternalLink className="h-4 w-4" />
+                <FileText className="h-3 w-3" />
+                PDF
               </a>
             )}
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-text-muted">
-            {paper.venue && <span>{paper.venue}</span>}
-            {paper.year && <span>{paper.year}</span>}
-            {doiUrl ? (
-              <a
-                href={doiUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-[10px] text-accent-default hover:underline truncate max-w-[200px]"
-              >
-                {paper.doi}
-              </a>
-            ) : null}
-            {paper.citation_count !== null &&
-              paper.citation_count !== undefined && (
-                <span>{paper.citation_count} citations</span>
-              )}
           </div>
         </div>
       </div>
@@ -217,65 +284,4 @@ function PaperCard({ paper }: { paper: Paper }) {
   );
 }
 
-function RetrieveForm({ investigationId }: { investigationId: string }) {
-  const queryRef = useRef<HTMLInputElement>(null);
-  const limitRef = useRef<HTMLInputElement>(null);
-  const trigger = useTriggerRetrievalWithPoll(investigationId);
-  const { data: executions } = useLatestExecution(investigationId);
 
-  const isRunning =
-    trigger.isPending ||
-    (executions &&
-      executions.length > 0 &&
-      executions[0]?.status === "running");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = queryRef.current?.value.trim();
-    if (!query) return;
-
-    trigger.mutate({
-      query,
-      paper_limit: limitRef.current?.value
-        ? Number(limitRef.current.value)
-        : undefined,
-    });
-
-    if (queryRef.current) queryRef.current.value = "";
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="flex items-end gap-2">
-      <div>
-        <input
-          ref={queryRef}
-          required
-          type="text"
-          placeholder="Search query…"
-          disabled={isRunning}
-          className="rounded-md border border-input bg-surface-base px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-ring w-64 disabled:opacity-50"
-        />
-      </div>
-      <div className="w-20">
-        <input
-          ref={limitRef}
-          type="number"
-          min={1}
-          max={100}
-          defaultValue={10}
-          disabled={isRunning}
-          className="w-full rounded-md border border-input bg-surface-base px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-          title="Paper limit"
-        />
-      </div>
-      <Button type="submit" size="sm" disabled={isRunning}>
-        {isRunning ? (
-          <Spinner size="sm" className="border-t-white" />
-        ) : (
-          <Search className="h-4 w-4" />
-        )}
-        Retrieve
-      </Button>
-    </form>
-  );
-}

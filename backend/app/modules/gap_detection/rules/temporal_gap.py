@@ -29,7 +29,7 @@ class TemporalGapRule(BaseGapRule):
     RECENT_YEARS = 2
     MAX_RESULTS = 5
 
-    async def evaluate(self, ctx: RuleContext) -> list[Gap]:
+    def evaluate(self, ctx: RuleContext) -> list[Gap]:
         gaps: list[Gap] = []
 
         technique_years: dict[str, set[str]] = defaultdict(set)

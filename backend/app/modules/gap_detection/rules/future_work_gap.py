@@ -29,7 +29,7 @@ class FutureWorkGapRule(BaseGapRule):
     MIN_MENTIONS = 3
     MAX_RESULTS = 5
 
-    async def evaluate(self, ctx: RuleContext) -> list[Gap]:
+    def evaluate(self, ctx: RuleContext) -> list[Gap]:
         gaps: list[Gap] = []
 
         fw_counter: Counter[str] = Counter()
