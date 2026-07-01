@@ -31,26 +31,29 @@ class ExtractionArtifactBuilder:
     ) -> Artifact:
         """Persist a ``KNOWLEDGE_PACKAGE`` artifact.
 
-        The payload is a list of per-paper extraction results with
-        paper_id, title, and the structured knowledge fields.
+        The payload is an object with a ``papers`` key containing a list
+        of per-paper extraction results with paper_id, title, and the
+        structured knowledge fields.
         """
-        payload = [
-            {
-                "paper_id": str(r.paper_id),
-                "paper_title": r.paper_title,
-                "research_questions": r.research_questions,
-                "key_findings": r.key_findings,
-                "methodology": r.methodology,
-                "limitations": r.limitations,
-                "key_contributions": r.key_contributions,
-                "relevant_techniques": r.relevant_techniques,
-                "cited_works": r.cited_works,
-                "future_work": r.future_work,
-                "summary": r.summary,
-                "tokens_used": r.tokens_used,
-            }
-            for r in knowledge_records
-        ]
+        payload = {
+            "papers": [
+                {
+                    "paper_id": str(r.paper_id),
+                    "paper_title": r.paper_title,
+                    "research_questions": r.research_questions,
+                    "key_findings": r.key_findings,
+                    "methodology": r.methodology,
+                    "limitations": r.limitations,
+                    "key_contributions": r.key_contributions,
+                    "relevant_techniques": r.relevant_techniques,
+                    "cited_works": r.cited_works,
+                    "future_work": r.future_work,
+                    "summary": r.summary,
+                    "tokens_used": r.tokens_used,
+                }
+                for r in knowledge_records
+            ],
+        }
 
         artifact = Artifact(
             investigation_id=investigation_id,
