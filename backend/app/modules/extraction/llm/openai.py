@@ -9,7 +9,7 @@ Retries on transient API errors with exponential back-off.
 
 import json
 
-from openai import APIError, AsyncOpenAI, RateLimitError
+from openai import APIError, APITimeoutError, AsyncOpenAI, RateLimitError
 from pydantic import BaseModel, ValidationError
 
 from app.config import get_settings
@@ -52,6 +52,7 @@ class OpenAIProvider(BaseLLMProvider):
                     ],
                     temperature=temperature,
                     max_tokens=max_tokens,
+                    timeout=180,
                     response_format={"type": "json_object"},
                 )
 
@@ -80,7 +81,7 @@ class OpenAIProvider(BaseLLMProvider):
                     continue
                 raise
 
-            except (APIError, RateLimitError) as exc:
+            except (APIError, APITimeoutError, RateLimitError) as exc:
                 last_error = exc
                 logger.warning(
                     "llm_api_error",

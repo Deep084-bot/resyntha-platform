@@ -3,6 +3,7 @@
 import uuid
 from collections.abc import Sequence
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.modules.paper.domain.models import InvestigationPaper, Paper, PaperSource
@@ -39,19 +40,28 @@ class PaperService:
         Returns the list of paper UUIDs in rank order.
         """
         paper_ids: list[uuid.UUID] = []
-        for rank, paper in enumerate(papers):
-            db_paper = self._resolve_paper(paper)
-            paper_ids.append(db_paper.id)
-            self._create_source(db_paper.id, paper)
-            self._repository.attach_to_investigation(
-                InvestigationPaper(
-                    investigation_id=investigation_id,
-                    paper_id=db_paper.id,
-                    rank=rank + 1,
-                    relevance_score=paper.score,
-                ),
+        try:
+            for rank, paper in enumerate(papers):
+                db_paper = self._resolve_paper(paper)
+                paper_ids.append(db_paper.id)
+                self._create_source(db_paper.id, paper)
+                self._repository.attach_to_investigation(
+                    InvestigationPaper(
+                        investigation_id=investigation_id,
+                        paper_id=db_paper.id,
+                        rank=rank + 1,
+                        relevance_score=paper.score,
+                    ),
+                )
+            self._session.commit()
+        except IntegrityError:
+            self._session.rollback()
+            logger.error(
+                "papers_persist_integrity_error",
+                investigation_id=str(investigation_id),
             )
-        self._session.commit()
+            raise
+
         logger.info(
             "papers_persisted",
             investigation_id=str(investigation_id),

@@ -3,7 +3,7 @@
 Uses the official Groq Python SDK (OpenAI-compatible endpoint).
 Prompts the model to return valid JSON matching the required schema
 — standard ``json_object`` mode is not available on all Groq models,
-so we rely on prompt instructions plus Pydantic validation.
+so we rely on prompt instructions plus ``parse_llm_json()``.
 
 Retries on transient API errors with exponential back-off.
 """
@@ -11,11 +11,13 @@ Retries on transient API errors with exponential back-off.
 import asyncio
 import json
 
-from groq import APIError, AsyncGroq, RateLimitError
+from groq import APIError, APITimeoutError, AsyncGroq, RateLimitError
 from pydantic import BaseModel, ValidationError
 
 from app.config import get_settings
 from app.modules.extraction.llm.base import BaseLLMProvider, LLMUsage
+from app.modules.extraction.llm.exceptions import LLMParsingError
+from app.modules.extraction.llm.parser import parse_llm_json
 from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
@@ -54,10 +56,13 @@ class GroqProvider(BaseLLMProvider):
                     ],
                     temperature=temperature,
                     max_tokens=max_tokens,
+                    timeout=180,
                 )
 
                 choice = response.choices[0]
-                raw = choice.message.content or "{}"
+                finish_reason = getattr(choice, "finish_reason", None)
+                content = choice.message.content or ""
+
                 usage_data = LLMUsage(
                     prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
                     completion_tokens=response.usage.completion_tokens if response.usage else 0,
@@ -65,23 +70,41 @@ class GroqProvider(BaseLLMProvider):
                     model=self._model,
                 )
 
-                parsed = json.loads(raw)
+                parsed = parse_llm_json(
+                    raw=content,
+                    finish_reason=finish_reason,
+                )
+
                 validated = response_model.model_validate(parsed)
                 return validated, usage_data
 
-            except (ValidationError, json.JSONDecodeError) as exc:
+            except LLMParsingError as exc:
                 last_error = exc
                 logger.warning(
                     "llm_parse_failure",
                     attempt=attempt + 1,
                     model=self._model,
-                    error=str(exc)[:200],
+                    raw_repr=repr(exc.raw)[:500],
+                    sanitized_repr=repr(exc.sanitized)[:500],
+                    finish_reason=exc.finish_reason,
                 )
                 if attempt < max_retries - 1:
                     continue
                 raise
 
-            except (APIError, RateLimitError) as exc:
+            except (ValidationError, json.JSONDecodeError) as exc:
+                last_error = exc
+                logger.warning(
+                    "llm_validation_failure",
+                    attempt=attempt + 1,
+                    model=self._model,
+                    error=str(exc)[:500],
+                )
+                if attempt < max_retries - 1:
+                    continue
+                raise
+
+            except (APIError, APITimeoutError, RateLimitError) as exc:
                 last_error = exc
                 logger.warning(
                     "llm_api_error",
@@ -90,7 +113,7 @@ class GroqProvider(BaseLLMProvider):
                     error=str(exc)[:200],
                 )
                 if attempt < max_retries - 1:
-                    wait = 2 ** attempt * 2
+                    wait = 2**attempt * 2
                     await asyncio.sleep(wait)
                     continue
                 raise

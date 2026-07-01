@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from arq import Retry
+from sqlalchemy.exc import IntegrityError
 
 from app.config import get_settings
 import app.database.model_registry  # noqa: F401 — ensure all ORM models are loaded
@@ -233,11 +234,35 @@ async def retrieval_job(
             logger.warning("no_retrieval_metrics_found", metrics_keys=list(final_context.metrics.keys()))
 
         # ── Success ──────────────────────────────────────────────
-        execution_service.update_execution(
+        logger.info("execution_mark_completed_started", execution_id=exec_id)
+
+        before = execution_service.get_execution(execution_id)
+        logger.info(
+            "execution_status_before",
+            execution_id=exec_id,
+            status=before.status.value if before else "NOT_FOUND",
+            completed_at=str(before.completed_at) if before and before.completed_at else None,
+        )
+
+        updated = execution_service.update_execution(
             execution_id,
             UpdateExecutionRequest(status=ExecutionStatus.COMPLETED),
         )
+        logger.info(
+            "execution_mark_completed_finished",
+            execution_id=exec_id,
+            new_status=updated.status.value if updated else "UPDATE_RETURNED_NONE",
+        )
+
         session.commit()
+
+        verify = execution_service.get_execution(execution_id)
+        logger.info(
+            "execution_verify_after_commit",
+            execution_id=exec_id,
+            status=verify.status.value if verify else "NOT_FOUND",
+            completed_at=str(verify.completed_at) if verify and verify.completed_at else None,
+        )
 
         paper_count = final_context.metrics.get("paper_count", 0)
         logger.info(
@@ -246,6 +271,17 @@ async def retrieval_job(
             duration_seconds=round(elapsed, 2),
             paper_count=paper_count,
         )
+        return None
+
+    except IntegrityError as exc:
+        session.rollback()
+        logger.error(
+            "retrieval_job_integrity_error_permanent",
+            execution_id=exec_id,
+            investigation_id=inv_id,
+            error=str(exc),
+        )
+        _mark_terminal(execution_id, ExecutionStatus.FAILED)
         return None
 
     except Exception as exc:

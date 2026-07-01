@@ -40,7 +40,18 @@ class PaperRepository:
         return source
 
     def attach_to_investigation(self, link: InvestigationPaper) -> InvestigationPaper:
-        """Create a link between an investigation and a paper."""
+        """Create a link between an investigation and a paper.
+
+        Idempotent — if the ``(investigation_id, paper_id)`` pair already
+        exists the existing record is returned instead of raising a
+        ``UniqueViolation``.
+        """
+        existing = self._session.get(
+            InvestigationPaper,
+            (link.investigation_id, link.paper_id),
+        )
+        if existing is not None:
+            return existing
         self._session.add(link)
         self._session.flush()
         self._session.refresh(link)
