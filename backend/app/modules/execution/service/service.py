@@ -166,8 +166,14 @@ class ExecutionStageService:
         self,
         execution_id: uuid.UUID,
         stage_name: str,
+        metadata: dict | None = None,
     ) -> None:
-        """Record that a stage attempt completed successfully."""
+        """Record that a stage attempt completed successfully.
+
+        When *metadata* is provided the stage is recorded as
+        ``PARTIAL_SUCCESS`` and the metadata is persisted in the
+        stage's JSONB column.
+        """
         stage = self._repository.get_active_stage(execution_id, stage_name)
         if stage is None:
             logger.warning(
@@ -177,7 +183,11 @@ class ExecutionStageService:
             )
             return
         now = datetime.now(timezone.utc)
-        stage.status = ExecutionStageStatus.COMPLETED
+        if metadata is not None:
+            stage.status = ExecutionStageStatus.PARTIAL_SUCCESS
+            stage._metadata = metadata
+        else:
+            stage.status = ExecutionStageStatus.COMPLETED
         stage.completed_at = now
         if stage.started_at:
             stage.duration_ms = int(

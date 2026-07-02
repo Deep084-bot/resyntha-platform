@@ -134,6 +134,11 @@ class PipelineRunner:
                     await self._stage_recorder.record_completed(
                         context.execution_id, stage.name(),
                     )
+                elif result == PipelineResult.PARTIAL_SUCCESS:
+                    await self._stage_recorder.record_completed(
+                        context.execution_id, stage.name(),
+                        metadata=context.metadata,
+                    )
                 elif result == PipelineResult.SKIPPED:
                     await self._stage_recorder.record_completed(
                         context.execution_id, stage.name(),

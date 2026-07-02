@@ -34,8 +34,14 @@ class StageRecorder(Protocol):
         self,
         execution_id: UUID,
         stage_name: str,
+        metadata: dict | None = None,
     ) -> None:
-        """Record that a stage attempt completed successfully."""
+        """Record that a stage attempt completed successfully.
+
+        When *metadata* is provided the stage is recorded as
+        ``PARTIAL_SUCCESS`` and the metadata is persisted in the
+        stage's JSONB column.
+        """
 
     async def record_failed(
         self,

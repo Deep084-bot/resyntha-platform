@@ -32,6 +32,7 @@ class ExecutionStageStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
+    PARTIAL_SUCCESS = "partial_success"
     FAILED = "failed"
     SKIPPED = "skipped"
 

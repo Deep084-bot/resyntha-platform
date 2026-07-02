@@ -44,22 +44,34 @@ class ExtractStage(PipelineStage):
         )
 
         try:
-            results = await self._extraction_service.extract_for_investigation(
+            batch = await self._extraction_service.extract_for_investigation(
                 investigation_id=investigation_id,
                 execution_id=execution_id,
             )
 
-            knowledge_ids = [str(k.id) for k in results]
+            stats = batch.stats
+            knowledge_ids = [str(k.id) for k in batch.knowledge]
             context.set_metadata("extracted_knowledge_ids", knowledge_ids)
-            context.record_metric("extraction_count", len(results))
+            context.record_metric("extraction_count", len(batch.knowledge))
+
+            context.set_metadata("extraction_total", stats.total)
+            context.set_metadata("extraction_successful", stats.successful)
+            context.set_metadata("extraction_failed", stats.failed)
+            context.set_metadata("extraction_provider", stats.provider)
+            context.set_metadata("extraction_failure_reasons", stats.failure_reasons)
 
             logger.info(
                 "extract_stage_completed",
                 investigation_id=str(investigation_id),
-                extraction_count=len(results),
+                extraction_count=len(batch.knowledge),
+                failed=stats.failed,
             )
 
-            return PipelineResult.SUCCESS
+            if stats.successful == stats.total:
+                return PipelineResult.SUCCESS
+            if stats.successful > 0 and stats.failed > 0:
+                return PipelineResult.PARTIAL_SUCCESS
+            return PipelineResult.FAILED
 
         except Exception as exc:
             logger.exception(

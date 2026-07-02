@@ -14,6 +14,11 @@ class PipelineResult(str, Enum):
     ``SUCCESS``
         The stage completed normally; proceed to the next stage.
 
+    ``PARTIAL_SUCCESS``
+        The stage completed with some failures; proceed to the next
+        stage.  The runner may use this to inform the overall pipeline
+        result.
+
     ``FAILED``
         The stage encountered an unrecoverable error; the runner should
         stop the pipeline.
@@ -28,6 +33,7 @@ class PipelineResult(str, Enum):
     """
 
     SUCCESS = "success"
+    PARTIAL_SUCCESS = "partial_success"
     FAILED = "failed"
     SKIPPED = "skipped"
     RETRY = "retry"
