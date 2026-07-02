@@ -27,6 +27,11 @@ class BaseLLMProvider(ABC):
     parsing.
     """
 
+    @property
+    def provider_name(self) -> str:
+        """Return the short provider identifier (e.g. ``"groq"``)."""
+        return type(self).__name__.lower().replace("provider", "")
+
     @abstractmethod
     async def generate_structured(
         self,
