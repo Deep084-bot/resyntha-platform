@@ -37,14 +37,20 @@ class ArtifactService:
         self,
         investigation_id: uuid.UUID,
         request: CreateArtifactRequest,
+        status: ArtifactStatus = ArtifactStatus.PENDING,
     ) -> ArtifactResponse:
-        """Create a new artifact linked to an investigation and optionally an execution."""
+        """Create a new artifact linked to an investigation and optionally an execution.
+
+        Default status is ``PENDING``; callers that generate final
+        content should pass ``ArtifactStatus.READY`` so the artifact
+        is immediately visible in the UI.
+        """
         artifact = Artifact(
             investigation_id=investigation_id,
             execution_id=request.execution_id,
             artifact_type=request.artifact_type,
             version=request.version,
-            status=ArtifactStatus.PENDING,
+            status=status,
             payload=request.payload,
         )
         saved = self._repository.create(artifact)

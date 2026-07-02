@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.modules.analysis.domain.landscape import ResearchLandscape
-from app.modules.artifact.domain.models import Artifact, ArtifactType
+from app.modules.artifact.domain.models import Artifact, ArtifactStatus, ArtifactType
 from app.modules.artifact.repository.repository import ArtifactRepository
 from app.observability.logger import get_logger
 
@@ -38,6 +38,7 @@ class AnalysisArtifactBuilder:
             execution_id=execution_id,
             artifact_type=ArtifactType.RESEARCH_LANDSCAPE,
             payload=payload,
+            status=ArtifactStatus.READY,
         )
 
         created = self._artifact_repo.create(artifact)
