@@ -15,9 +15,9 @@ Covers every scenario described in the LLM output format specification:
 
 import json
 import pytest
+from app.core.llm.parser import parse_llm_json
 
-from app.modules.extraction.llm.parser import parse_llm_json
-from app.modules.extraction.llm.exceptions import LLMParsingError
+from app.core.llm.exceptions import LLMParsingError
 
 
 # ── Helpers ──────────────────────────────────────────────────────────

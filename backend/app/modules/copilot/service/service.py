@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.modules.artifact.repository.repository import ArtifactRepository
 from app.modules.copilot.repository.repository import CopilotRepository
 from app.modules.copilot.schemas.response import ChatResponse, Citation
-from app.modules.extraction.llm.factory import ProviderFactory
+from app.core.llm import BaseLLMProvider, ProviderFactory
 from app.modules.paper.repository.repository import PaperRepository
 from app.observability.logger import get_logger
 
@@ -34,12 +34,20 @@ CONTEXT_CHAR_LIMIT = 30000
 
 
 class CopilotService:
-    def __init__(self, session: Session) -> None:
+    def __init__(
+        self,
+        session: Session,
+        llm_provider: BaseLLMProvider | None = None,
+    ) -> None:
         self._copilot_repo = CopilotRepository(session)
         self._paper_repo = PaperRepository(session)
         self._artifact_repo = ArtifactRepository(session)
         self._session = session
-        self._llm = ProviderFactory.create("groq")
+        if llm_provider is not None:
+            self._llm = llm_provider
+        else:
+            from app.config import get_settings
+            self._llm = ProviderFactory.create(get_settings().LLM_PROVIDER)
 
     async def chat(
         self, investigation_id: uuid.UUID, question: str

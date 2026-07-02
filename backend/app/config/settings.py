@@ -13,6 +13,10 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.observability.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class Settings(BaseSettings):
     """Type-safe, validated configuration for the Resyntha platform."""
@@ -55,7 +59,7 @@ class Settings(BaseSettings):
     )
 
     # ------------------------------------------------------------------
-    # AI / External services
+    # AI / LLM providers
     # ------------------------------------------------------------------
     # Primary LLM provider (default: groq)
     LLM_PROVIDER: str = "groq"
@@ -69,12 +73,55 @@ class Settings(BaseSettings):
     # OpenAI (optional — requires separate install)
     OPENAI_API_KEY: str = ""
 
+    # ------------------------------------------------------------------
+    # Retrieval providers
+    # ------------------------------------------------------------------
+    # Comma-separated list of active paper-search providers.
+    # Supported: semantic_scholar, arxiv, openalex
+    RETRIEVAL_PROVIDERS: str = "semantic_scholar,arxiv,openalex"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
     )
+
+
+def parse_retrieval_providers(raw: str | None = None) -> list[str]:
+    """Parse a comma-separated provider string into a validated list.
+
+    Parameters
+    ----------
+    raw:
+        Comma-separated provider names (e.g. ``"semantic_scholar,arxiv"``).
+        When ``None``, reads from ``get_settings().RETRIEVAL_PROVIDERS``.
+
+    Returns
+    -------
+    list[str]
+        Provider names with whitespace stripped and empty entries removed.
+
+    Warnings
+    --------
+    Unknown provider names are logged but not removed — they will be
+    rejected at instantiation time by ``RetrievalProviderRegistry``.
+    """
+    if raw is None:
+        raw = get_settings().RETRIEVAL_PROVIDERS
+    providers = [n.strip() for n in raw.split(",") if n.strip()]
+
+    # Log a warning for unrecognised provider names.
+    known = {"semantic_scholar", "arxiv", "openalex"}
+    for name in providers:
+        if name not in known:
+            logger.warning(
+                "unknown_retrieval_provider",
+                provider=name,
+                known=sorted(known),
+            )
+
+    return providers
 
 
 @lru_cache

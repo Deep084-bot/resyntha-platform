@@ -26,7 +26,7 @@ from app.modules.execution.service.service import (
     ExecutionService,
     ExecutionStageService,
 )
-from app.modules.extraction.llm import ProviderFactory
+from app.core.llm import ProviderFactory
 from app.modules.extraction.service.service import ExtractionService
 from app.modules.gap_detection.service.service import GapDetectionService
 from app.modules.investigation.timeline.models import TimelineStage, TimelineStatus

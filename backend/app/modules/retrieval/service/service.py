@@ -3,40 +3,49 @@
 Delegates to ``RetrievalCoordinator`` which runs all configured
 providers concurrently, merges, deduplicates, and ranks.  Persistence
 is handled by the caller (``RetrieveStage`` + ``PersistStage``).
+
+Providers are obtained from ``RetrievalProviderRegistry`` instead of
+being instantiated directly.
 """
 
 from collections.abc import Sequence
 
+from app.core.retrieval import BaseRetrievalProvider, RetrievalProviderRegistry
 from app.modules.retrieval.coordinator.coordinator import RetrievalCoordinator
 from app.modules.retrieval.domain.paper import Paper
-from app.modules.retrieval.providers.arxiv import ArxivProvider
-from app.modules.retrieval.providers.openalex import OpenAlexProvider
-from app.modules.retrieval.providers.semantic_scholar import (
-    SemanticScholarProvider,
-)
 from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class RetrievalService:
-    """Search external providers, normalise, deduplicate, and rank papers."""
+    """Search external providers, normalise, deduplicate, and rank papers.
+
+    Parameters
+    ----------
+    providers:
+        Optional pre-configured provider instances for dependency
+        injection / testing.  When ``None``, providers are obtained
+        from ``RetrievalProviderRegistry.create_active()``.
+    redis:
+        Optional Redis client for caching (passed to coordinator).
+    cache_ttl:
+        Cache TTL in seconds (default 3600).
+    """
 
     def __init__(
         self,
-        semantic_scholar: SemanticScholarProvider | None = None,
-        arxiv: ArxivProvider | None = None,
-        openalex: OpenAlexProvider | None = None,
+        providers: Sequence[BaseRetrievalProvider] | None = None,
         redis: object | None = None,
         cache_ttl: int = 3600,
     ) -> None:
-        providers = [
-            semantic_scholar or SemanticScholarProvider(),
-            arxiv or ArxivProvider(),
-            openalex or OpenAlexProvider(email=None),
-        ]
+        if providers is None:
+            provider_list = RetrievalProviderRegistry.create_active()
+        else:
+            provider_list = list(providers)
+
         self._coordinator = RetrievalCoordinator(
-            providers=providers,
+            providers=provider_list,
             redis=redis,
             cache_ttl=cache_ttl,
         )

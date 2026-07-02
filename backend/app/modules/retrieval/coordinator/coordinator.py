@@ -14,14 +14,14 @@ from app.modules.retrieval.coordinator.merger import MetadataMerger
 from app.modules.retrieval.coordinator.ranking import RankingEngine
 from app.modules.retrieval.coordinator.resolver import DuplicateResolver
 from app.modules.retrieval.domain.paper import Paper
-from app.modules.retrieval.providers.base import BaseProvider, SearchResult
+from app.core.retrieval.base import BaseRetrievalProvider, RetrievalResult
 from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class CachedProvider:
-    """Optional caching wrapper around a ``BaseProvider``.
+    """Optional caching wrapper around a ``BaseRetrievalProvider``.
 
     Uses an async ``get``/``set`` interface compatible with ``redis.asyncio``.
     Skips cache entirely when ``redis`` is ``None``.
@@ -29,7 +29,7 @@ class CachedProvider:
 
     def __init__(
         self,
-        provider: BaseProvider,
+        provider: BaseRetrievalProvider,
         redis: object | None = None,
         ttl_seconds: int = 3600,
     ) -> None:
@@ -41,7 +41,7 @@ class CachedProvider:
     def name(self) -> str:
         return self._provider.name
 
-    async def search(self, query: str, limit: int) -> SearchResult:
+    async def search(self, query: str, limit: int) -> RetrievalResult:
         if self._redis is None:
             return await self._provider.search(query, limit)
 
@@ -65,7 +65,7 @@ class CachedProvider:
             logger.warning("cache_write_failed", provider=self._provider.name)
         return result
 
-    async def _get_cached(self, key: str) -> SearchResult | None:
+    async def _get_cached(self, key: str) -> RetrievalResult | None:
         import pickle
 
         data = await self._redis.get(key)
@@ -73,7 +73,7 @@ class CachedProvider:
             return None
         return pickle.loads(data)
 
-    async def _set_cached(self, key: str, result: SearchResult) -> None:
+    async def _set_cached(self, key: str, result: RetrievalResult) -> None:
         import pickle
 
         await self._redis.setex(key, self._ttl, pickle.dumps(result))
@@ -84,7 +84,7 @@ class RetrievalCoordinator:
 
     def __init__(
         self,
-        providers: Sequence[BaseProvider],
+        providers: Sequence[BaseRetrievalProvider],
         resolver: DuplicateResolver | None = None,
         merger: MetadataMerger | None = None,
         ranking: RankingEngine | None = None,
@@ -117,7 +117,7 @@ class RetrievalCoordinator:
 
         tasks = [p.search(query, limit) for p in providers_with_cache]
         logger.info("coordinator_search_started", provider_count=len(self._providers), query=query)
-        results: list[SearchResult] = await asyncio.gather(*tasks, return_exceptions=True)
+        results: list[RetrievalResult | Exception] = await asyncio.gather(*tasks, return_exceptions=True)
 
         all_papers: list[Paper] = []
         provider_metrics: dict[str, dict] = {}
@@ -125,12 +125,13 @@ class RetrievalCoordinator:
         for provider, result in zip(self._providers, results):
             name = provider.name
             if isinstance(result, Exception):
+                rt_ms = getattr(result, "response_time_ms", 0)
                 logger.error("provider_failed", provider=name, error=str(result))
                 provider_metrics[name] = {
                     "success": False,
                     "error": str(result),
                     "papers_returned": 0,
-                    "response_time_ms": 0,
+                    "response_time_ms": rt_ms,
                 }
                 continue
 

@@ -3,6 +3,8 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
+from app.core.llm.factory import ProviderFactory
 from app.database.dependencies import get_db
 from app.modules.copilot.schemas.request import ChatRequest
 from app.modules.copilot.schemas.response import ChatResponse
@@ -14,7 +16,8 @@ logger = get_logger(__name__)
 
 
 def _get_service(db: Session = Depends(get_db)) -> CopilotService:
-    return CopilotService(db)
+    provider = ProviderFactory.create(get_settings().LLM_PROVIDER)
+    return CopilotService(db, llm_provider=provider)
 
 
 @router.post("/chat", response_model=ChatResponse)

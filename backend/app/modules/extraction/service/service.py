@@ -21,8 +21,13 @@ from app.modules.extraction.domain.results import (
     ExtractionStats,
     FailureReason,
 )
-from app.modules.extraction.llm.base import BaseLLMProvider
-from app.modules.extraction.llm.exceptions import LLMParsingError
+from app.core.llm import (
+    BaseLLMProvider,
+    LLMAPIError,
+    LLMParsingError,
+    LLMRateLimitError,
+    LLMTimeoutError,
+)
 from app.modules.extraction.prompts.extraction import (
     EXTRACTION_SYSTEM_PROMPT,
     build_extraction_user_prompt,
@@ -201,18 +206,38 @@ class ExtractionService:
                 reason=FailureReason.MALFORMED_JSON,
                 detail=str(exc)[:500],
             )
-        except RuntimeError as exc:
-            reason, detail = self._classify_llm_error(exc)
+        except LLMRateLimitError as exc:
             logger.error(
-                "extraction_llm_error",
+                "extraction_rate_limited",
                 paper_id=str(paper.id),
-                error=detail[:300],
             )
             return ExtractionFailure(
                 paper_id=paper.id,
                 title=title,
-                reason=reason,
-                detail=detail,
+                reason=FailureReason.RATE_LIMIT,
+                detail=str(exc)[:500],
+            )
+        except LLMTimeoutError as exc:
+            logger.error(
+                "extraction_timed_out",
+                paper_id=str(paper.id),
+            )
+            return ExtractionFailure(
+                paper_id=paper.id,
+                title=title,
+                reason=FailureReason.TIMEOUT,
+                detail=str(exc)[:500],
+            )
+        except LLMAPIError as exc:
+            logger.error(
+                "extraction_api_error",
+                paper_id=str(paper.id),
+            )
+            return ExtractionFailure(
+                paper_id=paper.id,
+                title=title,
+                reason=FailureReason.API_ERROR,
+                detail=str(exc)[:500],
             )
 
         knowledge = ExtractedKnowledge(
@@ -234,34 +259,6 @@ class ExtractionService:
         )
 
         return self._repository.create(knowledge)
-
-    def _classify_llm_error(
-        self,
-        exc: RuntimeError,
-    ) -> tuple[FailureReason, str]:
-        """Classify a ``RuntimeError`` from the LLM provider by inspecting
-        ``__cause__``.
-        """
-        cause = exc.__cause__
-        if cause is None:
-            return FailureReason.UNKNOWN, str(exc)[:500]
-
-        from groq import APIError, APITimeoutError, RateLimitError
-
-        if isinstance(cause, RateLimitError):
-            return FailureReason.RATE_LIMIT, str(cause)[:500]
-        if isinstance(cause, APITimeoutError):
-            return FailureReason.TIMEOUT, str(cause)[:500]
-        if isinstance(cause, APIError):
-            return FailureReason.API_ERROR, str(cause)[:500]
-        if isinstance(cause, LLMParsingError):
-            return FailureReason.MALFORMED_JSON, str(cause)[:500]
-        if isinstance(cause, json.JSONDecodeError):
-            return FailureReason.MALFORMED_JSON, str(cause)[:500]
-        if isinstance(cause, ValidationError):
-            return FailureReason.VALIDATION_ERROR, str(cause)[:500]
-
-        return FailureReason.UNKNOWN, str(cause)[:500]
 
     def _create_knowledge_package_artifact(
         self,
