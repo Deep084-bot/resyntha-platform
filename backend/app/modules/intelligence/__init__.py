@@ -4,6 +4,7 @@ Transforms extracted knowledge into structured intelligence via
 a normalized ResearchGraph and composable analyzers.
 """
 
+from app.modules.intelligence.api import IntelligenceService, LandscapeResponse
 from app.modules.intelligence.aggregation import (
     CollaborationSection,
     DatasetSection,
@@ -90,6 +91,8 @@ __all__ = [
     "InstitutionType",
     "IntelligenceConfig",
     "IntelligenceEngine",
+    "IntelligenceService",
+    "LandscapeResponse",
     "LandscapeAggregator",
     "LandscapeResult",
     "MethodologyAnalyzer",

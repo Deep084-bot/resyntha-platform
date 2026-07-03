@@ -10,6 +10,7 @@ from app.pipeline.stages import (
     ArtifactStage,
     ExtractStage,
     GapDetectionStage,
+    IntelligenceStage,
     PersistStage,
     RetrieveStage,
     TimelineStage,
@@ -133,6 +134,33 @@ class AnalyzePlugin(PipelinePlugin):
 
     def __init__(self, **kwargs) -> None:
         self._inner = AnalyzeStage(analysis_service=kwargs["analysis_service"])
+
+    async def execute(self, context):
+        return await self._inner.execute(context)
+
+
+class IntelligencePlugin(PipelinePlugin):
+    """Run the full Intelligence pipeline after extraction."""
+
+    _name = "intelligence"
+    consumes: list[str] = ["extracted_knowledge_ids"]
+    produces: list[str] = [
+        "intelligence_landscape",
+        "intelligence_markdown",
+        "intelligence_json",
+    ]
+    metadata: dict = {
+        "description": "Run the full Intelligence pipeline after extraction",
+    }
+
+    def __init__(self, **kwargs) -> None:
+        self._inner = IntelligenceStage(
+            extraction_repository=kwargs["extraction_repository"],
+            paper_repository=kwargs["paper_repository"],
+            artifact_service=kwargs["artifact_service"],
+            graph_builder=kwargs.get("intelligence_graph_builder"),
+            config=kwargs.get("intelligence_config"),
+        )
 
     async def execute(self, context):
         return await self._inner.execute(context)

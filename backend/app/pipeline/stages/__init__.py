@@ -13,6 +13,7 @@ from app.pipeline.stages.analyze import AnalyzeStage
 from app.pipeline.stages.artifact import ArtifactStage
 from app.pipeline.stages.extract import ExtractStage
 from app.pipeline.stages.gap_detection import GapDetectionStage
+from app.pipeline.stages.intelligence import IntelligenceStage
 from app.pipeline.stages.persist import PersistStage
 from app.pipeline.stages.retrieve import RetrieveStage
 from app.pipeline.stages.timeline import TimelineStage
@@ -23,6 +24,7 @@ __all__ = [
     "ArtifactStage",
     "ExtractStage",
     "GapDetectionStage",
+    "IntelligenceStage",
     "PersistStage",
     "RetrieveStage",
     "TimelineStage",

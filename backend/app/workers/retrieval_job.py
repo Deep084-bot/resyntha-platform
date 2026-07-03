@@ -27,10 +27,12 @@ from app.modules.execution.service.service import (
     ExecutionStageService,
 )
 from app.core.llm import ProviderFactory
+from app.modules.extraction.repository.repository import ExtractionRepository
 from app.modules.extraction.service.service import ExtractionService
 from app.modules.gap_detection.service.service import GapDetectionService
 from app.modules.investigation.timeline.models import TimelineStage, TimelineStatus
 from app.modules.investigation.timeline.service import TimelineService
+from app.modules.paper.repository.repository import PaperRepository
 from app.modules.paper.service.service import PaperService
 from app.modules.retrieval.service.service import RetrievalService
 from app.modules.validation.service.service import ValidationService
@@ -105,6 +107,8 @@ async def retrieval_job(
             session=session,
             llm_provider=llm_provider,
         )
+        extraction_repository = ExtractionRepository(session=session)
+        paper_repository = PaperRepository(session=session)
         analysis_service = AnalysisService(session=session)
         gap_detection_service = GapDetectionService(session=session)
 
@@ -195,6 +199,8 @@ async def retrieval_job(
             analysis_service=analysis_service,
             gap_detection_service=gap_detection_service,
             timeline_service=timeline_service,
+            extraction_repository=extraction_repository,
+            paper_repository=paper_repository,
         )
 
         # ── Execute ──────────────────────────────────────────────
