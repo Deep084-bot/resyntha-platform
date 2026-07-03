@@ -6,6 +6,9 @@ Covers:
   - InstitutionAnalyzer
   - MethodologyAnalyzer
   - TemporalAnalyzer
+  - TechnologyAnalyzer
+  - DatasetAnalyzer
+  - CollaborationAnalyzer
   - IntelligenceEngine orchestrator
 """
 
@@ -17,7 +20,11 @@ from app.modules.intelligence import (
     AnalysisContext,
     AnalysisResults,
     AnalyzerResult,
+    AuthorNode,
     BaseAnalyzer,
+    CollaborationAnalyzer,
+    DatasetAnalyzer,
+    DatasetNode,
     GraphServices,
     InstitutionAnalyzer,
     InstitutionNode,
@@ -30,9 +37,16 @@ from app.modules.intelligence import (
     PaperNode,
     ResearchGraph,
     ResearchGraphBuilder,
+    TechnologyAnalyzer,
+    TechnologyNode,
+    TechnologyType,
     TemporalAnalyzer,
 )
 from app.modules.intelligence.analyzers.base import BaseAnalyzer as BaseAnalyzerCls
+from app.modules.intelligence.services.centrality import CentralityService
+from app.modules.intelligence.services.co_occurrence import CoOccurrenceService
+from app.modules.intelligence.services.statistics import StatisticsService
+from app.modules.intelligence.services.trends import TrendService
 from tests.test_intelligence import P1_STR, P1_UUID, _fake_record
 
 # ======================================================================
@@ -62,6 +76,25 @@ def _context(graph: ResearchGraph | None = None) -> AnalysisContext:
 
 def _paper(id: str, year: int | None = None) -> PaperNode:
     return PaperNode(id=id, title="", year=year)
+
+
+def _graph_with_services(**overrides: dict) -> ResearchGraph:
+    kwargs = {
+        "papers": {},
+        "authors": {},
+        "institutions": {},
+        "methodologies": {},
+        "datasets": {},
+        "technologies": {},
+        "metrics": {},
+    }
+    kwargs.update(overrides)
+    graph = ResearchGraph(**kwargs)
+    graph.services.co_occurrence = CoOccurrenceService(graph)
+    graph.services.trends = TrendService(graph)
+    graph.services.statistics = StatisticsService(graph)
+    graph.services.centrality = CentralityService(graph)
+    return graph
 
 
 # ======================================================================
@@ -694,3 +727,399 @@ class TestIntelligenceEngine:
         assert results["temporal"].data["total_papers"] == 1
         assert results.investigation_id == "test-inv"
         assert results.execution_id is None
+
+
+# ======================================================================
+# TechnologyAnalyzer
+# ======================================================================
+
+
+class TestTechnologyAnalyzer:
+    def test_empty_graph(self) -> None:
+        graph = _graph_with_services()
+        analyzer = TechnologyAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert result.analyzer_name == "technology"
+        assert result.data["diversity"]["total_technologies"] == 0
+        assert result.data["frequency"] == {}
+
+    def test_single_technology(self) -> None:
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1")},
+            technologies={
+                "PyTorch": TechnologyNode(
+                    name="PyTorch", type=TechnologyType.FRAMEWORK,
+                    paper_ids=["p1"],
+                ),
+            },
+        )
+        analyzer = TechnologyAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert result.data["diversity"]["total_technologies"] == 1
+        assert result.data["frequency"]["PyTorch"] == 1
+        assert len(result.data["popularity_ranking"]) == 1
+
+    def test_frequency_counts(self) -> None:
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1"), "p2": _paper("p2")},
+            technologies={
+                "A": TechnologyNode(name="A", type=TechnologyType.OTHER, paper_ids=["p1", "p2"]),
+                "B": TechnologyNode(name="B", type=TechnologyType.OTHER, paper_ids=["p1"]),
+            },
+        )
+        analyzer = TechnologyAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        freq = result.data["frequency"]
+        assert freq["A"] == 2
+        assert freq["B"] == 1
+
+    def test_popularity_ranking_sorted(self) -> None:
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1"), "p2": _paper("p2"), "p3": _paper("p3")},
+            technologies={
+                "A": TechnologyNode(name="A", type=TechnologyType.OTHER, paper_ids=["p1"]),
+                "B": TechnologyNode(
+                    name="B", type=TechnologyType.OTHER,
+                    paper_ids=["p1", "p2", "p3"],
+                ),
+            },
+        )
+        analyzer = TechnologyAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        ranking = result.data["popularity_ranking"]
+        assert ranking[0][0] == "B"
+
+    def test_first_appearance_and_adoption(self) -> None:
+        graph = _graph_with_services(
+            papers={
+                "p1": _paper("p1", year=2022),
+                "p2": _paper("p2", year=2024),
+            },
+            technologies={
+                "T": TechnologyNode(
+                    name="T", type=TechnologyType.OTHER, paper_ids=["p1", "p2"],
+                ),
+            },
+        )
+        analyzer = TechnologyAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert result.data["first_appearance_by_year"]["T"] == 2022
+        assert result.data["yearly_adoption_timeline"]["T"] == {2022: 1, 2024: 1}
+
+    def test_methodology_co_occurrence(self) -> None:
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1")},
+            technologies={
+                "PyTorch": TechnologyNode(
+                    name="PyTorch", type=TechnologyType.FRAMEWORK, paper_ids=["p1"],
+                ),
+            },
+            methodologies={
+                "CNN": MethodologyNode(name="CNN", paper_ids=["p1"]),
+            },
+        )
+        analyzer = TechnologyAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        co = result.data["methodology_co_occurrence"]
+        assert "PyTorch" in co
+        assert co["PyTorch"][0][0] == "CNN"
+        assert co["PyTorch"][0][1] == 1
+
+    def test_dataset_co_occurrence(self) -> None:
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1")},
+            technologies={
+                "PyTorch": TechnologyNode(
+                    name="PyTorch", type=TechnologyType.FRAMEWORK, paper_ids=["p1"],
+                ),
+            },
+            datasets={
+                "ImageNet": DatasetNode(name="ImageNet", paper_ids=["p1"]),
+            },
+        )
+        analyzer = TechnologyAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        co = result.data["dataset_co_occurrence"]
+        assert "PyTorch" in co
+        assert co["PyTorch"][0][0] == "ImageNet"
+
+    def test_diversity_metrics(self) -> None:
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1"), "p2": _paper("p2")},
+            technologies={
+                "A": TechnologyNode(name="A", type=TechnologyType.OTHER, paper_ids=["p1"]),
+                "B": TechnologyNode(name="B", type=TechnologyType.OTHER, paper_ids=["p2"]),
+            },
+        )
+        analyzer = TechnologyAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        div = result.data["diversity"]
+        assert div["total_technologies"] == 2
+        assert div["papers_with_technology"] == 2
+        assert div["avg_papers_per_technology"] == 1.0
+
+    def test_respects_max_results(self) -> None:
+        config = IntelligenceConfig(max_results_per_analyzer=1)
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1"), "p2": _paper("p2")},
+            technologies={
+                "A": TechnologyNode(
+                    name="A", type=TechnologyType.OTHER, paper_ids=["p1", "p2"],
+                ),
+                "B": TechnologyNode(name="B", type=TechnologyType.OTHER, paper_ids=["p1"]),
+            },
+        )
+        ctx = AnalysisContext(graph=graph, config=config, investigation_id="test")
+        analyzer = TechnologyAnalyzer(ctx)
+        result = analyzer.analyze()
+        assert len(result.data["popularity_ranking"]) == 1
+
+
+# ======================================================================
+# DatasetAnalyzer
+# ======================================================================
+
+
+class TestDatasetAnalyzer:
+    def test_empty_graph(self) -> None:
+        graph = _graph_with_services()
+        analyzer = DatasetAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert result.analyzer_name == "dataset"
+        assert result.data["diversity"]["total_datasets"] == 0
+        assert result.data["popularity"] == {}
+
+    def test_single_dataset(self) -> None:
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1")},
+            datasets={
+                "ImageNet": DatasetNode(name="ImageNet", paper_ids=["p1"]),
+            },
+        )
+        analyzer = DatasetAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert result.data["diversity"]["total_datasets"] == 1
+        assert result.data["popularity"]["ImageNet"] == 1
+
+    def test_popularity_ranking(self) -> None:
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1"), "p2": _paper("p2"), "p3": _paper("p3")},
+            datasets={
+                "A": DatasetNode(name="A", paper_ids=["p1", "p2"]),
+                "B": DatasetNode(name="B", paper_ids=["p1"]),
+                "C": DatasetNode(name="C", paper_ids=["p1", "p2", "p3"]),
+            },
+        )
+        analyzer = DatasetAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        ranking = result.data["popularity_ranking"]
+        assert ranking[0][0] == "C"
+
+    def test_yearly_usage_trends(self) -> None:
+        graph = _graph_with_services(
+            papers={
+                "p1": _paper("p1", year=2023),
+                "p2": _paper("p2", year=2024),
+            },
+            datasets={
+                "D": DatasetNode(name="D", paper_ids=["p1", "p2"]),
+            },
+        )
+        analyzer = DatasetAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert result.data["yearly_usage_trends"]["D"] == {2023: 1, 2024: 1}
+
+    def test_methodology_relationships(self) -> None:
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1")},
+            datasets={
+                "ImageNet": DatasetNode(name="ImageNet", paper_ids=["p1"]),
+            },
+            methodologies={
+                "CNN": MethodologyNode(name="CNN", paper_ids=["p1"]),
+            },
+        )
+        analyzer = DatasetAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        rel = result.data["methodology_relationships"]
+        assert "ImageNet" in rel
+        assert rel["ImageNet"][0][0] == "CNN"
+
+    def test_technology_relationships(self) -> None:
+        graph = _graph_with_services(
+            papers={"p1": _paper("p1")},
+            datasets={
+                "ImageNet": DatasetNode(name="ImageNet", paper_ids=["p1"]),
+            },
+            technologies={
+                "PyTorch": TechnologyNode(
+                    name="PyTorch", type=TechnologyType.FRAMEWORK, paper_ids=["p1"],
+                ),
+            },
+        )
+        analyzer = DatasetAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        rel = result.data["technology_relationships"]
+        assert "ImageNet" in rel
+        assert rel["ImageNet"][0][0] == "PyTorch"
+
+    def test_diversity_empty(self) -> None:
+        graph = _graph_with_services()
+        analyzer = DatasetAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert result.data["diversity"]["avg_papers_per_dataset"] == 0.0
+
+    def test_top_datasets_limited(self) -> None:
+        config = IntelligenceConfig(max_results_per_analyzer=2)
+        graph = _graph_with_services(
+            papers={f"p{i}": _paper(f"p{i}") for i in range(5)},
+            datasets={
+                f"D{i}": DatasetNode(name=f"D{i}", paper_ids=[f"p{i}"])
+                for i in range(5)
+            },
+        )
+        ctx = AnalysisContext(graph=graph, config=config, investigation_id="test")
+        analyzer = DatasetAnalyzer(ctx)
+        result = analyzer.analyze()
+        assert len(result.data["top_datasets"]) == 2
+
+
+# ======================================================================
+# CollaborationAnalyzer
+# ======================================================================
+
+
+class TestCollaborationAnalyzer:
+    def test_empty_graph(self) -> None:
+        graph = _graph_with_services()
+        analyzer = CollaborationAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert result.analyzer_name == "collaboration"
+        assert result.data["institution_network"]["total_institutions"] == 0
+        assert result.data["author_network"]["total_authors"] == 0
+        assert result.data["institution_collaborations"] == []
+        assert result.data["author_collaborations"] == []
+
+    def test_author_collaborations(self) -> None:
+        graph = _graph_with_services(
+            papers={
+                "p1": PaperNode(
+                    id="p1", title="",
+                    authors=[
+                        AuthorNode(name="Alice"),
+                        AuthorNode(name="Bob"),
+                    ],
+                ),
+            },
+            authors={
+                "Alice": AuthorNode(name="Alice"),
+                "Bob": AuthorNode(name="Bob"),
+            },
+        )
+        analyzer = CollaborationAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert len(result.data["author_collaborations"]) == 1
+
+    def test_institution_collaborations(self) -> None:
+        graph = _graph_with_services(
+            papers={
+                "p1": PaperNode(
+                    id="p1", title="",
+                    institutions=[
+                        InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
+                        InstitutionNode(name="Stanford", type=InstitutionType.UNIVERSITY),
+                    ],
+                ),
+            },
+            institutions={
+                "MIT": InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
+                "Stanford": InstitutionNode(name="Stanford", type=InstitutionType.UNIVERSITY),
+            },
+        )
+        analyzer = CollaborationAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert len(result.data["institution_collaborations"]) == 1
+
+    def test_author_network_stats(self) -> None:
+        graph = _graph_with_services(
+            papers={
+                "p1": PaperNode(
+                    id="p1", title="",
+                    authors=[AuthorNode(name="Alice"), AuthorNode(name="Bob")],
+                ),
+            },
+            authors={"Alice": AuthorNode(name="Alice"), "Bob": AuthorNode(name="Bob")},
+        )
+        analyzer = CollaborationAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        network = result.data["author_network"]
+        assert network["total_authors"] == 2
+        assert network["total_collaborations"] == 1
+        assert "Alice" in network["degree_centrality"]
+        assert "Bob" in network["degree_centrality"]
+        assert len(network["top_by_centrality"]) == 2
+
+    def test_institution_network_stats(self) -> None:
+        graph = _graph_with_services(
+            papers={
+                "p1": PaperNode(
+                    id="p1", title="",
+                    institutions=[
+                        InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
+                        InstitutionNode(name="Stanford", type=InstitutionType.UNIVERSITY),
+                    ],
+                ),
+            },
+            institutions={
+                "MIT": InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
+                "Stanford": InstitutionNode(name="Stanford", type=InstitutionType.UNIVERSITY),
+            },
+        )
+        analyzer = CollaborationAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        network = result.data["institution_network"]
+        assert network["total_institutions"] == 2
+        assert network["total_collaborations"] == 1
+        assert len(network["top_by_centrality"]) == 2
+
+    def test_solo_paper_no_collab_edges(self) -> None:
+        graph = _graph_with_services(
+            papers={
+                "p1": PaperNode(
+                    id="p1", title="",
+                    authors=[AuthorNode(name="Alice")],
+                    institutions=[
+                        InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
+                    ],
+                ),
+            },
+        )
+        analyzer = CollaborationAnalyzer(_context(graph))
+        result = analyzer.analyze()
+        assert result.data["author_collaborations"] == []
+        assert result.data["institution_collaborations"] == []
+
+    def test_respects_max_results(self) -> None:
+        config = IntelligenceConfig(max_results_per_analyzer=1)
+        graph = _graph_with_services(
+            papers={
+                "p1": PaperNode(
+                    id="p1", title="",
+                    authors=[
+                        AuthorNode(name="Alice"),
+                        AuthorNode(name="Bob"),
+                        AuthorNode(name="Charlie"),
+                    ],
+                ),
+            },
+            authors={
+                "Alice": AuthorNode(name="Alice"),
+                "Bob": AuthorNode(name="Bob"),
+                "Charlie": AuthorNode(name="Charlie"),
+            },
+        )
+        ctx = AnalysisContext(graph=graph, config=config, investigation_id="test")
+        analyzer = CollaborationAnalyzer(ctx)
+        result = analyzer.analyze()
+        # Three authors = 3 edges, limited to 1
+        assert len(result.data["author_collaborations"]) == 1

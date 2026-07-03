@@ -13,7 +13,11 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    pass
+    from app.modules.intelligence.services.centrality import CentralityService
+    from app.modules.intelligence.services.co_occurrence import CoOccurrenceService
+    from app.modules.intelligence.services.similarity import SimilarityService
+    from app.modules.intelligence.services.statistics import StatisticsService
+    from app.modules.intelligence.services.trends import TrendService
 
 
 # ── Enums ──────────────────────────────────────────────────────────
@@ -128,11 +132,11 @@ class GraphServices:
     added in later sprints alongside the first analyzers.
     """
 
-    co_occurrence: object = field(default=None)
-    trends: object = field(default=None)
-    similarity: object = field(default=None)
-    centrality: object = field(default=None)
-    statistics: object = field(default=None)
+    co_occurrence: CoOccurrenceService | None = field(default=None)
+    trends: TrendService | None = field(default=None)
+    similarity: SimilarityService | None = field(default=None)
+    centrality: CentralityService | None = field(default=None)
+    statistics: StatisticsService | None = field(default=None)
 
 
 # ── Root graph object ──────────────────────────────────────────────
