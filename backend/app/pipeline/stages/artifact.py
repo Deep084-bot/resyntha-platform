@@ -13,7 +13,7 @@ from typing import Any
 from app.pipeline.context import PipelineContext
 from app.pipeline.result import PipelineResult
 from app.pipeline.stage import PipelineStage
-from app.modules.artifact.domain.models import ArtifactType
+from app.modules.artifact.domain.models import ArtifactStatus, ArtifactType
 from app.modules.artifact.schemas.request import CreateArtifactRequest
 from app.modules.artifact.service.service import ArtifactService
 
@@ -44,7 +44,7 @@ class ArtifactStage(PipelineStage):
 
         investigation_id = context.investigation_id
 
-        # ── PAPER_COLLECTION (unchanged) ─────────────────────────
+        # ── PAPER_COLLECTION ─────────────────────────────────────
         paper_artifact = self._artifact_service.create_artifact(
             investigation_id=investigation_id,
             request=CreateArtifactRequest(
@@ -55,6 +55,7 @@ class ArtifactStage(PipelineStage):
                     paper_ids=[str(pid) for pid in paper_ids],
                 ),
             ),
+            status=ArtifactStatus.READY,
         )
         context.add_artifact("artifact_response", paper_artifact)
 
@@ -89,6 +90,7 @@ class ArtifactStage(PipelineStage):
                         },
                     ),
                 ),
+                status=ArtifactStatus.READY,
             )
             context.add_artifact("validation_artifact_response", validation_artifact)
 
