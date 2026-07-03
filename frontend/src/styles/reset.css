@@ -1,0 +1,27 @@
+* {
+  border-color: var(--color-border-default, #1e293b);
+}
+
+body {
+  background-color: var(--color-surface-base, #0b0e14);
+  color: var(--color-text-primary, #e2e8f0);
+  font-family: var(--font-sans, "Inter", ui-sans-serif, system-ui, sans-serif);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}

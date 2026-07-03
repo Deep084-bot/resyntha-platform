@@ -1,0 +1,15 @@
+export const ROUTES = {
+  HOME: "/",
+  PIPELINE: "/pipeline",
+  SETTINGS: "/settings",
+  INVESTIGATION: (id: string) => `/investigations/${id}`,
+  INVESTIGATION_TIMELINE: (id: string) => `/investigations/${id}/timeline`,
+  INVESTIGATION_ARTIFACTS: (id: string) => `/investigations/${id}/artifacts`,
+  INVESTIGATION_PAPERS: (id: string) => `/investigations/${id}/papers`,
+  INVESTIGATION_EXECUTIONS: (id: string) => `/investigations/${id}/executions`,
+  INVESTIGATION_VALIDATION: (id: string) => `/investigations/${id}/validation`,
+  INVESTIGATION_KNOWLEDGE: (id: string) => `/investigations/${id}/knowledge`,
+  INVESTIGATION_ANALYSIS: (id: string) => `/investigations/${id}/analysis`,
+  INVESTIGATION_GAPS: (id: string) => `/investigations/${id}/gaps`,
+  INVESTIGATION_COPILOT: (id: string) => `/investigations/${id}/copilot`,
+} as const;
