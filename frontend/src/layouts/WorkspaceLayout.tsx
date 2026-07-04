@@ -1,5 +1,12 @@
 import { Link, Outlet, useLocation, useParams } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 
+import {
+  Workspace,
+  WorkspaceBody,
+  WorkspaceHeader,
+} from "@/components/layout";
+import { PageTitle } from "@/components/layout/PageTitle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useInvestigation } from "@/hooks/useInvestigations";
@@ -19,6 +26,10 @@ const tabs = [
   { label: "Copilot", to: "copilot" },
 ] as const;
 
+function ChevronRightIcon({ className }: { className?: string }) {
+  return <ChevronRight className={cn("h-3 w-3", className)} />;
+}
+
 export function WorkspaceLayout() {
   const { id } = useParams();
   const location = useLocation();
@@ -32,7 +43,7 @@ export function WorkspaceLayout() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full flex-col">
+      <Workspace>
         <div className="border-b border-border px-6 pt-4 pb-0 space-y-4">
           <Skeleton className="h-4 w-48" />
           <Skeleton className="h-6 w-96" />
@@ -43,10 +54,10 @@ export function WorkspaceLayout() {
             ))}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-6">
+        <WorkspaceBody>
           <Outlet />
-        </div>
-      </div>
+        </WorkspaceBody>
+      </Workspace>
     );
   }
 
@@ -71,88 +82,64 @@ export function WorkspaceLayout() {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="border-b border-border">
-        <div className="px-6 pt-4 pb-0">
-          {/* Breadcrumb */}
-          <nav className="mb-3 flex items-center gap-1.5 text-xs text-text-muted">
-            <Link
-              to="/"
-              className="hover:text-text-secondary transition-colors"
-            >
-              Investigations
-            </Link>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-text-primary truncate max-w-[200px]">
-              {investigation.title}
-            </span>
-          </nav>
+    <Workspace>
+      <WorkspaceHeader>
+        {/* Breadcrumb */}
+        <nav className="mb-3 flex items-center gap-1.5 text-xs text-text-muted">
+          <Link
+            to="/"
+            className="transition-colors hover:text-text-secondary"
+          >
+            Investigations
+          </Link>
+          <ChevronRightIcon />
+          <span className="max-w-[200px] truncate text-text-primary">
+            {investigation.title}
+          </span>
+        </nav>
 
-          {/* Title row */}
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold text-text-primary">
-              {investigation.title}
-            </h1>
-            <StatusBadge
-              status={mapInvestigationStatus(investigation.status)}
-              label={investigation.status}
-            />
-          </div>
-          <p className="mt-1 mb-4 text-sm text-text-muted">
-            {investigation.topic}
-          </p>
-
-          {/* Tabs */}
-          <div className="flex gap-0">
-            {tabs.map((tab, i) => {
-              const href = tab.to
-                ? `/investigations/${id}/${tab.to}`
-                : `/investigations/${id}`;
-              return (
-                <Link
-                  key={tab.label}
-                  to={href}
-                  className={cn(
-                    "relative px-4 py-2.5 text-sm font-medium transition-colors",
-                    i === activeTab
-                      ? "text-text-primary"
-                      : "text-text-muted hover:text-text-secondary",
-                  )}
-                >
-                  {tab.label}
-                  {i === activeTab && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-default rounded-full" />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
+        {/* Title row */}
+        <div className="flex items-center gap-3">
+          <PageTitle>{investigation.title}</PageTitle>
+          <StatusBadge
+            status={mapInvestigationStatus(investigation.status)}
+            label={investigation.status}
+          />
         </div>
-      </div>
+        <p className="mb-4 mt-1 text-sm text-text-muted">
+          {investigation.topic}
+        </p>
 
-      {/* Content area */}
-      <div className="flex-1 overflow-y-auto p-6">
+        {/* Tabs */}
+        <div className="flex gap-0">
+          {tabs.map((tab, i) => {
+            const href = tab.to
+              ? `/investigations/${id}/${tab.to}`
+              : `/investigations/${id}`;
+            return (
+              <Link
+                key={tab.label}
+                to={href}
+                className={cn(
+                  "relative px-4 py-2.5 text-sm font-medium transition-colors",
+                  i === activeTab
+                    ? "text-text-primary"
+                    : "text-text-muted hover:text-text-secondary",
+                )}
+              >
+                {tab.label}
+                {i === activeTab && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-accent-default" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </WorkspaceHeader>
+
+      <WorkspaceBody>
         <Outlet />
-      </div>
-    </div>
-  );
-}
-
-function ChevronRight({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="m8.25 4.5 7.5 7.5-7.5 7.5"
-      />
-    </svg>
+      </WorkspaceBody>
+    </Workspace>
   );
 }
