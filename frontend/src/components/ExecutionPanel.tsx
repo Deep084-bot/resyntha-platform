@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Clock } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -11,9 +12,10 @@ interface ExecutionPanelProps {
   isLoading: boolean;
   onSelect?: (id: string) => void;
   selectedId?: string;
+  emptyAction?: ReactNode;
 }
 
-export function ExecutionPanel({ executions, isLoading, onSelect, selectedId }: ExecutionPanelProps) {
+export function ExecutionPanel({ executions, isLoading, onSelect, selectedId, emptyAction }: ExecutionPanelProps) {
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -26,10 +28,11 @@ export function ExecutionPanel({ executions, isLoading, onSelect, selectedId }: 
 
   if (!executions || executions.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed border-border py-8">
         <p className="text-sm text-text-muted">
           No executions yet. Run the retrieval pipeline to create one.
         </p>
+        {emptyAction}
       </div>
     );
   }

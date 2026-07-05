@@ -83,3 +83,16 @@ export function useTriggerRetrievalWithPoll(investigationId: string) {
     },
   });
 }
+
+export function useRunInvestigation(investigationId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation<RetrieveAcceptedResponse, Error, RetrieveRequest>({
+    mutationFn: (body) => triggerRetrieval(investigationId!, body),
+    onSuccess: () => {
+      // Invalidate executions to start polling
+      qc.invalidateQueries({
+        queryKey: queryKeys.executions.byInvestigation(investigationId!),
+      });
+    },
+  });
+}

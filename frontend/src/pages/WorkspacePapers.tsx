@@ -13,8 +13,12 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { usePapers } from "@/hooks/useRetrieval";
+import { useInvestigation } from "@/hooks/useInvestigations";
+import { useRunInvestigation } from "@/hooks/useExecutions";
 import type { Paper } from "@/types";
 
 const PROVIDER_COLORS: Record<string, string> = {
@@ -39,6 +43,8 @@ type SortKey = "year" | "citations" | "title" | "score" | "source";
 export function WorkspacePapersPage() {
   const { id } = useParams();
   const { data: papers, isLoading, isError } = usePapers(id);
+  const { data: investigation } = useInvestigation(id);
+  const runInvestigation = useRunInvestigation(id);
 
   const [search, setSearch] = useState("");
   const [venueFilter, setVenueFilter] = useState("");
@@ -90,6 +96,12 @@ export function WorkspacePapersPage() {
 
     return result;
   }, [papers, search, venueFilter, sortKey, sortDesc]);
+
+  const handleRunInvestigation = () => {
+    const query = investigation?.topic ?? "";
+    if (!query) return;
+    runInvestigation.mutate({ query, paper_limit: investigation?.paper_limit ?? 10 });
+  };
 
   return (
     <div className="space-y-6">
@@ -175,6 +187,23 @@ export function WorkspacePapersPage() {
               search || venueFilter
                 ? "Try adjusting your search or filters."
                 : "Run the retrieval pipeline to search for papers"
+            }
+            action={
+              !search && !venueFilter ? (
+                <Button
+                  onClick={handleRunInvestigation}
+                  disabled={runInvestigation.isPending}
+                >
+                  {runInvestigation.isPending ? (
+                    <>
+                      <Spinner size="sm" className="mr-2 border-t-white" />
+                      Running…
+                    </>
+                  ) : (
+                    "Run Investigation"
+                  )}
+                </Button>
+              ) : undefined
             }
           />
         </div>

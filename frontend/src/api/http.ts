@@ -97,6 +97,6 @@ export default api;
  * pass a fully-typed request config. Just a passthrough that
  * returns its argument, but it gives the IDE a useful hint.
  */
-export function requestConfig<T = unknown>(config: AxiosRequestConfig): AxiosRequestConfig {
+export function requestConfig(config: AxiosRequestConfig): AxiosRequestConfig {
   return config;
 }

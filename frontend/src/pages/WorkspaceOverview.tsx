@@ -120,7 +120,7 @@ function LiveStageProgress({ executionId }: { executionId: string }) {
   );
 }
 
-function RetrievalMetricsSection({ executionId, investigationId }: { executionId: string; investigationId: string }) {
+function RetrievalMetricsSection({ executionId }: { executionId: string }) {
   const { data: execution } = useExecution(executionId);
   if (!execution) return null;
 
@@ -257,6 +257,7 @@ export function WorkspaceOverviewPage() {
   useEffect(() => {
     if (!executions || executions.length === 0) return;
     const latest = executions[0];
+    if (!latest) return;
     const prev = prevExecutionStatusRef.current;
     prevExecutionStatusRef.current = latest.status;
     if (!prev || prev === latest.status) return;
@@ -441,7 +442,7 @@ export function WorkspaceOverviewPage() {
       {latestExecution && latestExecution.status === "completed" && (
         <>
           <StageMetrics executionId={latestExecution.id} />
-          <RetrievalMetricsSection executionId={latestExecution.id} investigationId={id!} />
+          <RetrievalMetricsSection executionId={latestExecution.id} />
         </>
       )}
 

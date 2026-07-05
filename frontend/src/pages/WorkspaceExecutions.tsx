@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PipelineStageCard } from "@/components/ui/pipeline-stage-card";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ExecutionPanel } from "@/components/ExecutionPanel";
-import { useExecutionStages, useExecutions } from "@/hooks/useExecutions";
+import { useExecutionStages, useExecutions, useRunInvestigation } from "@/hooks/useExecutions";
+import { useInvestigation } from "@/hooks/useInvestigations";
 import { formatDateTime, formatDuration } from "@/lib/format";
 import { mapExecutionStatus, mapStageStatus, type Execution, type ExecutionStage } from "@/types";
 
@@ -269,11 +271,35 @@ function StatBox({
 export function WorkspaceExecutionsPage() {
   const { id } = useParams();
   const { data: executions, isLoading, isError } = useExecutions(id);
+  const { data: investigation } = useInvestigation(id);
+  const runInvestigation = useRunInvestigation(id);
   const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(null);
 
   const selectedExecution = selectedExecutionId
     ? executions?.find((e) => e.id === selectedExecutionId) ?? null
     : null;
+
+  const handleRunInvestigation = () => {
+    const query = investigation?.topic ?? "";
+    if (!query) return;
+    runInvestigation.mutate({ query, paper_limit: investigation?.paper_limit ?? 10 });
+  };
+
+  const emptyAction = (
+    <Button
+      onClick={handleRunInvestigation}
+      disabled={runInvestigation.isPending}
+    >
+      {runInvestigation.isPending ? (
+        <>
+          <Spinner size="sm" className="mr-2 border-t-white" />
+          Running…
+        </>
+      ) : (
+        "Run Investigation"
+      )}
+    </Button>
+  );
 
   return (
     <div className="space-y-6">
@@ -300,6 +326,7 @@ export function WorkspaceExecutionsPage() {
                   isLoading={isLoading}
                   onSelect={setSelectedExecutionId}
                   selectedId={selectedExecutionId ?? undefined}
+                  emptyAction={emptyAction}
                 />
               </CardContent>
             </Card>

@@ -5,12 +5,24 @@ import { ArtifactCard } from "@/components/ui/artifact-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { useArtifacts } from "@/hooks/useArtifacts";
+import { useInvestigation } from "@/hooks/useInvestigations";
+import { useRunInvestigation } from "@/hooks/useExecutions";
 import { mapArtifactStatus } from "@/types";
 
 export function WorkspaceArtifactsPage() {
   const { id } = useParams();
   const { data: artifacts, isLoading, isError } = useArtifacts(id);
+  const { data: investigation } = useInvestigation(id);
+  const runInvestigation = useRunInvestigation(id);
+
+  const handleRunInvestigation = () => {
+    const query = investigation?.topic ?? "";
+    if (!query) return;
+    runInvestigation.mutate({ query, paper_limit: investigation?.paper_limit ?? 10 });
+  };
 
   if (isLoading) {
     return (
@@ -68,6 +80,21 @@ export function WorkspaceArtifactsPage() {
             icon={FlaskConical}
             title="No artifacts yet"
             description="Artifacts will be generated as the pipeline executes"
+            action={
+              <Button
+                onClick={handleRunInvestigation}
+                disabled={runInvestigation.isPending}
+              >
+                {runInvestigation.isPending ? (
+                  <>
+                    <Spinner size="sm" className="mr-2 border-t-white" />
+                    Running…
+                  </>
+                ) : (
+                  "Run Investigation"
+                )}
+              </Button>
+            }
           />
         </div>
       )}
