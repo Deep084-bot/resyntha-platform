@@ -11,6 +11,17 @@ vi.mock("@/hooks/useExecutions", () => ({
   useExecutionStages: vi.fn(),
 }));
 
+vi.mock("@/features/investigations/layout/InvestigationRunContext", () => ({
+  useInvestigationRun: vi.fn(() => ({
+    running: false,
+    latestExecution: null,
+    stages: [],
+    run: vi.fn(),
+    isStarting: false,
+    error: null,
+  })),
+}));
+
 import { useExecutions, useExecutionStages } from "@/hooks/useExecutions";
 
 const mockExecutions = [

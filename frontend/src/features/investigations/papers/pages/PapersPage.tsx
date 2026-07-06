@@ -15,9 +15,14 @@ import { PaperCard } from "../components/PaperCard";
 import { PaperDetailDrawer } from "../components/PaperDetailDrawer";
 import type { Paper } from "@/types";
 
+import { RunningMessage } from "@/features/investigations/components/RunningMessage";
+import { useInvestigationRun } from "@/features/investigations/layout/InvestigationRunContext";
+import { WorkspaceErrorBoundary } from "@/features/investigations/components/WorkspaceErrorBoundary";
+
 export function PapersPage() {
   const { id } = useParams();
   const { data: papers, isLoading, isError, refetch } = usePapers(id);
+  const { running } = useInvestigationRun();
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
 
   const {
@@ -50,28 +55,41 @@ export function PapersPage() {
 
   if (isError) {
     return (
-      <div className="flex h-48 flex-col items-center justify-center gap-3">
-        <AlertCircle className="h-8 w-8 text-destructive" />
-        <p className="text-sm text-destructive font-medium">
-          Failed to load papers.
-        </p>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          Try again
-        </Button>
-      </div>
+      <WorkspaceErrorBoundary>
+        <div className="flex h-48 flex-col items-center justify-center gap-3">
+          <AlertCircle className="h-8 w-8 text-destructive" />
+          <p className="text-sm text-destructive font-medium">
+            Failed to load papers.
+          </p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            Try again
+          </Button>
+        </div>
+      </WorkspaceErrorBoundary>
     );
   }
 
   if (!papers || papers.length === 0) {
+    if (running) {
+      return (
+        <div className="space-y-4">
+          <SectionHeader title="Papers" />
+          <RunningMessage phase="Retrieving papers" />
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-lg" />
+          ))}
+        </div>
+      );
+    }
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-4 rounded-md border border-dashed border-border">
         <BookOpen className="h-10 w-10 text-text-muted" />
         <div className="text-center">
           <p className="text-sm font-medium text-text-primary">
-            No papers retrieved yet
+            No papers have been retrieved yet.
           </p>
           <p className="mt-1 text-xs text-text-muted">
-            Run an execution to retrieve papers for this investigation.
+            Run an investigation to retrieve papers.
           </p>
         </div>
       </div>

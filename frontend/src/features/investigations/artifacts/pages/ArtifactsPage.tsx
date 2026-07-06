@@ -10,6 +10,8 @@ import { ArtifactDownload } from "../components/ArtifactDownload";
 import { ArtifactSkeleton } from "../components/ArtifactSkeleton";
 import { ArtifactErrorState } from "../components/ArtifactErrorState";
 import { ArtifactEmptyState } from "../components/ArtifactEmptyState";
+import { useInvestigationRun } from "@/features/investigations/layout/InvestigationRunContext";
+import { RunningMessage } from "@/features/investigations/components/RunningMessage";
 
 export function ArtifactsPage() {
   const { id } = useParams();
@@ -21,6 +23,7 @@ export function ArtifactsPage() {
     handleSelect,
     handleRefresh,
   } = useArtifactsPage(id);
+  const { running } = useInvestigationRun();
 
   if (isLoading) {
     return (
@@ -41,6 +44,15 @@ export function ArtifactsPage() {
   }
 
   if (artifacts.length === 0) {
+    if (running) {
+      return (
+        <div className="space-y-4">
+          <SectionHeader title="Artifacts" />
+          <RunningMessage phase="Generating artifacts" />
+          <ArtifactSkeleton />
+        </div>
+      );
+    }
     return (
       <div className="space-y-4">
         <SectionHeader title="Artifacts" />

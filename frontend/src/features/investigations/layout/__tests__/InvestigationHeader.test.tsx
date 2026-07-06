@@ -7,6 +7,19 @@ import type { Investigation } from "@/types";
 
 import { InvestigationHeader } from "../InvestigationHeader";
 
+const runContextValue = {
+  running: false,
+  run: vi.fn(),
+  isStarting: false,
+  latestExecution: null,
+  stages: [],
+  error: null,
+};
+
+vi.mock("../InvestigationRunContext", () => ({
+  useInvestigationRun: () => runContextValue,
+}));
+
 afterEach(cleanup);
 
 const mockInvestigation: Investigation = {
@@ -82,20 +95,20 @@ describe("InvestigationHeader", () => {
     expect(onEdit).toHaveBeenCalledOnce();
   });
 
-  it("calls onRerun when rerun button is clicked", async () => {
-    const user = userEvent.setup();
-    const onRerun = vi.fn();
-    renderHeader({ onRerun });
-
-    const rerunBtn = screen.getByRole("button", { name: /re-run/i });
-    await user.click(rerunBtn);
-    expect(onRerun).toHaveBeenCalledOnce();
+  it("shows run investigation when there has never been a completed execution", () => {
+    renderHeader({ hasCompletedExecution: false });
+    expect(screen.getByText("Run Investigation")).toBeInTheDocument();
   });
 
-  it("does not render action buttons when callbacks are not provided", () => {
+  it("shows rerun when a completed execution exists", () => {
+    renderHeader({ hasCompletedExecution: true });
+    expect(screen.getByText("Re-run")).toBeInTheDocument();
+  });
+
+  it("does not render edit/delete buttons when callbacks are not provided", () => {
     renderHeader();
     expect(screen.queryByRole("button", { name: /edit/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /re-run/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Run Investigation")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /delete/i })).not.toBeInTheDocument();
   });
 });

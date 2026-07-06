@@ -239,6 +239,37 @@ async def retrieval_job(
         else:
             logger.warning("no_retrieval_metrics_found", metrics_keys=list(final_context.metrics.keys()))
 
+        # ── Record SUCCESS for all stages that had RUNNING events ─
+        timeline_service.record_event(
+            investigation_id=investigation_id,
+            execution_id=execution_id,
+            stage=TimelineStage.VALIDATING,
+            status=TimelineStatus.SUCCESS,
+            message="Validation completed",
+        )
+        timeline_service.record_event(
+            investigation_id=investigation_id,
+            execution_id=execution_id,
+            stage=TimelineStage.EXTRACTING,
+            status=TimelineStatus.SUCCESS,
+            message="Knowledge extraction completed",
+        )
+        timeline_service.record_event(
+            investigation_id=investigation_id,
+            execution_id=execution_id,
+            stage=TimelineStage.ANALYZING,
+            status=TimelineStatus.SUCCESS,
+            message="Cross-paper analysis completed",
+        )
+        # ── Record investigation completion ──────────────────────
+        timeline_service.record_event(
+            investigation_id=investigation_id,
+            execution_id=execution_id,
+            stage=TimelineStage.COMPLETED,
+            status=TimelineStatus.SUCCESS,
+            message="Investigation completed",
+        )
+
         # ── Success ──────────────────────────────────────────────
         logger.info("execution_mark_completed_started", execution_id=exec_id)
 

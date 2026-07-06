@@ -64,5 +64,12 @@ export function useTimeline(investigationId: string | undefined) {
     queryKey: queryKeys.investigations.timeline(investigationId!),
     queryFn: () => fetchTimeline(investigationId!),
     enabled: !!investigationId,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data || data.length === 0) return false;
+      // Poll while there are still running events in the timeline
+      const hasRunning = data.some((e) => e.status === "running");
+      return hasRunning ? 5_000 : false;
+    },
   });
 }

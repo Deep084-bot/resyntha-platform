@@ -11,6 +11,17 @@ vi.mock("@/hooks/useArtifacts", () => ({
   useArtifacts: vi.fn(),
 }));
 
+vi.mock("@/features/investigations/layout/InvestigationRunContext", () => ({
+  useInvestigationRun: vi.fn(() => ({
+    running: false,
+    latestExecution: null,
+    stages: [],
+    run: vi.fn(),
+    isStarting: false,
+    error: null,
+  })),
+}));
+
 import { useArtifacts } from "@/hooks/useArtifacts";
 
 const MOCK_ARTIFACTS = [

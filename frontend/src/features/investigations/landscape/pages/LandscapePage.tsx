@@ -10,11 +10,7 @@ import {
   GitMerge,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { useLandscape } from "../hooks/useLandscape";
-import { useInvestigation } from "@/hooks/useInvestigations";
-import { useRunInvestigation } from "@/hooks/useExecutions";
 import {
   SectionCard,
   LandscapeOverview,
@@ -29,24 +25,27 @@ import {
   LandscapeEmptyState,
   LandscapeErrorState,
 } from "../components";
+import { RunningMessage } from "@/features/investigations/components/RunningMessage";
+import { useInvestigationRun } from "@/features/investigations/layout/InvestigationRunContext";
 
 export function LandscapePage() {
   const { id } = useParams();
   const { data, isLoading, isError, error, isNotGenerated } = useLandscape(id);
-  const { data: investigation } = useInvestigation(id);
-  const runInvestigation = useRunInvestigation(id);
-
-  const handleRunInvestigation = () => {
-    const query = investigation?.topic ?? "";
-    if (!query) return;
-    runInvestigation.mutate({ query, paper_limit: investigation?.paper_limit ?? 10 });
-  };
+  const { running } = useInvestigationRun();
 
   if (isLoading) {
     return <LandscapeSkeleton />;
   }
 
   if (isNotGenerated) {
+    if (running) {
+      return (
+        <div className="space-y-4">
+          <RunningMessage phase="Building landscape" />
+          <LandscapeSkeleton />
+        </div>
+      );
+    }
     return (
       <div
         className="flex h-64 flex-col items-center justify-center gap-4 rounded-md border border-dashed border-border"
@@ -55,25 +54,11 @@ export function LandscapePage() {
         <BookOpen className="h-10 w-10 text-text-muted" />
         <div className="text-center">
           <p className="text-sm font-medium text-text-primary">
-            Landscape not yet available
+            Research landscape will appear after analysis.
           </p>
           <p className="mt-1 text-xs text-text-muted">
-            Landscape will become available after the investigation pipeline finishes.
+            Run an investigation to generate it.
           </p>
-          <Button
-            onClick={handleRunInvestigation}
-            disabled={runInvestigation.isPending}
-            className="mt-4"
-          >
-            {runInvestigation.isPending ? (
-              <>
-                <Spinner size="sm" className="mr-2 border-t-white" />
-                Running…
-              </>
-            ) : (
-              "Run Investigation"
-            )}
-          </Button>
         </div>
       </div>
     );

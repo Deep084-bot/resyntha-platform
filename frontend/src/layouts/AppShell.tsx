@@ -10,6 +10,7 @@ import {
 
 import { Sidebar, SidebarFooter, SidebarItem } from "@/components/navigation";
 import { TopBar } from "@/components/navigation/TopBar";
+import { SuccessToast } from "@/components/SuccessToast";
 
 export function AppShell() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -41,6 +42,8 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      <SuccessToast />
     </div>
   );
 }

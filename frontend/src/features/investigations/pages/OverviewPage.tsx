@@ -21,6 +21,9 @@ import {
   mapArtifactStatus,
 } from "@/types";
 
+import { RunningMessage } from "../components/RunningMessage";
+import { useInvestigationRun } from "../layout/InvestigationRunContext";
+
 function StatCard({
   label,
   value,
@@ -51,6 +54,7 @@ export function OverviewPage() {
   const { data: artifacts, isLoading: artifactsLoading } = useArtifacts(id);
   const { data: executions, isLoading: execLoading } = useExecutions(id);
   const { data: timeline, isLoading: timelineLoading } = useTimeline(id);
+  const { running } = useInvestigationRun();
 
   const completedExecs = (executions ?? []).filter(
     (e) => e.status === "completed",
@@ -185,52 +189,56 @@ export function OverviewPage() {
                   <span className="text-xs text-text-muted ml-auto">
                     {formatElapsed(artifact.created_at)}
                   </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-border">
-              <p className="text-sm text-text-muted">
-                {hasExecution
-                  ? "No artifacts generated yet."
-                  : "No executions have been run yet."}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            ))}
+          </div>
+          ) : running ? (
+            <RunningMessage phase="Generating artifacts" />
+        ) : (
+          <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-border">
+            <p className="text-sm text-text-muted">
+              {hasExecution
+                ? "No artifacts generated yet."
+                : "No executions have been run yet."}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {timeline && timeline.length > 0 ? (
-            <div className="space-y-2">
-              {timeline.slice(0, 5).map((event, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm">
-                  <StatusBadge
-                    status={mapTimelineStatus(event.status)}
-                  />
-                  <span className="text-text-primary">{event.message}</span>
-                  <span className="ml-auto text-xs text-text-muted">
-                    {formatElapsed(event.created_at)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-border">
-              <p className="text-sm text-text-muted">
-                {timelineLoading
-                  ? "Loading activity..."
-                  : hasExecution
-                    ? "No timeline events recorded yet."
-                    : "No executions have been run yet."}
-              </p>
-            </div>
-          )}
+    {/* Recent Activity */}
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent Activity</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {timeline && timeline.length > 0 ? (
+          <div className="space-y-2">
+            {timeline.slice(-5).reverse().map((event, i) => (
+              <div key={i} className="flex items-center gap-3 text-sm">
+                <StatusBadge
+                  status={mapTimelineStatus(event.status)}
+                />
+                <span className="text-text-primary">{event.message}</span>
+                <span className="ml-auto text-xs text-text-muted">
+                  {formatElapsed(event.created_at)}
+                </span>
+              </div>
+            ))}
+          </div>
+          ) : running ? (
+            <RunningMessage phase="Tracking activity" />
+        ) : (
+          <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-border">
+            <p className="text-sm text-text-muted">
+              {timelineLoading
+                ? "Loading activity..."
+                : hasExecution
+                  ? "No timeline events recorded yet."
+                  : "No executions have been run yet."}
+            </p>
+          </div>
+        )}
         </CardContent>
       </Card>
     </div>

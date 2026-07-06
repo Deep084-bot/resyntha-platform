@@ -1,10 +1,15 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Investigation } from "@/types";
 
 afterEach(cleanup);
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
 
 const mockInvestigation: Investigation = {
   id: "inv-1",
@@ -38,16 +43,49 @@ vi.mock("@/hooks/useInvestigations", () => ({
   })),
 }));
 
+vi.mock("@/hooks/useExecutions", () => ({
+  useExecutions: vi.fn(() => ({ data: [], isLoading: false })),
+  useExecutionStages: vi.fn(() => ({ data: [], isLoading: false })),
+  useRunInvestigation: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+  })),
+}));
+
+vi.mock("@/features/investigations/layout/InvestigationRunContext", () => ({
+  InvestigationRunContextProvider: ({ children }: { children: React.ReactNode }) => children,
+  useInvestigationRun: vi.fn(() => ({
+    running: false,
+    latestExecution: null,
+    stages: [],
+    run: vi.fn(),
+    isStarting: false,
+    error: null,
+  })),
+}));
+
+function Wrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={["/investigations/inv-1"]}>
+        {children}
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+}
+
 async function renderLayout(initialPath = "/investigations/inv-1") {
   const { InvestigationLayout } = await import("../InvestigationLayout");
   return render(
-    <MemoryRouter initialEntries={[initialPath]}>
+    <Wrapper>
       <Routes>
         <Route path="/investigations/:id" element={<InvestigationLayout />}>
           <Route index element={<div data-testid="child-content">Child Content</div>} />
         </Route>
       </Routes>
-    </MemoryRouter>,
+    </Wrapper>,
   );
 }
 
@@ -82,11 +120,11 @@ describe("InvestigationLayout", () => {
 
     const { InvestigationLayout } = await import("../InvestigationLayout");
     const { container } = render(
-      <MemoryRouter initialEntries={["/investigations/inv-1"]}>
+      <Wrapper>
         <Routes>
           <Route path="/investigations/:id" element={<InvestigationLayout />} />
         </Routes>
-      </MemoryRouter>,
+      </Wrapper>,
     );
 
     const pulseEls = container.querySelectorAll(".animate-pulse");
@@ -98,11 +136,11 @@ describe("InvestigationLayout", () => {
 
     const { InvestigationLayout } = await import("../InvestigationLayout");
     render(
-      <MemoryRouter initialEntries={["/investigations/inv-1"]}>
+      <Wrapper>
         <Routes>
           <Route path="/investigations/:id" element={<InvestigationLayout />} />
         </Routes>
-      </MemoryRouter>,
+      </Wrapper>,
     );
 
     expect(
@@ -115,11 +153,11 @@ describe("InvestigationLayout", () => {
 
     const { InvestigationLayout } = await import("../InvestigationLayout");
     render(
-      <MemoryRouter initialEntries={["/investigations/inv-1"]}>
+      <Wrapper>
         <Routes>
           <Route path="/investigations/:id" element={<InvestigationLayout />} />
         </Routes>
-      </MemoryRouter>,
+      </Wrapper>,
     );
 
     expect(screen.getByText("Investigation not found")).toBeInTheDocument();

@@ -11,11 +11,14 @@ import { ExecutionLogPreview } from "../components/ExecutionLogPreview";
 import { ExecutionSkeleton } from "../components/ExecutionSkeleton";
 import { ExecutionErrorState } from "../components/ExecutionErrorState";
 import { ExecutionEmptyState } from "../components/ExecutionEmptyState";
+import { useInvestigationRun } from "@/features/investigations/layout/InvestigationRunContext";
+import { RunningMessage } from "@/features/investigations/components/RunningMessage";
 
 export function ExecutionsPage() {
   const { id } = useParams();
   const { executions, selectedId, setSelectedId, isLoading, isError, stagesResult } =
     useExecutionsPage(id);
+  const { running } = useInvestigationRun();
 
   // Loading state
   if (isLoading) {
@@ -37,8 +40,18 @@ export function ExecutionsPage() {
     );
   }
 
-  // Empty state
+  // Empty state — only show the static "No executions yet" card when
+  // there is no run in flight. While a run is starting, show progress.
   if (!executions || executions.length === 0) {
+    if (running) {
+      return (
+        <div className="space-y-4">
+          <SectionHeader title="Executions" />
+          <RunningMessage phase="Starting pipeline" />
+          <ExecutionSkeleton />
+        </div>
+      );
+    }
     return (
       <div className="space-y-4">
         <SectionHeader title="Executions" />

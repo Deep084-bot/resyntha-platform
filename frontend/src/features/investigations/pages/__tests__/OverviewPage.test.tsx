@@ -63,8 +63,26 @@ const mockTimeline: TimelineEvent[] = [
 
 let usePapersResult = { data: mockPapers, isLoading: false, isError: false };
 let useArtifactsResult = { data: mockArtifacts, isLoading: false, isError: false };
-let useExecsResult = { data: mockExecutions, isLoading: false };
+let useExecsResult: { data: Execution[]; isLoading: boolean } = {
+  data: mockExecutions,
+  isLoading: false,
+};
 let useTimelineResult = { data: mockTimeline, isLoading: false };
+let runContextValue: {
+  running: boolean;
+  run: () => void;
+  isStarting: boolean;
+  latestExecution: Execution | null;
+  stages: never[];
+  error: null;
+} = {
+  running: false,
+  run: vi.fn(),
+  isStarting: false,
+  latestExecution: null,
+  stages: [],
+  error: null,
+};
 
 vi.mock("@/hooks/useRetrieval", () => ({
   usePapers: vi.fn(() => usePapersResult),
@@ -81,6 +99,10 @@ vi.mock("@/hooks/useExecutions", () => ({
 
 vi.mock("@/hooks/useInvestigations", () => ({
   useTimeline: vi.fn(() => useTimelineResult),
+}));
+
+vi.mock("@/features/investigations/layout/InvestigationRunContext", () => ({
+  useInvestigationRun: () => runContextValue,
 }));
 
 async function renderOverviewPage() {
@@ -145,5 +167,44 @@ describe("OverviewPage", () => {
     expect(
       screen.getByText("No executions have been run yet."),
     ).toBeInTheDocument();
+  });
+
+  it("shows running message in recent artifacts when running with no artifacts", async () => {
+    runContextValue = {
+      ...runContextValue,
+      running: true,
+    };
+    useArtifactsResult = { data: [], isLoading: false, isError: false };
+    useTimelineResult = { data: [], isLoading: false };
+
+    const { OverviewPage } = await import("../OverviewPage");
+    render(
+      <MemoryRouter initialEntries={["/investigations/inv-1"]}>
+        <Routes>
+          <Route path="/investigations/:id" element={<OverviewPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Generating artifacts")).toBeInTheDocument();
+  });
+
+  it("shows running message in recent activity when running with no timeline", async () => {
+    runContextValue = {
+      ...runContextValue,
+      running: true,
+    };
+    useTimelineResult = { data: [], isLoading: false };
+
+    const { OverviewPage } = await import("../OverviewPage");
+    render(
+      <MemoryRouter initialEntries={["/investigations/inv-1"]}>
+        <Routes>
+          <Route path="/investigations/:id" element={<OverviewPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Tracking activity")).toBeInTheDocument();
   });
 });

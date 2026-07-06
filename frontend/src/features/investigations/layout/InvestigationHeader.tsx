@@ -1,18 +1,20 @@
-import { Trash2, Pencil, RefreshCw } from "lucide-react";
+import { Trash2, Pencil, Play, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { PageTitle } from "@/components/layout/PageTitle";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Investigation } from "@/types";
 
 import { InvestigationStatusBadge } from "../components/InvestigationStatusBadge";
+import { useInvestigationRun } from "./InvestigationRunContext";
 
 export interface InvestigationHeaderProps {
   investigation: Investigation;
   onDelete?: () => void;
   onEdit?: () => void;
-  onRerun?: () => void;
+  hasCompletedExecution?: boolean;
   isDeleting?: boolean;
   className?: string;
 }
@@ -21,10 +23,14 @@ export function InvestigationHeader({
   investigation,
   onDelete,
   onEdit,
-  onRerun,
+  hasCompletedExecution = false,
   isDeleting,
   className,
 }: InvestigationHeaderProps) {
+  const { running, run, isStarting } = useInvestigationRun();
+
+  const isBusy = isStarting || running;
+
   return (
     <div className={cn("space-y-4", className)}>
       {/* Title and status row */}
@@ -52,17 +58,34 @@ export function InvestigationHeader({
               <span className="hidden sm:inline">Edit</span>
             </Button>
           )}
-          {onRerun && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRerun}
-              aria-label={`Re-run ${investigation.title}`}
-            >
+          <Button
+            variant="default"
+            size="sm"
+            onClick={run}
+            disabled={isBusy}
+            aria-label={
+              hasCompletedExecution
+                ? `Re-run ${investigation.title}`
+                : `Run ${investigation.title}`
+            }
+          >
+            {isStarting ? (
+              <Spinner size="sm" className="border-t-white" />
+            ) : hasCompletedExecution ? (
               <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Re-run</span>
-            </Button>
-          )}
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">
+              {isStarting
+                ? "Starting…"
+                : running
+                  ? "Running…"
+                  : hasCompletedExecution
+                    ? "Re-run"
+                    : "Run Investigation"}
+            </span>
+          </Button>
           {onDelete && (
             <Button
               variant="outline"
