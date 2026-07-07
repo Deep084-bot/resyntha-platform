@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { Lock, type LucideIcon } from "lucide-react";
 import { Link, useLocation, useParams } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
@@ -6,6 +7,9 @@ import { cn } from "@/lib/utils";
 export interface TabDefinition {
   label: string;
   to: string;
+  disabled?: boolean;
+  tooltip?: string;
+  icon?: LucideIcon;
 }
 
 export interface InvestigationTabsProps {
@@ -28,27 +32,38 @@ export function InvestigationTabs({ tabs, className }: InvestigationTabsProps) {
     );
   });
 
+  const enabledIndices = tabs
+    .map((tab, index) => (tab.disabled ? null : index))
+    .filter((index): index is number => index !== null);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      const tabElements = tabListRef.current?.querySelectorAll<HTMLAnchorElement>(
-        '[role="tab"]',
+      const tabElements = tabListRef.current?.querySelectorAll<HTMLElement>(
+        '[role="tab"]:not([aria-disabled="true"])',
       );
       if (!tabElements || tabElements.length === 0) return;
 
       let newIndex: number | null = null;
+      const activeEnabledIndex = enabledIndices.indexOf(activeIndex);
 
       switch (e.key) {
         case "ArrowRight":
-          newIndex = (activeIndex + 1) % tabs.length;
+          newIndex =
+            enabledIndices[(activeEnabledIndex + 1) % enabledIndices.length] ??
+            null;
           break;
         case "ArrowLeft":
-          newIndex = (activeIndex - 1 + tabs.length) % tabs.length;
+          newIndex =
+            enabledIndices[
+              (activeEnabledIndex - 1 + enabledIndices.length) %
+                enabledIndices.length
+            ] ?? null;
           break;
         case "Home":
-          newIndex = 0;
+          newIndex = enabledIndices[0] ?? null;
           break;
         case "End":
-          newIndex = tabs.length - 1;
+          newIndex = enabledIndices[enabledIndices.length - 1] ?? null;
           break;
       }
 
@@ -58,7 +73,7 @@ export function InvestigationTabs({ tabs, className }: InvestigationTabsProps) {
         tabElements[newIndex]?.focus();
       }
     },
-    [activeIndex, tabs.length],
+    [activeIndex, enabledIndices],
   );
 
   useEffect(() => {
@@ -80,6 +95,28 @@ export function InvestigationTabs({ tabs, className }: InvestigationTabsProps) {
           ? `/investigations/${id}/${tab.to}`
           : `/investigations/${id}`;
         const isActive = i === activeIndex;
+        const Icon = tab.disabled ? Lock : tab.icon;
+
+        if (tab.disabled) {
+          return (
+            <button
+              key={tab.label}
+              type="button"
+              role="tab"
+              aria-selected={false}
+              aria-disabled="true"
+              tabIndex={-1}
+              title={tab.tooltip}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
+                "cursor-not-allowed text-text-muted",
+              )}
+            >
+              <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        }
 
         return (
           <Link
@@ -91,12 +128,13 @@ export function InvestigationTabs({ tabs, className }: InvestigationTabsProps) {
             tabIndex={isActive ? 0 : -1}
             replace
             className={cn(
-              "relative px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+              "relative inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
               isActive
                 ? "text-text-primary"
                 : "text-text-muted hover:text-text-secondary",
             )}
           >
+            {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
             {tab.label}
             {isActive && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-accent-default" />

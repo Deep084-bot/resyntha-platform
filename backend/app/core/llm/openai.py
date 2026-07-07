@@ -12,6 +12,8 @@ before leaving the provider.
 import asyncio
 import json
 
+from collections.abc import AsyncIterator
+
 from openai import (
     APIError as OpenAIAPIError,
     APITimeoutError as OpenAITimeoutError,
@@ -136,3 +138,35 @@ class OpenAIProvider(BaseLLMProvider):
                 raise LLMTimeoutError(msg) from last_error
             raise LLMAPIError(msg) from last_error
         raise RuntimeError(msg) from last_error
+
+    async def generate_stream(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float = 0.3,
+        max_tokens: int = 4096,
+    ) -> AsyncIterator[str]:
+        try:
+            stream = await self._client.chat.completions.create(
+                model=self._model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+                timeout=180,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                if delta and delta.content:
+                    yield delta.content
+
+        except OpenAIRateLimitError as exc:
+            raise LLMRateLimitError(f"OpenAI rate limit during streaming: {exc}") from exc
+        except OpenAITimeoutError as exc:
+            raise LLMTimeoutError(f"OpenAI timeout during streaming: {exc}") from exc
+        except OpenAIAPIError as exc:
+            raise LLMAPIError(f"OpenAI API error during streaming: {exc}") from exc

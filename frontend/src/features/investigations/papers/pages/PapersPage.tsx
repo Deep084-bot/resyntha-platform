@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { BookOpen, Search, AlertCircle } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +24,8 @@ export function PapersPage() {
   const { data: papers, isLoading, isError, refetch } = usePapers(id);
   const { running } = useInvestigationRun();
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const paperIdFromUrl = searchParams.get("paperId");
 
   const {
     filters,
@@ -41,6 +43,25 @@ export function PapersPage() {
     setSortBy,
     resetFilters,
   } = usePaperFilters(papers);
+
+  useEffect(() => {
+    if (!papers || !paperIdFromUrl) return;
+
+    const matchedPaper = papers.find((paper) => paper.id === paperIdFromUrl);
+    if (matchedPaper) {
+      setSelectedPaper(matchedPaper);
+    }
+  }, [papers, paperIdFromUrl]);
+
+  const handleCloseDrawer = () => {
+    setSelectedPaper(null);
+
+    if (!paperIdFromUrl) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("paperId");
+    setSearchParams(nextParams, { replace: true });
+  };
 
   if (isLoading) {
     return (
@@ -175,7 +196,7 @@ export function PapersPage() {
       {/* Detail drawer */}
       <PaperDetailDrawer
         paper={selectedPaper}
-        onClose={() => setSelectedPaper(null)}
+        onClose={handleCloseDrawer}
       />
     </div>
   );

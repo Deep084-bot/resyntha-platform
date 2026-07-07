@@ -76,7 +76,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-async function renderLayout(initialPath = "/investigations/inv-1") {
+async function renderLayout() {
   const { InvestigationLayout } = await import("../InvestigationLayout");
   return render(
     <Wrapper>

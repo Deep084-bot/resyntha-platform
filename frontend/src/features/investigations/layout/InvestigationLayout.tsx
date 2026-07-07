@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { Lock } from "lucide-react";
 
 import {
   Workspace,
@@ -138,6 +139,7 @@ function InvestigationWorkspaceContent({
 
   const stagesResult = useExecutionStages(latestExecution?.id);
   const stages: ExecutionStage[] = stagesResult.data ?? [];
+  const copilotUnlocked = investigation.status === "completed";
 
   // True when any execution is still pending or running.
   const running = useMemo(
@@ -203,7 +205,20 @@ function InvestigationWorkspaceContent({
           hasCompletedExecution={hasCompletedExecution}
         />
         <div className="mt-4">
-          <InvestigationTabs tabs={[...TABS]} />
+          <InvestigationTabs
+            tabs={[
+              ...TABS,
+              {
+                label: "Copilot",
+                to: "copilot",
+                disabled: !copilotUnlocked,
+                tooltip: !copilotUnlocked
+                  ? "Complete an investigation to unlock AI Copilot."
+                  : undefined,
+                icon: Lock,
+              },
+            ]}
+          />
         </div>
         {latestExecution && (
           <div className="mt-4">
@@ -217,7 +232,7 @@ function InvestigationWorkspaceContent({
 
       <WorkspaceBody>
         <WorkspaceErrorBoundary>
-          <Outlet />
+          <Outlet context={{ investigation }} />
         </WorkspaceErrorBoundary>
       </WorkspaceBody>
     </InvestigationRunContextProvider>

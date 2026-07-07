@@ -4,12 +4,16 @@ Every provider implements ``generate_structured()`` which accepts
 a system prompt, a user prompt, and a Pydantic response model,
 and returns a validated instance of that model.
 
+Providers also implement ``generate_stream()`` which yields raw
+text tokens for real-time streaming.
+
 Providers translate their SDK-specific exceptions into the
 provider-independent exception types defined in ``exceptions.py``
 before raising them.
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 
 from pydantic import BaseModel
 
@@ -82,4 +86,33 @@ class BaseLLMProvider(ABC):
             Pydantic model validation failed.
         json.JSONDecodeError
             Response was not valid JSON.
+        """
+
+    @abstractmethod
+    async def generate_stream(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float = 0.3,
+        max_tokens: int = 4096,
+    ) -> AsyncIterator[str]:
+        """Stream tokens from the LLM for a chat completion.
+
+        Parameters are the same as ``generate_structured`` but
+        no ``response_model`` is required — the caller receives
+        raw text tokens as they are produced.
+
+        Yields
+        ------
+        str
+            A single token (or short text segment) from the LLM.
+
+        Raises
+        ------
+        LLMRateLimitError
+            Provider rate-limit exceeded.
+        LLMTimeoutError
+            Provider request timed out.
+        LLMAPIError
+            Provider returned an API error.
         """

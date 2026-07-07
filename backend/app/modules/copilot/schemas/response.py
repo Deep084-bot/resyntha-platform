@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -24,3 +26,27 @@ class ChatResponse(BaseModel):
     suggested_questions: list[str] = Field(default_factory=list)
     message_id: str = ""
     conversation_id: str = ""
+
+
+class CopilotHistoryResponse(BaseModel):
+    messages: list[CopilotMessageResponse] = Field(default_factory=list)
+
+
+class StreamToken(BaseModel):
+    type: Literal["token"] = "token"
+    content: str
+
+
+class StreamDone(BaseModel):
+    type: Literal["done"] = "done"
+    message_id: str
+    conversation_id: str
+    citations: list[Citation] = Field(default_factory=list)
+    suggested_questions: list[str] = Field(default_factory=list)
+    confidence: float = 0.0
+    reasoning: str = ""
+
+
+class StreamError(BaseModel):
+    type: Literal["error"] = "error"
+    message: str

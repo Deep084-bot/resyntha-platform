@@ -12,6 +12,8 @@ before leaving the provider.
 import asyncio
 import json
 
+from collections.abc import AsyncIterator
+
 from groq import APIError, APITimeoutError, AsyncGroq, RateLimitError
 from pydantic import BaseModel, ValidationError
 
@@ -131,3 +133,35 @@ class GroqProvider(BaseLLMProvider):
                 raise LLMTimeoutError(msg) from last_error
             raise LLMAPIError(msg) from last_error
         raise RuntimeError(msg) from last_error
+
+    async def generate_stream(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float = 0.3,
+        max_tokens: int = 4096,
+    ) -> AsyncIterator[str]:
+        try:
+            stream = await self._client.chat.completions.create(
+                model=self._model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+                timeout=180,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                if delta and delta.content:
+                    yield delta.content
+
+        except RateLimitError as exc:
+            raise LLMRateLimitError(f"Groq rate limit during streaming: {exc}") from exc
+        except APITimeoutError as exc:
+            raise LLMTimeoutError(f"Groq timeout during streaming: {exc}") from exc
+        except APIError as exc:
+            raise LLMAPIError(f"Groq API error during streaming: {exc}") from exc

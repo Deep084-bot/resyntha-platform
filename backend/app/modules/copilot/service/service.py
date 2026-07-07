@@ -1,12 +1,20 @@
 import json
 import uuid
+from collections.abc import AsyncIterator
 
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.modules.artifact.repository.repository import ArtifactRepository
 from app.modules.copilot.repository.repository import CopilotRepository
-from app.modules.copilot.schemas.response import ChatResponse, Citation
+from app.modules.copilot.schemas.response import (
+    ChatResponse,
+    Citation,
+    CopilotMessageResponse,
+    StreamDone,
+    StreamError,
+    StreamToken,
+)
 from app.core.llm import BaseLLMProvider, ProviderFactory
 from app.modules.paper.repository.repository import PaperRepository
 from app.observability.logger import get_logger
@@ -31,6 +39,51 @@ class LLMSuggestedQuestions(BaseModel):
 
 
 CONTEXT_CHAR_LIMIT = 30000
+
+
+class _AnswerStreamExtractor:
+    """Extracts the ``answer`` field value incrementally from a streaming JSON buffer.
+
+    The LLM outputs a JSON object with the answer field. This helper
+    parses the partial JSON on each call and returns only the *new*
+    characters since the last invocation, so callers can yield clean
+    tokens to the frontend.
+    """
+
+    def __init__(self) -> None:
+        self._prev_len = 0
+
+    def extract(self, buffer: str) -> str:
+        current = self._parse_answer(buffer)
+        if current is None:
+            return ""
+        new_text = current[self._prev_len:]
+        self._prev_len = len(current)
+        return new_text
+
+    @staticmethod
+    def _parse_answer(buffer: str) -> str | None:
+        prefix = '"answer": "'
+        idx = buffer.find(prefix)
+        if idx == -1:
+            return None
+        start = idx + len(prefix)
+        result: list[str] = []
+        i = start
+        while i < len(buffer):
+            ch = buffer[i]
+            if ch == '\\':
+                if i + 1 < len(buffer):
+                    result.append(buffer[i + 1])
+                    i += 2
+                else:
+                    break
+            elif ch == '"':
+                break
+            else:
+                result.append(ch)
+                i += 1
+        return "".join(result)
 
 
 class CopilotService:
@@ -121,6 +174,103 @@ class CopilotService:
             conversation_id=str(conversation.id),
         )
 
+    async def chat_stream(
+        self, investigation_id: uuid.UUID, question: str
+    ) -> AsyncIterator[StreamToken | StreamDone | StreamError]:
+        conversation = self._copilot_repo.get_conversation_by_investigation(
+            investigation_id
+        )
+        if conversation is None:
+            conversation = self._copilot_repo.create_conversation(
+                investigation_id
+            )
+
+        context = self._build_context(investigation_id)
+        history = self._get_history(conversation.id)
+
+        system_prompt = self._build_system_prompt(context)
+        user_prompt = self._build_user_prompt(history, question)
+
+        extractor = _AnswerStreamExtractor()
+        buffer = ""
+        full_answer = ""
+
+        try:
+            async for token in self._llm.generate_stream(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                temperature=0.3,
+                max_tokens=4096,
+            ):
+                buffer += token
+                content = extractor.extract(buffer)
+                if content:
+                    full_answer += content
+                    yield StreamToken(content=content)
+
+        except Exception as exc:
+            logger.error("copilot_stream_error", error=str(exc)[:500])
+            yield StreamError(message=str(exc)[:500])
+            return
+
+        try:
+            parsed = json.loads(buffer)
+        except json.JSONDecodeError:
+            logger.error("copilot_stream_parse_error", buffer_length=len(buffer))
+            yield StreamError(message="Failed to parse assistant response.")
+            return
+
+        answer_citations = [
+            Citation(paper_title=c.get("paper_title", ""), paper_id="", relevance=c.get("relevance", ""))
+            for c in parsed.get("citations", [])
+        ]
+
+        paper_id_map = self._build_paper_title_map(investigation_id)
+        for citation in answer_citations:
+            if citation.paper_title in paper_id_map:
+                citation.paper_id = str(paper_id_map[citation.paper_title])
+
+        questions_result = await self._generate_suggested_questions(context)
+
+        confidence = float(parsed.get("confidence", 0.0))
+        reasoning = str(parsed.get("reasoning", ""))
+
+        message_metadata = {
+            "citations": [c.model_dump() for c in answer_citations],
+            "confidence": confidence,
+            "reasoning": reasoning,
+            "suggested_questions": questions_result.questions,
+        }
+
+        self._copilot_repo.add_message(conversation.id, "user", question)
+
+        assistant_msg = self._copilot_repo.add_message(
+            conversation.id,
+            "assistant",
+            full_answer or parsed.get("answer", ""),
+            metadata=message_metadata,
+        )
+
+        self._session.commit()
+
+        yield StreamDone(
+            message_id=str(assistant_msg.id),
+            conversation_id=str(conversation.id),
+            citations=answer_citations,
+            suggested_questions=questions_result.questions,
+            confidence=confidence,
+            reasoning=reasoning,
+        )
+
+    def get_history(self, investigation_id: uuid.UUID) -> list[CopilotMessageResponse]:
+        conversation = self._copilot_repo.get_conversation_by_investigation(
+            investigation_id
+        )
+        if conversation is None:
+            return []
+
+        return [self._serialize_message(message) for message in self._copilot_repo.get_messages(conversation.id)]
+
     def _build_context(self, investigation_id: uuid.UUID) -> str:
         sections: list[str] = []
 
@@ -176,6 +326,40 @@ class CopilotService:
             prefix = "User" if msg.role == "user" else "Assistant"
             lines.append(f"{prefix}: {msg.content[:2000]}")
         return "\n".join(lines)
+
+    def _serialize_message(self, message: object) -> CopilotMessageResponse:
+        metadata = getattr(message, "_metadata", None)
+        if not isinstance(metadata, dict):
+            metadata = {}
+
+        raw_citations = metadata.get("citations") or metadata.get("sources") or []
+        citations: list[Citation] = []
+        if isinstance(raw_citations, list):
+            for raw_citation in raw_citations:
+                if not isinstance(raw_citation, dict):
+                    continue
+                citations.append(
+                    Citation(
+                        paper_title=str(raw_citation.get("paper_title", "") or ""),
+                        paper_id=str(raw_citation.get("paper_id", "") or ""),
+                        relevance=str(raw_citation.get("relevance", "") or ""),
+                    )
+                )
+
+        raw_questions = metadata.get("suggested_questions") or []
+        suggested_questions = [str(question) for question in raw_questions if isinstance(question, str)]
+
+        created_at = getattr(message, "created_at", None)
+        created_at_value = created_at.isoformat() if created_at is not None else ""
+
+        return CopilotMessageResponse(
+            id=str(getattr(message, "id")),
+            role=str(getattr(message, "role")),
+            content=str(getattr(message, "content")),
+            sources=citations,
+            suggested_questions=suggested_questions,
+            created_at=created_at_value,
+        )
 
     def _build_system_prompt(self, context: str) -> str:
         return (

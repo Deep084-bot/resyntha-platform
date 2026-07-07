@@ -246,6 +246,7 @@ export const queryKeys = {
   },
   copilot: {
     chat: (id: string) => ["investigations", id, "copilot", "chat"] as const,
+    history: (id: string) => ["investigations", id, "copilot", "messages"] as const,
   },
 } as const;
 
@@ -278,4 +279,26 @@ export interface ChatResponse {
   suggested_questions: string[];
   message_id: string;
   conversation_id: string;
+}
+
+export type StreamChunk =
+  | { type: "token"; content: string }
+  | {
+      type: "done";
+      message_id: string;
+      conversation_id: string;
+      citations: Citation[];
+      suggested_questions: string[];
+      confidence: number;
+      reasoning: string;
+    }
+  | { type: "error"; message: string };
+
+export interface StreamingMessage {
+  id: string;
+  role: "assistant";
+  content: string;
+  sources: Citation[];
+  suggested_questions: string[];
+  created_at: string;
 }

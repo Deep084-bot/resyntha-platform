@@ -10,6 +10,7 @@ import {
   OverviewPage,
   PapersPage,
 } from "@/features/investigations/pages";
+import { CopilotPage } from "@/features/investigations/copilot/pages/CopilotPage";
 import { InvestigationLayout } from "@/features/investigations/layout";
 import { NotFoundPage } from "@/pages/NotFound";
 import { PipelinePage } from "@/pages/Pipeline";
@@ -30,6 +31,7 @@ const routes: RouteObject[] = [
           { path: "landscape", element: <LandscapePage /> },
           { path: "artifacts", element: <ArtifactsPage /> },
           { path: "executions", element: <ExecutionsPage /> },
+          { path: "copilot", element: <CopilotPage /> },
         ],
       },
       // Sidebar nav items that don't have dedicated pages yet
