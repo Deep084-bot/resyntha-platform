@@ -51,9 +51,9 @@ function CentralityRow({ entry }: { entry: CentralityEntry }) {
 }
 
 export function CollaborationList({ data }: CollaborationListProps) {
-  const hasInstitutionCollabs = data.institution_collaborations.length > 0;
-  const hasAuthorCollabs = data.author_collaborations.length > 0;
-  const hasCentrality = data.centrality_rankings.length > 0;
+  const hasInstitutionCollabs = (data.institution_collaborations?.length ?? 0) > 0;
+  const hasAuthorCollabs = (data.author_collaborations?.length ?? 0) > 0;
+  const hasCentrality = (data.centrality_rankings?.length ?? 0) > 0;
 
   if (!hasInstitutionCollabs && !hasAuthorCollabs && !hasCentrality) {
     return (

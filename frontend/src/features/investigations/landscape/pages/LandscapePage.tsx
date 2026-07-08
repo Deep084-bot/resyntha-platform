@@ -85,8 +85,8 @@ export function LandscapePage() {
   const hasTemporal = data.temporal_trends && data.temporal_trends.length > 0;
   const hasCollaborations =
     data.collaborations &&
-    (data.collaborations.institution_collaborations.length > 0 ||
-      data.collaborations.author_collaborations.length > 0);
+    ((data.collaborations.institution_collaborations?.length ?? 0) > 0 ||
+      (data.collaborations.author_collaborations?.length ?? 0) > 0);
 
   return (
     <div className="space-y-6" role="region" aria-label="Research landscape analysis">

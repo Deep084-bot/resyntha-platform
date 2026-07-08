@@ -103,12 +103,31 @@ class AnalysisService:
             min_count=1,
         )
 
+        # ── New data fields ───────────────────────────────────────
+        all_datasets = self._flatten_field(records, "datasets_used")
+        all_technologies = self._flatten_field(records, "technologies")
+        all_metrics = self._flatten_field(records, "evaluation_metrics")
+        all_domains = self._flatten_field(records, "research_domains")
+        all_authors = self._flatten_field(records, "authors")
+        all_keywords = self._flatten_field(records, "keywords")
+
+        datasets_ranked = self._clusterer.cluster_and_rank(all_datasets)
+        technologies_ranked = self._clusterer.cluster_and_rank(all_technologies)
+        metrics_ranked = self._clusterer.cluster_and_rank(all_metrics)
+        domains_ranked = self._clusterer.cluster_and_rank(all_domains)
+        authors_ranked = self._clusterer.cluster_and_rank(all_authors)
+        keywords_ranked = self._clusterer.cluster_and_rank(all_keywords)
+
         all_terms = list(
             self._calculator.flatten_list_of_lists(
-                [all_techniques, all_limitations, all_future_work, all_contributions],
+                [all_techniques, all_limitations, all_future_work,
+                 all_contributions, all_datasets, all_technologies,
+                 all_metrics, all_domains, all_keywords],
             ),
         )
-        keywords = self._clusterer.cluster_and_rank(
+
+        # Use dedicated keywords if available, fall back to term clustering
+        keywords = keywords_ranked or self._clusterer.cluster_and_rank(
             all_terms,
             min_count=1,
             max_results=30,
@@ -130,16 +149,16 @@ class AnalysisService:
         return ResearchLandscape(
             paper_count=paper_count,
             methodologies=methodologies,
-            datasets=techniques_ranked,
-            evaluation_metrics=[],
-            research_domains=contributions_ranked,
+            datasets=datasets_ranked or techniques_ranked,
+            evaluation_metrics=metrics_ranked,
+            research_domains=domains_ranked or contributions_ranked,
             tasks=methodologies,
-            applications=techniques_ranked,
+            applications=technologies_ranked or techniques_ranked,
             limitations=limitations_ranked,
             future_work=future_work_ranked,
             keywords=keywords,
             novel_contributions=contributions_ranked,
-            top_authors=[],
+            top_authors=authors_ranked,
             publication_year_distribution=year_dist,
             venue_distribution=venue_dist,
             citation_statistics=citation_stats,
@@ -156,6 +175,10 @@ class AnalysisService:
 
         If *field* is a list-type column, all items are concatenated.
         If it is a scalar, non-None values are collected as single items.
+
+        For list-of-dict fields (e.g. authors, institutions), the
+        ``name`` key is extracted from each dict.  For plain string
+        lists, items are used directly.
         """
         result: list[str] = []
         for rec in records:
@@ -163,7 +186,13 @@ class AnalysisService:
             if value is None:
                 continue
             if isinstance(value, list):
-                result.extend(str(v) for v in value if v)
+                for v in value:
+                    if isinstance(v, dict):
+                        name = v.get("name") or v.get("metric_name") or v.get("dataset_name") or ""
+                        if name:
+                            result.append(str(name))
+                    elif v:
+                        result.append(str(v))
             else:
                 result.append(str(value))
         return result

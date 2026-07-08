@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
-import { Lock } from "lucide-react";
+import { Bot } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { useCopilotHistory, useCopilotStream } from "@/hooks/useCopilot";
@@ -90,7 +90,7 @@ export function CopilotPage() {
       <Card>
         <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-text-muted/10 text-text-muted">
-            <Lock className="h-5 w-5" aria-hidden="true" />
+            <Bot className="h-5 w-5" aria-hidden="true" />
           </div>
           <div className="space-y-1">
             <h2 className="text-base font-semibold text-text-primary">

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Lock } from "lucide-react";
+import { Bot } from "lucide-react";
 
 import {
   Workspace,
@@ -172,6 +172,9 @@ function InvestigationWorkspaceContent({
       qc.invalidateQueries({
         queryKey: ["investigations", investigationId, "landscape"],
       });
+      qc.invalidateQueries({
+        queryKey: queryKeys.investigations.detail(investigationId),
+      });
     }
     lastSeenStatusRef.current = current;
   }, [latestExecution, investigationId, qc]);
@@ -215,7 +218,7 @@ function InvestigationWorkspaceContent({
                 tooltip: !copilotUnlocked
                   ? "Complete an investigation to unlock AI Copilot."
                   : undefined,
-                icon: Lock,
+                icon: Bot,
               },
             ]}
           />

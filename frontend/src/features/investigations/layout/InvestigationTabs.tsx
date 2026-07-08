@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { Lock, type LucideIcon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 import { Link, useLocation, useParams } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
@@ -95,7 +95,7 @@ export function InvestigationTabs({ tabs, className }: InvestigationTabsProps) {
           ? `/investigations/${id}/${tab.to}`
           : `/investigations/${id}`;
         const isActive = i === activeIndex;
-        const Icon = tab.disabled ? Lock : tab.icon;
+        const Icon = tab.icon;
 
         if (tab.disabled) {
           return (
@@ -112,7 +112,7 @@ export function InvestigationTabs({ tabs, className }: InvestigationTabsProps) {
                 "cursor-not-allowed text-text-muted",
               )}
             >
-              <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+              {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
               <span>{tab.label}</span>
             </button>
           );

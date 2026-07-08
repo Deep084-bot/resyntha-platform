@@ -41,6 +41,8 @@ class ExtractedKnowledge(Base):
         index=True,
     )
     paper_title: Mapped[str] = mapped_column(String(500), nullable=False)
+
+    # ── Existing fields ───────────────────────────────────────────
     research_questions: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
     key_findings: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
     methodology: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -50,6 +52,19 @@ class ExtractedKnowledge(Base):
     cited_works: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
     future_work: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
     summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
+
+    # ── New structured fields ─────────────────────────────────────
+    authors: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    institutions: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    datasets_used: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    technologies: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    evaluation_metrics: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    research_domains: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    keywords: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+    paper_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    funding: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # ── Provenance ────────────────────────────────────────────────
     model_used: Mapped[str] = mapped_column(String(100), nullable=False)
     tokens_used: Mapped[int | None] = mapped_column(Integer, nullable=True)
     confidence_score: Mapped[float | None] = mapped_column(Float, nullable=True)

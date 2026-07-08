@@ -30,6 +30,8 @@ from app.core.llm import ProviderFactory
 from app.modules.extraction.repository.repository import ExtractionRepository
 from app.modules.extraction.service.service import ExtractionService
 from app.modules.gap_detection.service.service import GapDetectionService
+from app.modules.investigation.domain.models import Investigation, InvestigationStatus
+from app.modules.investigation.repository.repository import InvestigationRepository
 from app.modules.investigation.timeline.models import TimelineStage, TimelineStatus
 from app.modules.investigation.timeline.service import TimelineService
 from app.modules.paper.repository.repository import PaperRepository
@@ -290,6 +292,19 @@ async def retrieval_job(
             execution_id=exec_id,
             new_status=updated.status.value if updated else "UPDATE_RETURNED_NONE",
         )
+
+        investigation = InvestigationRepository(session).get_by_id(investigation_id)
+        if investigation:
+            investigation.status = InvestigationStatus.COMPLETED
+            logger.info(
+                "investigation_marked_completed",
+                investigation_id=inv_id,
+            )
+        else:
+            logger.warning(
+                "investigation_not_found_for_completion",
+                investigation_id=inv_id,
+            )
 
         session.commit()
 

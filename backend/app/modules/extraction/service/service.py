@@ -34,6 +34,8 @@ from app.modules.extraction.prompts.extraction import (
 )
 from app.modules.extraction.repository.repository import ExtractionRepository
 from app.modules.extraction.service.artifact import ExtractionArtifactBuilder
+from app.modules.extraction.utils.normalization import ExtractionNormalizer
+from app.modules.extraction.utils.validation import ExtractionValidator
 from app.modules.paper.repository.repository import PaperRepository
 from app.observability.logger import get_logger
 
@@ -240,6 +242,37 @@ class ExtractionService:
                 detail=str(exc)[:500],
             )
 
+        authors_dicts = self._normalize_author_list(output.authors)
+        institutions_dicts = self._normalize_institution_list(output.institutions)
+        datasets_dicts = self._normalize_dataset_list(output.datasets_used)
+        technologies_dicts = self._normalize_technology_list(output.technologies)
+        metrics_dicts = self._normalize_metric_list(output.evaluation_metrics)
+
+        valid_authors = ExtractionValidator.filter_valid_entities(
+            authors_dicts, "author", min_confidence=0.3,
+        )
+        valid_institutions = ExtractionValidator.filter_valid_entities(
+            institutions_dicts, "institution", min_confidence=0.3,
+        )
+        valid_datasets = ExtractionValidator.filter_valid_entities(
+            datasets_dicts, "dataset", min_confidence=0.3,
+        )
+        valid_technologies = ExtractionValidator.filter_valid_entities(
+            technologies_dicts, "technology", min_confidence=0.3,
+        )
+        valid_metrics = ExtractionValidator.filter_valid_entities(
+            metrics_dicts, "metric", min_confidence=0.3,
+        )
+
+        author_names = [a["name"] for a in valid_authors if "name" in a]
+        if author_names and not getattr(paper, "authors", None):
+            paper.authors = author_names
+            logger.info(
+                "paper_authors_backfilled",
+                paper_id=str(paper.id),
+                author_count=len(author_names),
+            )
+
         knowledge = ExtractedKnowledge(
             investigation_id=investigation_id,
             paper_id=paper.id,
@@ -254,11 +287,155 @@ class ExtractionService:
             cited_works=output.cited_works,
             future_work=output.future_work,
             summary=output.summary,
+            authors=valid_authors,
+            institutions=valid_institutions,
+            datasets_used=valid_datasets,
+            technologies=valid_technologies,
+            evaluation_metrics=valid_metrics,
+            research_domains=output.research_domains,
+            keywords=output.keywords,
+            paper_type=output.paper_type,
+            funding=output.funding,
             model_used=self._model or usage.model,
             tokens_used=usage.total_tokens,
         )
 
         return self._repository.create(knowledge)
+
+    # ── Normalization helpers ─────────────────────────────────────
+
+    @staticmethod
+    def _normalize_author_list(authors: list) -> list[dict]:
+        """Convert Author Pydantic models to dicts with normalised names."""
+        result: list[dict] = []
+        for i, author in enumerate(authors):
+            name = ""
+            if isinstance(author, dict):
+                name = author.get("name", "")
+            else:
+                name = getattr(author, "name", "")
+            if not name:
+                continue
+            normalised = ExtractionNormalizer.normalize_author(name)
+            if not normalised:
+                continue
+            entry: dict = {"name": normalised, "order": i + 1}
+            if isinstance(author, dict):
+                entry["is_corresponding"] = author.get("is_corresponding")
+            else:
+                entry["is_corresponding"] = getattr(author, "is_corresponding", None)
+            result.append(entry)
+        return result
+
+    @staticmethod
+    def _normalize_institution_list(institutions: list) -> list[dict]:
+        """Convert Institution models to dicts with normalised names."""
+        result: list[dict] = []
+        for inst in institutions:
+            name = ""
+            department = None
+            country = None
+            if isinstance(inst, dict):
+                name = inst.get("name", "")
+                department = inst.get("department")
+                country = inst.get("country")
+            else:
+                name = getattr(inst, "name", "")
+                department = getattr(inst, "department", None)
+                country = getattr(inst, "country", None)
+            if not name:
+                continue
+            normalised = ExtractionNormalizer.normalize_institution(name)
+            if not normalised:
+                continue
+            entry: dict = {"name": normalised}
+            if department:
+                entry["department"] = department
+            if country:
+                entry["country"] = country
+            result.append(entry)
+        return result
+
+    @staticmethod
+    def _normalize_dataset_list(datasets: list) -> list[dict]:
+        """Convert Dataset models to dicts with normalised names."""
+        result: list[dict] = []
+        for ds in datasets:
+            name = ""
+            is_public = None
+            is_benchmark = None
+            if isinstance(ds, dict):
+                name = ds.get("name", "")
+                is_public = ds.get("is_public")
+                is_benchmark = ds.get("is_benchmark")
+            else:
+                name = getattr(ds, "name", "")
+                is_public = getattr(ds, "is_public", None)
+                is_benchmark = getattr(ds, "is_benchmark", None)
+            if not name:
+                continue
+            normalised = ExtractionNormalizer.normalize_dataset(name)
+            if not normalised:
+                continue
+            entry: dict = {"name": normalised}
+            if is_public is not None:
+                entry["is_public"] = is_public
+            if is_benchmark is not None:
+                entry["is_benchmark"] = is_benchmark
+            result.append(entry)
+        return result
+
+    @staticmethod
+    def _normalize_technology_list(technologies: list) -> list[dict]:
+        """Convert Technology models to dicts with normalised names."""
+        result: list[dict] = []
+        for tech in technologies:
+            name = ""
+            tech_type = None
+            if isinstance(tech, dict):
+                name = tech.get("name", "")
+                tech_type = tech.get("type")
+            else:
+                name = getattr(tech, "name", "")
+                tech_type = getattr(tech, "type", None)
+            if not name:
+                continue
+            normalised = ExtractionNormalizer.normalize_technology(name)
+            if not normalised:
+                continue
+            entry: dict = {"name": normalised}
+            if tech_type:
+                entry["type"] = tech_type
+            result.append(entry)
+        return result
+
+    @staticmethod
+    def _normalize_metric_list(metrics: list) -> list[dict]:
+        """Convert Metric models to dicts."""
+        result: list[dict] = []
+        for metric in metrics:
+            name = ""
+            value = None
+            dataset = None
+            if isinstance(metric, dict):
+                name = metric.get("name", "")
+                value = metric.get("value")
+                dataset = metric.get("dataset")
+            else:
+                name = getattr(metric, "name", "")
+                value = getattr(metric, "value", None)
+                dataset = getattr(metric, "dataset", None)
+            if not name:
+                continue
+            if not ExtractionValidator.is_valid_entity_name(name):
+                continue
+            entry: dict = {"name": name}
+            if value:
+                entry["value"] = value
+            if dataset:
+                entry["dataset"] = dataset
+            result.append(entry)
+        return result
 
     def _create_knowledge_package_artifact(
         self,
