@@ -12,7 +12,7 @@ export interface InvestigationSearchProps {
 export function InvestigationSearch({
   value,
   onChange,
-  placeholder = "Search investigations\u2026",
+  placeholder = "Search investigations…",
   className,
 }: InvestigationSearchProps) {
   return (

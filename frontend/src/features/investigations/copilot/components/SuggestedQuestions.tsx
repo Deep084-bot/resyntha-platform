@@ -16,7 +16,7 @@ export function SuggestedQuestions({ questions, onSelect }: SuggestedQuestionsPr
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 rounded-full border-border bg-surface px-3 text-xs text-text-secondary hover:text-text-primary"
+          className="h-auto min-h-8 whitespace-normal break-words rounded-full border-border bg-surface px-3 py-1.5 text-xs text-text-secondary hover:text-text-primary"
           onClick={() => onSelect(question)}
           aria-label={`Ask: ${question}`}
         >

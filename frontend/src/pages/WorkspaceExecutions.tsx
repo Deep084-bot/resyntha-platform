@@ -58,7 +58,7 @@ function RetrievalMetrics({ execution }: { execution: Execution }) {
   return (
     <div className="mt-4 border-t border-border pt-4">
       <h4 className="mb-3 text-sm font-medium text-text-primary">Retrieval Metrics</h4>
-      <div className="mb-3 grid grid-cols-4 gap-3">
+      <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatBox
           icon={Database}
           label="Papers Fetched"
@@ -213,7 +213,7 @@ function ExecutionMonitor({ execution }: { execution: Execution }) {
 
         {/* Stats summary */}
         {stages && stages.length > 0 && (
-          <div className="mt-4 grid grid-cols-4 gap-3 border-t border-border pt-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-4">
             <StatBox
               icon={CheckCircle2}
               label="Succeeded"

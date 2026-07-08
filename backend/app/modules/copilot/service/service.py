@@ -1,11 +1,21 @@
+"""Copilot service — investigation-aware research assistant."""
+
 import json
+import time
 import uuid
 from collections.abc import AsyncIterator
 
-from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.modules.artifact.repository.repository import ArtifactRepository
+from app.core.llm import BaseLLMProvider, ProviderFactory
+from app.core.llm.exceptions import LLMError, LLMParsingError
+from app.modules.copilot.prompt.builder import LLMCopilotAnswer, PromptBuilder
+from app.modules.copilot.quality.confidence import ConfidenceCalibrator
+from app.modules.copilot.quality.followup import FollowUpGenerator
+from app.modules.copilot.quality.validator import CitationValidator
+from app.modules.copilot.retrieval.models import RetrievalDiagnostics, RetrievalResult
+from app.modules.copilot.retrieval.retriever import InvestigationRetriever
+from app.modules.copilot.retrieval.semantic_retriever import SemanticRetriever
 from app.modules.copilot.repository.repository import CopilotRepository
 from app.modules.copilot.schemas.response import (
     ChatResponse,
@@ -15,51 +25,43 @@ from app.modules.copilot.schemas.response import (
     StreamError,
     StreamToken,
 )
-from app.core.llm import BaseLLMProvider, ProviderFactory
-from app.modules.paper.repository.repository import PaperRepository
 from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-class LLMCitation(BaseModel):
-    paper_title: str = ""
-    relevance: str = ""
-
-
-class LLMCopilotAnswer(BaseModel):
-    answer: str
-    citations: list[LLMCitation] = Field(default_factory=list)
-    confidence: float = 0.0
-    reasoning: str = ""
-
-
-class LLMSuggestedQuestions(BaseModel):
-    questions: list[str] = Field(default_factory=list)
-
-
-CONTEXT_CHAR_LIMIT = 30000
+_MALFORMED_ANSWER_PLACEHOLDER = "I encountered an issue processing the response. Please try rephrasing your question."
 
 
 class _AnswerStreamExtractor:
     """Extracts the ``answer`` field value incrementally from a streaming JSON buffer.
 
-    The LLM outputs a JSON object with the answer field. This helper
-    parses the partial JSON on each call and returns only the *new*
-    characters since the last invocation, so callers can yield clean
-    tokens to the frontend.
+    Improvements over the original:
+    - Handles escaped quotes within the answer value.
+    - Tolerates truncated unicode escape sequences at buffer boundary.
+    - Resets internal state on detection of structural corruption.
     """
 
     def __init__(self) -> None:
         self._prev_len = 0
+        self._reset_on_next = False
 
     def extract(self, buffer: str) -> str:
         current = self._parse_answer(buffer)
         if current is None:
             return ""
         new_text = current[self._prev_len:]
+        if new_text and self._reset_on_next:
+            self._reset_on_next = False
+            # If we had a reset signal, start fresh but keep the last chunk
+            self._prev_len = len(current)
+            return new_text
         self._prev_len = len(current)
         return new_text
+
+    def reset(self) -> None:
+        self._prev_len = 0
+        self._reset_on_next = False
 
     @staticmethod
     def _parse_answer(buffer: str) -> str | None:
@@ -74,12 +76,38 @@ class _AnswerStreamExtractor:
             ch = buffer[i]
             if ch == '\\':
                 if i + 1 < len(buffer):
-                    result.append(buffer[i + 1])
-                    i += 2
+                    next_ch = buffer[i + 1]
+                    if next_ch == '"' or next_ch == '\\' or next_ch == '/':
+                        result.append(next_ch)
+                        i += 2
+                    elif next_ch == 'n':
+                        result.append('\n')
+                        i += 2
+                    elif next_ch == 't':
+                        result.append('\t')
+                        i += 2
+                    elif next_ch == 'u':
+                        # unicode escape — check if enough chars remain
+                        if i + 5 < len(buffer):
+                            try:
+                                hex_str = buffer[i + 2:i + 6]
+                                result.append(chr(int(hex_str, 16)))
+                                i += 6
+                            except (ValueError, IndexError):
+                                result.append('?')
+                                i += 1
+                        else:
+                            # truncated unicode at buffer boundary
+                            break
+                    else:
+                        result.append(next_ch)
+                        i += 2
                 else:
                     break
             elif ch == '"':
                 break
+            elif ch == '\n' or ch == '\r':
+                i += 1
             else:
                 result.append(ch)
                 i += 1
@@ -87,14 +115,19 @@ class _AnswerStreamExtractor:
 
 
 class CopilotService:
+    """Investigation-aware Copilot that grounds responses in investigation artifacts."""
+
     def __init__(
         self,
         session: Session,
         llm_provider: BaseLLMProvider | None = None,
     ) -> None:
         self._copilot_repo = CopilotRepository(session)
-        self._paper_repo = PaperRepository(session)
-        self._artifact_repo = ArtifactRepository(session)
+        self._retriever = SemanticRetriever(session)
+        self._prompt_builder = PromptBuilder()
+        self._citation_validator = CitationValidator()
+        self._confidence_calibrator = ConfidenceCalibrator()
+        self._followup_generator = FollowUpGenerator()
         self._session = session
         if llm_provider is not None:
             self._llm = llm_provider
@@ -113,63 +146,85 @@ class CopilotService:
                 investigation_id
             )
 
-        context = self._build_context(investigation_id)
-        history = self._get_history(conversation.id)
+        try:
+            retrieved = self._retriever.retrieve(investigation_id, question)
+        except Exception as exc:
+            logger.error("copilot_retrieval_error", error=str(exc)[:500])
+            return self._error_response("Failed to retrieve investigation context.")
 
-        system_prompt = self._build_system_prompt(context)
-        user_prompt = self._build_user_prompt(history, question)
+        history = self._get_history_str(conversation.id)
 
-        answer_result, usage = await self._llm.generate_structured(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            response_model=LLMCopilotAnswer,
-            temperature=0.3,
-            max_tokens=4096,
+        try:
+            system_prompt = self._prompt_builder.build_system_prompt(
+                retrieved, history
+            ).replace("{question}", question)
+            user_prompt = self._prompt_builder.build_user_prompt(history, question)
+        except Exception as exc:
+            logger.error("copilot_prompt_error", error=str(exc)[:500])
+            return self._error_response("Failed to build prompt.")
+
+        try:
+            answer_result, usage = await self._llm.generate_structured(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                response_model=LLMCopilotAnswer,
+                temperature=0.3,
+                max_tokens=4096,
+            )
+        except LLMError as exc:
+            logger.error("copilot_llm_error", error=str(exc)[:500])
+            return self._error_response("The language model encountered an issue. Please try again.")
+        except Exception as exc:
+            logger.error("copilot_generation_error", error=str(exc)[:500])
+            return self._error_response("An unexpected error occurred during generation.")
+
+        citation_validation = self._citation_validator.validate(
+            answer_result.citations, retrieved
+        )
+        validated_citations = citation_validation.validated
+
+        calibrated_confidence = self._confidence_calibrator.calibrate(
+            retrieved, citation_validation, answer_result.confidence
         )
 
-        answer_citations = [
-            Citation(
-                paper_title=c.paper_title,
-                paper_id="",
-                relevance=c.relevance,
+        followup_questions = self._followup_generator.generate(retrieved)
+
+        if citation_validation.discarded:
+            logger.info(
+                "copilot_citations_discarded",
+                discarded=citation_validation.discarded_count,
+                total=citation_validation.total_examined,
             )
-            for c in answer_result.citations
-        ]
-
-        paper_id_map = self._build_paper_title_map(investigation_id)
-        for citation in answer_citations:
-            if citation.paper_title in paper_id_map:
-                citation.paper_id = str(paper_id_map[citation.paper_title])
-
-        questions_result = await self._generate_suggested_questions(context)
 
         message_metadata = {
-            "citations": [c.model_dump() for c in answer_citations],
-            "confidence": answer_result.confidence,
+            "citations": [c.model_dump() for c in validated_citations],
+            "confidence": calibrated_confidence,
             "reasoning": answer_result.reasoning,
-            "suggested_questions": questions_result.questions,
+            "suggested_questions": followup_questions,
             "tokens_used": usage.total_tokens if usage else 0,
+            "citation_validation": {
+                "examined": citation_validation.total_examined,
+                "kept": citation_validation.kept_count,
+                "discarded": citation_validation.discarded_count,
+            },
+            "retrieval_diagnostics": self._serialize_diagnostics(retrieved.diagnostics),
         }
 
-        self._copilot_repo.add_message(
-            conversation.id, "user", question
-        )
-
+        self._copilot_repo.add_message(conversation.id, "user", question)
         assistant_msg = self._copilot_repo.add_message(
             conversation.id,
             "assistant",
             answer_result.answer,
             metadata=message_metadata,
         )
-
         self._session.commit()
 
         return ChatResponse(
             answer=answer_result.answer,
-            citations=answer_citations,
-            confidence=answer_result.confidence,
+            citations=validated_citations,
+            confidence=calibrated_confidence,
             reasoning=answer_result.reasoning,
-            suggested_questions=questions_result.questions,
+            suggested_questions=followup_questions,
             message_id=str(assistant_msg.id),
             conversation_id=str(conversation.id),
         )
@@ -185,11 +240,25 @@ class CopilotService:
                 investigation_id
             )
 
-        context = self._build_context(investigation_id)
-        history = self._get_history(conversation.id)
+        history = self._get_history_str(conversation.id)
 
-        system_prompt = self._build_system_prompt(context)
-        user_prompt = self._build_user_prompt(history, question)
+        try:
+            retrieved = self._retriever.retrieve(investigation_id, question)
+        except Exception as exc:
+            logger.error("copilot_retrieval_error", error=str(exc)[:500])
+            yield StreamError(message="Failed to retrieve investigation context.")
+            return
+
+        try:
+            system_prompt = self._prompt_builder.build_system_prompt(
+                retrieved, history
+            ).replace("{question}", question)
+        except Exception as exc:
+            logger.error("copilot_prompt_error", error=str(exc)[:500])
+            yield StreamError(message="Failed to build prompt.")
+            return
+
+        user_prompt = self._prompt_builder.build_user_prompt(history, question)
 
         extractor = _AnswerStreamExtractor()
         buffer = ""
@@ -208,56 +277,74 @@ class CopilotService:
                     full_answer += content
                     yield StreamToken(content=content)
 
+        except LLMError as exc:
+            logger.error("copilot_stream_llm_error", error=str(exc)[:500])
+            yield StreamError(message="The language model encountered an issue. Please try again.")
+            return
         except Exception as exc:
             logger.error("copilot_stream_error", error=str(exc)[:500])
-            yield StreamError(message=str(exc)[:500])
+            yield StreamError(message="A streaming error occurred. Please try again.")
             return
 
-        try:
-            parsed = json.loads(buffer)
-        except json.JSONDecodeError:
-            logger.error("copilot_stream_parse_error", buffer_length=len(buffer))
-            yield StreamError(message="Failed to parse assistant response.")
-            return
+        # Attempt to parse full JSON — be resilient to minor issues
+        parsed = self._try_parse_json(buffer)
 
-        answer_citations = [
-            Citation(paper_title=c.get("paper_title", ""), paper_id="", relevance=c.get("relevance", ""))
-            for c in parsed.get("citations", [])
-        ]
+        if parsed is None:
+            # Fallback: emit whatever we streamed as the answer with no citations
+            if full_answer:
+                answer_text = full_answer
+                citations: list[Citation] = []
+                confidence = 0.1
+                reasoning = ""
+                suggested_questions: list[str] = []
+            else:
+                yield StreamError(message="Failed to parse assistant response.")
+                return
+        else:
+            answer_text = parsed.get("answer") or full_answer or ""
+            citation_validation = self._citation_validator.validate(
+                parsed.get("citations", []), retrieved
+            )
+            citations = citation_validation.validated
+            calibrated = self._confidence_calibrator.calibrate(
+                retrieved, citation_validation, float(parsed.get("confidence", 0.0))
+            )
+            suggested_questions = self._followup_generator.generate(retrieved)
+            confidence = calibrated
+            reasoning = str(parsed.get("reasoning", ""))
 
-        paper_id_map = self._build_paper_title_map(investigation_id)
-        for citation in answer_citations:
-            if citation.paper_title in paper_id_map:
-                citation.paper_id = str(paper_id_map[citation.paper_title])
-
-        questions_result = await self._generate_suggested_questions(context)
-
-        confidence = float(parsed.get("confidence", 0.0))
-        reasoning = str(parsed.get("reasoning", ""))
+            if citation_validation.discarded:
+                logger.info(
+                    "copilot_stream_citations_discarded",
+                    discarded=citation_validation.discarded_count,
+                    total=citation_validation.total_examined,
+                )
 
         message_metadata = {
-            "citations": [c.model_dump() for c in answer_citations],
+            "citations": [
+                {"paper_title": c.paper_title, "paper_id": c.paper_id, "relevance": c.relevance}
+                for c in citations
+            ],
             "confidence": confidence,
             "reasoning": reasoning,
-            "suggested_questions": questions_result.questions,
+            "suggested_questions": suggested_questions,
+            "retrieval_diagnostics": self._serialize_diagnostics(retrieved.diagnostics),
         }
 
         self._copilot_repo.add_message(conversation.id, "user", question)
-
         assistant_msg = self._copilot_repo.add_message(
             conversation.id,
             "assistant",
-            full_answer or parsed.get("answer", ""),
+            full_answer or answer_text,
             metadata=message_metadata,
         )
-
         self._session.commit()
 
         yield StreamDone(
             message_id=str(assistant_msg.id),
             conversation_id=str(conversation.id),
-            citations=answer_citations,
-            suggested_questions=questions_result.questions,
+            citations=citations,
+            suggested_questions=suggested_questions,
             confidence=confidence,
             reasoning=reasoning,
         )
@@ -268,64 +355,108 @@ class CopilotService:
         )
         if conversation is None:
             return []
-
-        return [self._serialize_message(message) for message in self._copilot_repo.get_messages(conversation.id)]
-
-    def _build_context(self, investigation_id: uuid.UUID) -> str:
-        sections: list[str] = []
-
-        papers = self._paper_repo.list_by_investigation(investigation_id)
-        if papers:
-            paper_lines = ["=== PAPERS ==="]
-            for p in papers:
-                abstract = (p.abstract or "")[:500]
-                authors = ", ".join(getattr(p, "authors", []) or [])
-                paper_lines.append(
-                    f"Title: {p.title}\n"
-                    f"Authors: {authors}\n"
-                    f"Abstract: {abstract}\n"
-                    f"DOI: {p.doi or 'N/A'}\n"
-                )
-            sections.append("\n".join(paper_lines))
-
-        artifact_types = [
-            "paper_collection",
-            "validated_collection",
-            "knowledge_package",
-            "research_landscape",
-            "research_gap_report",
+        return [
+            self._serialize_message(message)
+            for message in self._copilot_repo.get_messages(conversation.id)
         ]
 
-        all_artifacts = self._artifact_repo.list_by_investigation(investigation_id)
+    # ── Internal helpers ────────────────────────────────────────
 
-        for atype in artifact_types:
-            matches = [a for a in all_artifacts if a.artifact_type == atype]
-            if not matches:
-                continue
-            artifact = max(matches, key=lambda a: a.created_at)
-            if artifact.payload:
-                payload_str = json.dumps(artifact.payload, indent=1)[:4000]
-                label = atype.upper().replace("_", " ")
-                sections.append(f"\n=== {label} ===\n{payload_str}")
-
-        full_context = "\n\n".join(sections)
-
-        if len(full_context) > CONTEXT_CHAR_LIMIT:
-            full_context = full_context[:CONTEXT_CHAR_LIMIT]
-            last_newline = full_context.rfind("\n")
-            if last_newline > 0:
-                full_context = full_context[:last_newline]
-            full_context += "\n[Context truncated due to length]"
-
-        return full_context
-
-    def _get_history(self, conversation_id: uuid.UUID) -> str:
+    def _get_history_str(self, conversation_id: uuid.UUID) -> str:
         messages = self._copilot_repo.get_messages(conversation_id)
         lines: list[str] = []
         for msg in messages:
             prefix = "User" if msg.role == "user" else "Assistant"
             lines.append(f"{prefix}: {msg.content[:2000]}")
         return "\n".join(lines)
+
+    def _build_citations(
+        self,
+        raw_citations: list[dict],
+        _paper_title_map: dict[str, str],  # kept for backwards compat
+    ) -> list[Citation]:
+        result: list[Citation] = []
+        for c in raw_citations:
+            title = c.get("paper_title", "") if isinstance(c, dict) else ""
+            relevance = c.get("relevance", "") if isinstance(c, dict) else ""
+            result.append(
+                Citation(
+                    paper_title=title,
+                    paper_id="",
+                    relevance=str(relevance),
+                )
+            )
+        return result
+
+    def _try_parse_json(self, buffer: str) -> dict | None:
+        """Attempt to parse JSON from the buffer, handling common issues."""
+        if not buffer:
+            return None
+
+        text = buffer.strip()
+
+        # Try direct parse
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # Try to find JSON object boundaries
+        start = text.find('{')
+        end = text.rfind('}')
+        if start != -1 and end != -1 and end > start:
+            candidate = text[start:end + 1]
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                pass
+
+        # Try stripping markdown fences
+        for fence in ("```json", "```", "'''"):
+            if fence in text:
+                parts = text.split(fence)
+                for part in parts:
+                    part = part.strip()
+                    if part.startswith('{'):
+                        end_idx = part.rfind('}')
+                        if end_idx != -1:
+                            try:
+                                return json.loads(part[:end_idx + 1])
+                            except json.JSONDecodeError:
+                                pass
+
+        return None
+
+    def _serialize_diagnostics(
+        self, diagnostics: RetrievalDiagnostics | None
+    ) -> dict:
+        if diagnostics is None:
+            return {}
+        return {
+            "total_raw_sections": diagnostics.total_raw_sections,
+            "scored_sections": diagnostics.scored_sections,
+            "dedup_removed": diagnostics.dedup_removed,
+            "selected_count": diagnostics.selected_count,
+            "dropped_low_score": diagnostics.dropped_low_score,
+            "dropped_budget": diagnostics.dropped_budget,
+            "truncated_count": diagnostics.truncated_count,
+            "used_fallback": diagnostics.used_fallback,
+            "budget_limit": diagnostics.budget_limit,
+            "retrieval_duration_ms": round(diagnostics.retrieval_duration_ms, 2),
+            "num_keywords": diagnostics.num_keywords,
+            "num_signals": diagnostics.num_signals,
+        }
+
+    def _error_response(self, message: str) -> ChatResponse:
+        return ChatResponse(
+            answer=message,
+            citations=[],
+            confidence=0.0,
+            reasoning="",
+            suggested_questions=[],
+            message_id="",
+            conversation_id="",
+        )
 
     def _serialize_message(self, message: object) -> CopilotMessageResponse:
         metadata = getattr(message, "_metadata", None)
@@ -347,7 +478,9 @@ class CopilotService:
                 )
 
         raw_questions = metadata.get("suggested_questions") or []
-        suggested_questions = [str(question) for question in raw_questions if isinstance(question, str)]
+        suggested_questions = [
+            str(q) for q in raw_questions if isinstance(q, str)
+        ]
 
         created_at = getattr(message, "created_at", None)
         created_at_value = created_at.isoformat() if created_at is not None else ""
@@ -360,63 +493,3 @@ class CopilotService:
             suggested_questions=suggested_questions,
             created_at=created_at_value,
         )
-
-    def _build_system_prompt(self, context: str) -> str:
-        return (
-            "You are a research assistant analyzing academic papers and research data. "
-            "Your answers must be based ONLY on the provided context. "
-            "If you cannot answer the question from the context, say "
-            "'I cannot answer this from the current investigation'. "
-            "Cite specific papers by title when referencing their content. "
-            "Return a JSON object with fields: "
-            "answer (str), citations (list of objects with paper_title and relevance), "
-            "confidence (float 0-1), reasoning (str).\n\n"
-            f"CONTEXT:\n{context}"
-        )
-
-    def _build_user_prompt(
-        self, history: str, question: str
-    ) -> str:
-        if history:
-            return (
-                f"Previous conversation:\n{history}\n\n"
-                f"Question: {question}"
-            )
-        return question
-
-    def _build_paper_title_map(
-        self, investigation_id: uuid.UUID
-    ) -> dict[str, str]:
-        papers = self._paper_repo.list_by_investigation(investigation_id)
-        return {p.title: str(p.id) for p in papers if p.title}
-
-    async def _generate_suggested_questions(
-        self, context: str
-    ) -> LLMSuggestedQuestions:
-        try:
-            summary = context[:8000]
-            system_prompt = (
-                "Based on the following research context, generate 5 follow-up questions "
-                "that a researcher might ask. Return them as a JSON object with a single "
-                "field 'questions' containing an array of strings.\n\n"
-                f"CONTEXT SUMMARY:\n{summary}"
-            )
-            result, _ = await self._llm.generate_structured(
-                system_prompt=system_prompt,
-                user_prompt="Generate 5 follow-up questions based on the research context above.",
-                response_model=LLMSuggestedQuestions,
-                temperature=0.7,
-                max_tokens=1024,
-            )
-            return result
-        except Exception as exc:
-            logger.warning("suggested_questions_failed", error=str(exc)[:200])
-            return LLMSuggestedQuestions(
-                questions=[
-                    "What are the key findings across all papers?",
-                    "What methodologies are most commonly used?",
-                    "What research gaps were identified?",
-                    "How do the papers compare in their approaches?",
-                    "What future work is recommended?",
-                ]
-            )

@@ -35,7 +35,7 @@ export function TopBar({ className, onMenuToggle }: TopBarProps) {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
         <input
           type="search"
-          placeholder="Search investigations\u2026"
+          placeholder="Search investigations…"
           className="w-full rounded-md border border-input bg-surface-card py-1.5 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>

@@ -80,6 +80,16 @@ class Settings(BaseSettings):
     # Supported: semantic_scholar, arxiv, openalex
     RETRIEVAL_PROVIDERS: str = "semantic_scholar,arxiv,openalex"
 
+    # ------------------------------------------------------------------
+    # Embeddings
+    # ------------------------------------------------------------------
+    # Embedding provider (local, or future: openai, etc.)
+    EMBEDDING_PROVIDER: str = "local"
+    # sentence-transformers model name for local embeddings
+    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    # Embedding vector dimension (must match model output)
+    EMBEDDING_DIMENSION: int = 384
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

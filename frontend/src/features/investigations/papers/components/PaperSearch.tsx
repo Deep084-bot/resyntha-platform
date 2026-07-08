@@ -12,7 +12,7 @@ export interface PaperSearchProps {
 export function PaperSearch({
   value,
   onChange,
-  placeholder = "Search titles, authors, abstracts\u2026",
+  placeholder = "Search titles, authors, abstracts…",
   className,
 }: PaperSearchProps) {
   return (

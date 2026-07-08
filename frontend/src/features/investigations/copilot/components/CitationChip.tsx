@@ -26,13 +26,13 @@ export function CitationChip({ citation, onClick }: CitationChipProps) {
       variant="outline"
       size="sm"
       className={cn(
-        "h-7 max-w-full justify-start rounded-full border-border bg-surface px-2.5 text-xs text-text-secondary hover:text-text-primary",
+        "h-auto min-h-7 max-w-full whitespace-normal break-words justify-start rounded-full border-border bg-surface px-2.5 py-1 text-xs text-text-secondary hover:text-text-primary",
       )}
       onClick={() => onClick?.(citation)}
       aria-label={`Open citation for ${label}`}
     >
-      <span className="truncate">{label}</span>
-      <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
+      <span className="min-w-0">{label}</span>
+      <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden="true" />
     </Button>
   );
 }

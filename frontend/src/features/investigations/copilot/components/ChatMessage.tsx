@@ -183,7 +183,7 @@ export function ChatMessage({
       >
         <div
           className={cn(
-            "rounded-2xl px-4 py-3 text-sm shadow-sm",
+            "rounded-2xl px-5 py-3.5 text-sm leading-relaxed shadow-sm",
             isUser
               ? "bg-primary text-primary-foreground"
               : "border border-border bg-surface text-text-primary",

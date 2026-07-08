@@ -104,7 +104,7 @@ export function DeleteConfirmationDialog({
               {isPending ? (
                 <>
                   <Spinner size="sm" />
-                  Deleting\u2026
+                  Deleting…
                 </>
               ) : (
                 "Delete"

@@ -154,7 +154,7 @@ export function NewInvestigationDialog({
               onChange={(e) => updateField("topic", e.target.value)}
               className={cn(inputClass("topic"), "resize-none")}
               rows={3}
-              placeholder="Describe the research topic or question\u2026"
+              placeholder="Describe the research topic or question…"
               aria-invalid={!!errors.topic}
               aria-describedby={errors.topic ? "topic-error" : undefined}
             />
@@ -177,7 +177,7 @@ export function NewInvestigationDialog({
               value={form.description}
               onChange={(e) => updateField("description", e.target.value)}
               className={inputClass("description")}
-              placeholder="Optional description\u2026"
+              placeholder="Optional description…"
             />
           </div>
 
@@ -222,7 +222,7 @@ export function NewInvestigationDialog({
               {isPending ? (
                 <>
                   <Spinner size="sm" />
-                  Creating\u2026
+                  Creating…
                 </>
               ) : (
                 "Create Investigation"

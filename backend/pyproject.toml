@@ -22,6 +22,9 @@ dependencies = [
     "structlog",
     "httpx",
     "groq",
+    "pgvector",
+    "numpy",
+    "sentence-transformers",
 ]
 
 [project.optional-dependencies]

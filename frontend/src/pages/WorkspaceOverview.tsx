@@ -140,7 +140,7 @@ function RetrievalMetricsSection({ executionId }: { executionId: string }) {
         <CardTitle>Retrieval Metrics</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-3 grid grid-cols-4 gap-3">
+        <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <MetricBox icon={Search} label="Papers Fetched" count={papersFetched ?? 0} color="text-blue-500" />
           <MetricBox icon={CheckCircle2} label="Unique" count={papersUnique ?? 0} color="text-success" />
           <MetricBox icon={AlertCircle} label="Duplicates" count={duplicatesRemoved ?? 0} color="text-warning" />
@@ -295,7 +295,7 @@ export function WorkspaceOverviewPage() {
   const latestFailed = latestExecution?.status === "failed";
 
   const buttonLabel = (() => {
-    if (isRunning) return "Retrieving\u2026";
+    if (isRunning) return "Retrieving…";
     if (latestCompleted) return "Run Again";
     if (latestFailed) return "Retry Retrieval";
     return "Start Retrieval";

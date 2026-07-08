@@ -34,3 +34,4 @@ import app.modules.validation.domain.models  # noqa: F401
 
 # copilot
 import app.modules.copilot.domain.models  # noqa: F401
+import app.modules.copilot.vector.models  # noqa: F401

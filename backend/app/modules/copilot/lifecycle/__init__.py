@@ -1,0 +1,1 @@
+"""Embedding lifecycle management."""
