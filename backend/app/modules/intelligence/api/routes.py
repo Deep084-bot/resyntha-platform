@@ -15,6 +15,7 @@ from app.modules.artifact.domain.models import ArtifactType
 from app.modules.artifact.service.service import ArtifactService
 from app.modules.intelligence.api.dependencies import (
     get_artifact_service,
+    get_graph_service,
     get_investigation_service,
 )
 from app.modules.intelligence.api.schemas import (
@@ -28,6 +29,8 @@ from app.modules.intelligence.api.schemas import (
     TechnologySectionResponse,
     TemporalSectionResponse,
 )
+from app.modules.intelligence.graph.api.schemas import GraphDTO
+from app.modules.intelligence.graph.api.service import GraphApiService
 from app.modules.investigation.service.service import InvestigationService
 from app.observability.logger import get_logger
 
@@ -255,3 +258,22 @@ async def get_collaborations(
     raw = content.get("collaborations") or {}
     logger.info("collaborations_retrieved", id=str(investigation_id))
     return CollaborationSectionResponse.model_validate(raw)
+
+
+# ── Graph endpoint ────────────────────────────────────────────────
+
+
+@router.get(
+    "/graph",
+    response_model=GraphDTO,
+)
+async def get_graph(
+    investigation_id: uuid.UUID,
+    inv_service: InvestigationService = Depends(get_investigation_service),
+    graph_service: GraphApiService = Depends(get_graph_service),
+) -> GraphDTO:
+    """Return the research knowledge graph for the investigation."""
+    _verify_investigation(investigation_id, inv_service)
+    result = graph_service.get_graph(investigation_id)
+    logger.info("graph_retrieved", id=str(investigation_id))
+    return result

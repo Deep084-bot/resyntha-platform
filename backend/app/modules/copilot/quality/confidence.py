@@ -1,4 +1,4 @@
-"""Confidence calibration — combines multiple signals into a final confidence score."""
+"""Confidence calibration — combines multiple signals into a final confidence score and explanation."""
 
 from __future__ import annotations
 
@@ -55,6 +55,56 @@ class ConfidenceCalibrator:
         )
 
         return round(min(max(score, 0.0), 1.0), 2)
+
+    def calibrate_with_explanation(
+        self,
+        retrieved: RetrievalResult,
+        citation_validation: CitationValidationResult,
+        model_confidence: float = 0.0,
+        max_chars: int = MAX_CHARS_DEFAULT,
+    ) -> tuple[float, str]:
+        """Returns (score, explanation)."""
+        if not retrieved.sections:
+            return 0.1, "No retrieved sections available."
+
+        evidence = self._evidence_coverage(retrieved)
+        completeness = self._context_completeness(retrieved, max_chars)
+        citation_val = self._citation_validation_score(citation_validation)
+        citation_count = self._citation_count_score(citation_validation)
+        retrieval = self._retrieval_score(retrieved)
+        model = self._cap_model_confidence(model_confidence)
+
+        score = (
+            evidence * self._EVIDENCE_WEIGHT +
+            completeness * self._COMPLETENESS_WEIGHT +
+            citation_val * self._CITATION_VALIDATION_WEIGHT +
+            citation_count * self._CITATION_COUNT_WEIGHT +
+            retrieval * self._RETRIEVAL_SCORE_WEIGHT +
+            model * self._MODEL_WEIGHT
+        )
+        score = round(min(max(score, 0.0), 1.0), 2)
+
+        reasons: list[str] = []
+        kept = citation_validation.kept_count
+        total = len(retrieved.sections)
+        if total > 0:
+            positive = sum(1 for s in retrieved.sections if s.score > 0)
+            reasons.append(f"supported by {positive}/{total} sections")
+
+        if kept > 0:
+            reasons.append(f"{kept} validated citation(s)")
+
+        if completeness > 0.5:
+            reasons.append("substantial context coverage")
+
+        if evidence > 0.5:
+            reasons.append("high evidence coverage")
+
+        if retrieval > 0.3:
+            reasons.append("consistent retrieval scores")
+
+        explanation = "; ".join(reasons) if reasons else "limited evidence"
+        return score, explanation
 
     @staticmethod
     def _evidence_coverage(retrieved: RetrievalResult) -> float:

@@ -11,6 +11,9 @@ python-dotenv
 structlog
 httpx
 groq
+pgvector
+numpy
+sentence-transformers
 
 [dev]
 pytest

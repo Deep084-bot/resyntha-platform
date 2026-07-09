@@ -16,6 +16,12 @@ lives here.
 # artifact
 import app.modules.artifact.domain.models  # noqa: F401
 
+# bookmarks
+import app.modules.bookmark.domain.models  # noqa: F401
+
+# collections
+import app.modules.collection.domain.models  # noqa: F401
+
 # execution
 import app.modules.execution.domain.models  # noqa: F401
 
@@ -26,8 +32,14 @@ import app.modules.investigation.domain.models  # noqa: F401
 # investigation.timeline
 import app.modules.investigation.timeline.models  # noqa: F401
 
+# notes & highlights
+import app.modules.notes.domain.models  # noqa: F401
+
 # paper
 import app.modules.paper.domain.models  # noqa: F401
+
+# reading status
+import app.modules.reading_status.domain.models  # noqa: F401
 
 # validation
 import app.modules.validation.domain.models  # noqa: F401

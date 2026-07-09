@@ -43,6 +43,8 @@ const TABS = [
   { label: "Overview", to: "" },
   { label: "Papers", to: "papers" },
   { label: "Landscape", to: "landscape" },
+  { label: "Graph", to: "graph" },
+  { label: "Notes", to: "notes" },
   { label: "Artifacts", to: "artifacts" },
   { label: "Executions", to: "executions" },
 ] as const;
@@ -174,6 +176,9 @@ function InvestigationWorkspaceContent({
       });
       qc.invalidateQueries({
         queryKey: queryKeys.investigations.detail(investigationId),
+      });
+      qc.invalidateQueries({
+        queryKey: queryKeys.graph.byInvestigation(investigationId),
       });
     }
     lastSeenStatusRef.current = current;

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { FileText, Bookmark, Plus, BookOpenCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -126,7 +126,7 @@ export function DashboardPage() {
         </div>
       </section>
 
-      {/* Recent Activity placeholder */}
+      {/* Recent Activity */}
       <section aria-labelledby="activity-heading">
         <h2
           id="activity-heading"
@@ -134,10 +134,18 @@ export function DashboardPage() {
         >
           Recent Activity
         </h2>
-        <div className="mt-4 rounded-lg border border-border bg-surface-card p-8 text-center">
-          <p className="text-sm text-text-muted">
-            Recent activity will appear here as you work on investigations.
-          </p>
+        <div className="mt-4 space-y-2">
+          {investigations.length > 0 ? (
+            investigations.slice(0, 5).map((inv) => (
+              <ActivityItem key={inv.id} investigation={inv} />
+            ))
+          ) : (
+            <div className="rounded-lg border border-border bg-surface-card p-8 text-center">
+              <p className="text-sm text-text-muted">
+                Recent activity will appear here as you work on investigations.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -167,5 +175,48 @@ export function DashboardPage() {
         />
       )}
     </div>
+  );
+}
+
+/* ── Recent Activity Item ──────────────────────────────────── */
+
+interface ActivityItemProps {
+  investigation: Investigation;
+}
+
+function ActivityItem({ investigation }: ActivityItemProps) {
+  const navigate = useNavigate();
+  const statusIcon = {
+    completed: BookOpenCheck,
+    running: Bookmark,
+    default: FileText,
+  } as const;
+  const Icon = statusIcon[investigation.status as keyof typeof statusIcon] ?? FileText;
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(`/investigations/${investigation.id}`)}
+      className="flex w-full items-center gap-3 rounded-lg border border-border bg-surface-card p-3 text-left transition-colors hover:bg-surface-hover"
+    >
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-default/10">
+        <Icon className="h-4 w-4 text-accent-default" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-text-primary truncate">
+          {investigation.title}
+        </p>
+        <p className="text-xs text-text-muted">
+          {investigation.status === "completed"
+            ? "Investigation completed"
+            : investigation.status === "failed"
+              ? "Investigation failed"
+              : `Status: ${investigation.status}`}
+        </p>
+      </div>
+      <span className="text-xs text-text-muted shrink-0">
+        {new Date(investigation.updated_at).toLocaleDateString()}
+      </span>
+    </button>
   );
 }

@@ -60,7 +60,7 @@ class TestPromptBuilder:
         result = self._make_result("Test context data")
         prompt = builder.build_system_prompt(result)
         assert "Test context data" in prompt
-        assert "research assistant" in prompt.lower()
+        assert "research reasoning assistant" in prompt.lower()
         assert "Answer ONLY" in prompt or "answer only" in prompt.lower()
         assert "citations" in prompt.lower()
         assert "suggested_questions" in prompt

@@ -7,6 +7,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from app.modules.copilot.classification.models import QuestionIntent
 from app.modules.copilot.embeddings.base import EmbeddingProvider
 from app.modules.copilot.embeddings.factory import create_embedding_provider
 from app.modules.copilot.retrieval.analyzer import KeywordAnalyzer
@@ -25,6 +26,51 @@ logger = get_logger(__name__)
 _MAX_CONTEXT_CHARS = 25000
 _MIN_SECTION_CHARS = 30
 _FALLBACK_CHARS = 8000
+
+_INTENT_STRATEGIES: dict[QuestionIntent, dict] = {
+    QuestionIntent.PAPER_SUMMARY: {
+        "top_k": 30,
+        "priority_labels": {"Key Findings", "Summary", "Research Questions"},
+    },
+    QuestionIntent.PAPER_COMPARISON: {
+        "top_k": 40,
+        "priority_sources": {"Knowledge Package"},
+    },
+    QuestionIntent.METHODOLOGY_COMPARISON: {
+        "top_k": 30,
+        "priority_labels": {"Methodologies"},
+    },
+    QuestionIntent.DATASET_COMPARISON: {
+        "top_k": 30,
+        "priority_labels": {"Datasets", "Evaluation Metrics"},
+    },
+    QuestionIntent.TECHNOLOGY_COMPARISON: {
+        "top_k": 30,
+        "priority_labels": {"Technologies"},
+    },
+    QuestionIntent.LIMITATION_ANALYSIS: {
+        "top_k": 25,
+        "priority_labels": {"Limitations", "Future Work"},
+    },
+    QuestionIntent.RESEARCH_GAP_EXPLORATION: {
+        "top_k": 25,
+        "priority_sources": {"Gap Report", "Research Gap Report"},
+        "priority_labels": {"Research Gaps", "Recommendations", "Limitations", "Future Work"},
+    },
+    QuestionIntent.TREND_ANALYSIS: {
+        "top_k": 30,
+        "priority_sources": {"Landscape", "Research Landscape"},
+    },
+    QuestionIntent.EVIDENCE_LOOKUP: {
+        "top_k": 25,
+        "priority_sources": {"Knowledge Package"},
+    },
+    QuestionIntent.GENERAL_RESEARCH_QUESTION: {
+        "top_k": 20,
+    },
+}
+
+_PRIORITY_BOOST = 0.25
 
 
 class SemanticRetriever:
@@ -58,9 +104,10 @@ class SemanticRetriever:
         question: str,
         max_chars: int = _MAX_CONTEXT_CHARS,
         top_k: int = 20,
+        intent: QuestionIntent | None = None,
     ) -> RetrievalResult:
         start = time.perf_counter()
-        diag = RetrievalDiagnostics(budget_limit=max_chars)
+        diag = RetrievalDiagnostics(budget_limit=max_chars, retriever_type="semantic")
 
         analyzed = self._analyzer.analyze(question)
         diag.num_keywords = len(analyzed.keywords)
@@ -71,6 +118,14 @@ class SemanticRetriever:
                 analyzed.author_signals, analyzed.gap_signals,
             ] if s
         ])
+
+        diag.detected_intent = intent.value if intent else ""
+
+        # Compute intent-aware strategy
+        strategy = _INTENT_STRATEGIES.get(intent, _INTENT_STRATEGIES[QuestionIntent.GENERAL_RESEARCH_QUESTION])
+        effective_top_k = strategy.get("top_k", top_k)
+        priority_labels: set[str] = strategy.get("priority_labels", set())
+        priority_sources: set[str] = strategy.get("priority_sources", set())
 
         # If no embeddings exist, return empty result (caller should fall back)
         if not self._vector_repo.has_embeddings(investigation_id):
@@ -93,11 +148,11 @@ class SemanticRetriever:
             )
         diag.retrieval_duration_ms = (time.perf_counter() - embed_start) * 1000
 
-        # Vector search
+        # Vector search (with intent-adjusted top_k)
         search_start = time.perf_counter()
         try:
             results = self._vector_repo.search(
-                investigation_id, query_vec, top_k=top_k,
+                investigation_id, query_vec, top_k=effective_top_k,
             )
         except Exception as exc:
             logger.error("semantic_retriever_search_error", error=str(exc)[:500])
@@ -115,7 +170,7 @@ class SemanticRetriever:
                 diagnostics=diag,
             )
 
-        # Convert to RetrievedSections with hybrid scores
+        # Convert to RetrievedSections with hybrid scores + intent boost
         hybrid_start = time.perf_counter()
         sections: list[RetrievedSection] = []
         for chunk_emb, similarity in results:
@@ -125,6 +180,9 @@ class SemanticRetriever:
                 content=chunk_emb.content,
             )
             hybrid_score = self._hybrid.score(section, analyzed, similarity)
+            if (priority_labels and section.label in priority_labels) or \
+               (priority_sources and section.source in priority_sources):
+                hybrid_score = min(hybrid_score + _PRIORITY_BOOST, 1.0)
             section.score = hybrid_score
             sections.append(section)
         sections.sort(key=lambda s: s.score, reverse=True)

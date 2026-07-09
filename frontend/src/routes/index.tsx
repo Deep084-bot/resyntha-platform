@@ -11,6 +11,8 @@ import {
   PapersPage,
 } from "@/features/investigations/pages";
 import { CopilotPage } from "@/features/investigations/copilot/pages/CopilotPage";
+import { GraphPage } from "@/features/investigations/graph/pages/GraphPage";
+import { NotesPage } from "@/features/investigations/notes/pages/NotesPage";
 import { InvestigationLayout } from "@/features/investigations/layout";
 import { NotFoundPage } from "@/pages/NotFound";
 import { PipelinePage } from "@/pages/Pipeline";
@@ -31,6 +33,8 @@ const routes: RouteObject[] = [
           { path: "landscape", element: <LandscapePage /> },
           { path: "artifacts", element: <ArtifactsPage /> },
           { path: "executions", element: <ExecutionsPage /> },
+          { path: "graph", element: <GraphPage /> },
+          { path: "notes", element: <NotesPage /> },
           { path: "copilot", element: <CopilotPage /> },
         ],
       },

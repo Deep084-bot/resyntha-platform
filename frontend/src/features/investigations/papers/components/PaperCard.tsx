@@ -1,8 +1,18 @@
 import { useState } from "react";
-import { ExternalLink, Bookmark, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  ExternalLink,
+  Bookmark,
+  BookmarkCheck,
+  ChevronDown,
+  ChevronUp,
+  Circle,
+  CheckCircle2,
+  BookOpenCheck,
+  SkipForward,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { Paper } from "@/types";
+import type { Paper, ReadingStatusValue } from "@/types";
 import { cn } from "@/lib/utils";
 
 export interface PaperCardProps {
@@ -10,6 +20,10 @@ export interface PaperCardProps {
   onSelect: (paper: Paper) => void;
   isSelected?: boolean;
   className?: string;
+  isBookmarked?: boolean;
+  onToggleBookmark?: () => void;
+  readingStatus?: ReadingStatusValue;
+  onSetReadingStatus?: (status: ReadingStatusValue) => void;
 }
 
 function truncateAuthors(authors: string[], max = 3): string {
@@ -24,6 +38,10 @@ export function PaperCard({
   onSelect,
   isSelected,
   className,
+  isBookmarked,
+  onToggleBookmark,
+  readingStatus,
+  onSetReadingStatus,
 }: PaperCardProps) {
   const [abstractExpanded, setAbstractExpanded] = useState(false);
 
@@ -163,17 +181,67 @@ export function PaperCard({
               </a>
             </Button>
           )}
+          {/* Bookmark toggle */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
-            aria-label={`Bookmark ${paper.title}`}
-            disabled
+            className={cn(
+              "h-7 w-7",
+              isBookmarked && "text-accent-default",
+            )}
+            aria-label={isBookmarked ? `Remove bookmark for ${paper.title}` : `Bookmark ${paper.title}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleBookmark?.();
+            }}
           >
-            <Bookmark className="h-3.5 w-3.5" />
+            {isBookmarked ? (
+              <BookmarkCheck className="h-3.5 w-3.5" />
+            ) : (
+              <Bookmark className="h-3.5 w-3.5" />
+            )}
           </Button>
         </div>
       </div>
+
+      {/* Reading status */}
+      {onSetReadingStatus && (
+        <div className="mt-2 flex items-center gap-1.5 border-t border-border pt-2">
+          <ReadingStatusBadge status={readingStatus} />
+          <select
+            value={readingStatus ?? "unread"}
+            onChange={(e) => onSetReadingStatus(e.target.value as ReadingStatusValue)}
+            onClick={(e) => e.stopPropagation()}
+            className="ml-1 rounded border border-border bg-transparent px-2 py-0.5 text-[10px] text-text-muted focus:outline-none focus:ring-1 focus:ring-accent-default"
+            aria-label="Reading status"
+          >
+            <option value="unread">Unread</option>
+            <option value="reading">Reading</option>
+            <option value="completed">Completed</option>
+            <option value="skipped">Skipped</option>
+          </select>
+        </div>
+      )}
     </article>
   );
+}
+
+const STATUS_ICONS: Record<string, typeof Circle> = {
+  unread: Circle,
+  reading: BookOpenCheck,
+  completed: CheckCircle2,
+  skipped: SkipForward,
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  unread: "text-text-muted",
+  reading: "text-blue-500",
+  completed: "text-emerald-500",
+  skipped: "text-orange-500",
+};
+
+function ReadingStatusBadge({ status }: { status?: ReadingStatusValue }) {
+  const Icon = STATUS_ICONS[status ?? "unread"];
+  const color = STATUS_COLORS[status ?? "unread"];
+  return <Icon className={cn("h-3 w-3", color)} />;
 }

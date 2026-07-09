@@ -5,6 +5,7 @@ the pipeline stages, and persists results.  Never exposed to HTTP;
 all inputs come from the job payload and the database.
 """
 
+import asyncio
 import os
 import socket
 import uuid
@@ -20,6 +21,7 @@ import app.database.model_registry  # noqa: F401 — ensure all ORM models are l
 from app.database.session import SessionLocal
 from app.modules.analysis.service.service import AnalysisService
 from app.modules.artifact.service.service import ArtifactService
+from app.modules.copilot.lifecycle.embedding import EmbeddingLifecycle
 from app.modules.execution.domain.models import ExecutionStatus
 from app.modules.execution.schemas.request import UpdateExecutionRequest
 from app.modules.execution.service.service import (
@@ -61,6 +63,44 @@ def _mark_terminal(
             session.commit()
         except Exception:
             logger.exception("failed_to_mark_execution", execution_id=str(execution_id))
+
+
+def _run_embedding_lifecycle(investigation_id: uuid.UUID) -> dict | None:
+    """Synchronous embedding lifecycle runner (runs in thread pool)."""
+    session = SessionLocal()
+    try:
+        lifecycle = EmbeddingLifecycle(session)
+        stats = lifecycle.generate_for_investigation(investigation_id)
+        return stats
+    except Exception:
+        logger.exception("embedding_lifecycle_error", investigation_id=str(investigation_id))
+        return None
+    finally:
+        session.close()
+
+
+async def _generate_embeddings_background(investigation_id: uuid.UUID) -> None:
+    """Non-blocking embedding generation after investigation completion."""
+    try:
+        loop = asyncio.get_running_loop()
+        stats = await loop.run_in_executor(None, _run_embedding_lifecycle, investigation_id)
+        if stats:
+            logger.info(
+                "background_embedding_complete",
+                investigation_id=str(investigation_id),
+                chunks_created=stats.get("chunks_created", 0),
+                duration_ms=stats.get("duration_ms", 0),
+                errors=stats.get("errors", []),
+            )
+            if stats.get("errors"):
+                logger.warning(
+                    "background_embedding_partial_errors",
+                    investigation_id=str(investigation_id),
+                    error_count=len(stats["errors"]),
+                    errors=stats["errors"][:3],
+                )
+    except Exception:
+        logger.exception("background_embedding_failed", investigation_id=str(investigation_id))
 
 
 async def retrieval_job(
@@ -307,6 +347,9 @@ async def retrieval_job(
             )
 
         session.commit()
+
+        # Launch background embedding generation (non-blocking, runs in thread pool)
+        asyncio.create_task(_generate_embeddings_background(investigation_id))
 
         verify = execution_service.get_execution(execution_id)
         logger.info(

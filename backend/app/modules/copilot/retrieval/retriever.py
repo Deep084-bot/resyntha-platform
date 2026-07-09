@@ -55,6 +55,7 @@ class InvestigationRetriever:
         diag = RetrievalDiagnostics(
             total_raw_sections=len(all_sections),
             budget_limit=max_chars,
+            retriever_type="heuristic",
             num_keywords=len(analyzed.keywords),
             num_signals=sum([
                 1 for s in [

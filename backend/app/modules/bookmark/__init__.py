@@ -1,0 +1,1 @@
+"""Paper bookmarks module."""

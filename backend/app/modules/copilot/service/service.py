@@ -9,6 +9,11 @@ from sqlalchemy.orm import Session
 
 from app.core.llm import BaseLLMProvider, ProviderFactory
 from app.core.llm.exceptions import LLMError, LLMParsingError
+from app.modules.copilot.classification.classifier import QuestionClassifier
+from app.modules.copilot.classification.models import QuestionAnalysis, QuestionIntent
+from app.modules.copilot.evidence.aggregator import EvidenceAggregator
+from app.modules.copilot.evidence.grouper import CitationGrouper
+from app.modules.copilot.evidence.models import EvidenceBundle
 from app.modules.copilot.prompt.builder import LLMCopilotAnswer, PromptBuilder
 from app.modules.copilot.quality.confidence import ConfidenceCalibrator
 from app.modules.copilot.quality.followup import FollowUpGenerator
@@ -124,6 +129,10 @@ class CopilotService:
     ) -> None:
         self._copilot_repo = CopilotRepository(session)
         self._retriever = SemanticRetriever(session)
+        self._fallback_retriever = InvestigationRetriever(session)
+        self._classifier = QuestionClassifier()
+        self._evidence_aggregator = EvidenceAggregator()
+        self._citation_grouper = CitationGrouper()
         self._prompt_builder = PromptBuilder()
         self._citation_validator = CitationValidator()
         self._confidence_calibrator = ConfidenceCalibrator()
@@ -147,18 +156,51 @@ class CopilotService:
             )
 
         try:
-            retrieved = self._retriever.retrieve(investigation_id, question)
+            retrieved, analysis = self._retrieve_with_fallback(investigation_id, question)
         except Exception as exc:
             logger.error("copilot_retrieval_error", error=str(exc)[:500])
             return self._error_response("Failed to retrieve investigation context.")
 
         history = self._get_history_str(conversation.id)
 
+        # Evidence aggregation
+        evidence_bundle: EvidenceBundle | None = None
+        try:
+            paper_title_map = {s.content.split("Title: ")[-1].split("\n")[0]: s.content
+                               for s in retrieved.sections if "Title:" in s.content} if retrieved.sections else None
+            evidence_bundle = self._evidence_aggregator.aggregate(
+                retrieved.sections, paper_title_map,
+            )
+            if retrieved.diagnostics is not None:
+                retrieved.diagnostics.aggregated_evidence_count = len(evidence_bundle.items)
+        except Exception as exc:
+            logger.error("copilot_evidence_error", error=str(exc)[:500])
+
+        # Citation grouping
+        grouped_citations: list[dict] = []
+        try:
+            if evidence_bundle and evidence_bundle.items:
+                grouped = self._citation_grouper.group(evidence_bundle)
+                grouped_citations = [
+                    {"claim": g.claim, "papers": [{"paper_title": p.title, "relevance": p.relevance} for p in g.papers]}
+                    for g in grouped
+                ]
+                if retrieved.diagnostics is not None:
+                    retrieved.diagnostics.grouped_citation_count = sum(len(g.papers) for g in grouped)
+        except Exception as exc:
+            logger.error("copilot_grouping_error", error=str(exc)[:500])
+
         try:
             system_prompt = self._prompt_builder.build_system_prompt(
-                retrieved, history
+                retrieved, history, evidence_bundle=evidence_bundle, intent=analysis.intent.value,
             ).replace("{question}", question)
             user_prompt = self._prompt_builder.build_user_prompt(history, question)
+            if retrieved.diagnostics is not None:
+                retrieved.diagnostics.estimated_prompt_chars = (
+                    len(system_prompt) + len(user_prompt)
+                )
+                retrieved.diagnostics.comparison_mode = analysis.is_comparison
+                retrieved.diagnostics.reasoning_mode = analysis.intent != QuestionIntent.GENERAL_RESEARCH_QUESTION
         except Exception as exc:
             logger.error("copilot_prompt_error", error=str(exc)[:500])
             return self._error_response("Failed to build prompt.")
@@ -183,11 +225,16 @@ class CopilotService:
         )
         validated_citations = citation_validation.validated
 
-        calibrated_confidence = self._confidence_calibrator.calibrate(
+        calibrated_confidence, confidence_explanation = self._confidence_calibrator.calibrate_with_explanation(
             retrieved, citation_validation, answer_result.confidence
         )
 
-        followup_questions = self._followup_generator.generate(retrieved)
+        if retrieved.diagnostics is not None:
+            retrieved.diagnostics.confidence_explanation = confidence_explanation
+
+        followup_questions = self._followup_generator.generate(
+            retrieved=retrieved, bundle=evidence_bundle,
+        )
 
         if citation_validation.discarded:
             logger.info(
@@ -198,7 +245,9 @@ class CopilotService:
 
         message_metadata = {
             "citations": [c.model_dump() for c in validated_citations],
+            "grouped_citations": grouped_citations,
             "confidence": calibrated_confidence,
+            "confidence_explanation": confidence_explanation,
             "reasoning": answer_result.reasoning,
             "suggested_questions": followup_questions,
             "tokens_used": usage.total_tokens if usage else 0,
@@ -208,6 +257,8 @@ class CopilotService:
                 "discarded": citation_validation.discarded_count,
             },
             "retrieval_diagnostics": self._serialize_diagnostics(retrieved.diagnostics),
+            "detected_intent": analysis.intent.value,
+            "evidence_count": len(evidence_bundle.items) if evidence_bundle else 0,
         }
 
         self._copilot_repo.add_message(conversation.id, "user", question)
@@ -243,22 +294,37 @@ class CopilotService:
         history = self._get_history_str(conversation.id)
 
         try:
-            retrieved = self._retriever.retrieve(investigation_id, question)
+            retrieved, analysis = self._retrieve_with_fallback(investigation_id, question)
         except Exception as exc:
             logger.error("copilot_retrieval_error", error=str(exc)[:500])
             yield StreamError(message="Failed to retrieve investigation context.")
             return
 
+        # Evidence aggregation
+        evidence_bundle: EvidenceBundle | None = None
+        try:
+            evidence_bundle = self._evidence_aggregator.aggregate(retrieved.sections)
+            if retrieved.diagnostics is not None:
+                retrieved.diagnostics.aggregated_evidence_count = len(evidence_bundle.items) if evidence_bundle else 0
+        except Exception as exc:
+            logger.error("copilot_evidence_error", error=str(exc)[:500])
+
         try:
             system_prompt = self._prompt_builder.build_system_prompt(
-                retrieved, history
+                retrieved, history, evidence_bundle=evidence_bundle, intent=analysis.intent.value,
             ).replace("{question}", question)
+            user_prompt = self._prompt_builder.build_user_prompt(history, question)
+            if retrieved.diagnostics is not None:
+                retrieved.diagnostics.estimated_prompt_chars = (
+                    len(system_prompt) + len(user_prompt)
+                )
+                retrieved.diagnostics.detected_intent = analysis.intent.value
+                retrieved.diagnostics.comparison_mode = analysis.is_comparison
+                retrieved.diagnostics.reasoning_mode = analysis.intent != QuestionIntent.GENERAL_RESEARCH_QUESTION
         except Exception as exc:
             logger.error("copilot_prompt_error", error=str(exc)[:500])
             yield StreamError(message="Failed to build prompt.")
             return
-
-        user_prompt = self._prompt_builder.build_user_prompt(history, question)
 
         extractor = _AnswerStreamExtractor()
         buffer = ""
@@ -286,15 +352,14 @@ class CopilotService:
             yield StreamError(message="A streaming error occurred. Please try again.")
             return
 
-        # Attempt to parse full JSON — be resilient to minor issues
         parsed = self._try_parse_json(buffer)
 
         if parsed is None:
-            # Fallback: emit whatever we streamed as the answer with no citations
             if full_answer:
                 answer_text = full_answer
                 citations: list[Citation] = []
                 confidence = 0.1
+                confidence_explanation = "No structured response available."
                 reasoning = ""
                 suggested_questions: list[str] = []
             else:
@@ -306,12 +371,17 @@ class CopilotService:
                 parsed.get("citations", []), retrieved
             )
             citations = citation_validation.validated
-            calibrated = self._confidence_calibrator.calibrate(
+            calibrated, confidence_explanation = self._confidence_calibrator.calibrate_with_explanation(
                 retrieved, citation_validation, float(parsed.get("confidence", 0.0))
             )
-            suggested_questions = self._followup_generator.generate(retrieved)
+            suggested_questions = self._followup_generator.generate(
+                retrieved=retrieved, bundle=evidence_bundle,
+            )
             confidence = calibrated
             reasoning = str(parsed.get("reasoning", ""))
+
+            if retrieved.diagnostics is not None:
+                retrieved.diagnostics.confidence_explanation = confidence_explanation
 
             if citation_validation.discarded:
                 logger.info(
@@ -326,9 +396,11 @@ class CopilotService:
                 for c in citations
             ],
             "confidence": confidence,
+            "confidence_explanation": confidence_explanation,
             "reasoning": reasoning,
             "suggested_questions": suggested_questions,
             "retrieval_diagnostics": self._serialize_diagnostics(retrieved.diagnostics),
+            "detected_intent": analysis.intent.value,
         }
 
         self._copilot_repo.add_message(conversation.id, "user", question)
@@ -361,6 +433,38 @@ class CopilotService:
         ]
 
     # ── Internal helpers ────────────────────────────────────────
+
+    def _retrieve_with_fallback(
+        self,
+        investigation_id: uuid.UUID,
+        question: str,
+    ) -> tuple[RetrievalResult, QuestionAnalysis]:
+        """Classify question, then try semantic retriever; fall back to heuristic."""
+        analysis = self._classifier.classify(question)
+
+        try:
+            result = self._retriever.retrieve(
+                investigation_id, question, intent=analysis.intent,
+            )
+            if result.sections:
+                if result.diagnostics is not None:
+                    result.diagnostics.detected_intent = analysis.intent.value
+                return result, analysis
+            reason = result.metadata[0] if result.metadata else "empty_result"
+        except Exception as exc:
+            logger.error("copilot_semantic_error", error=str(exc)[:500])
+            reason = str(exc)[:200]
+
+        logger.info(
+            "copilot_semantic_fallback",
+            investigation_id=str(investigation_id),
+            reason=reason,
+        )
+        fallback_result = self._fallback_retriever.retrieve(investigation_id, question)
+        if fallback_result.diagnostics is not None:
+            fallback_result.diagnostics.retriever_type = "heuristic"
+            fallback_result.diagnostics.detected_intent = analysis.intent.value
+        return fallback_result, analysis
 
     def _get_history_str(self, conversation_id: uuid.UUID) -> str:
         messages = self._copilot_repo.get_messages(conversation_id)
@@ -445,6 +549,14 @@ class CopilotService:
             "retrieval_duration_ms": round(diagnostics.retrieval_duration_ms, 2),
             "num_keywords": diagnostics.num_keywords,
             "num_signals": diagnostics.num_signals,
+            "retriever_type": diagnostics.retriever_type,
+            "estimated_prompt_chars": diagnostics.estimated_prompt_chars,
+            "detected_intent": diagnostics.detected_intent,
+            "aggregated_evidence_count": diagnostics.aggregated_evidence_count,
+            "comparison_mode": diagnostics.comparison_mode,
+            "reasoning_mode": diagnostics.reasoning_mode,
+            "grouped_citation_count": diagnostics.grouped_citation_count,
+            "confidence_explanation": diagnostics.confidence_explanation,
         }
 
     def _error_response(self, message: str) -> ChatResponse:

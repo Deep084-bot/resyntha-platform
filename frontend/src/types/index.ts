@@ -221,6 +221,8 @@ export function mapStageStatus(s: ExecutionStageStatus): StatusVariant {
   return STAGE_MAP[s];
 }
 
+export type ReadingStatusValue = "unread" | "reading" | "completed" | "skipped";
+
 export function isExecutionTerminal(s: ExecutionStatus): boolean {
   return s === "completed" || s === "failed" || s === "cancelled";
 }
@@ -243,6 +245,9 @@ export const queryKeys = {
     byInvestigation: (id: string) => ["investigations", id, "executions"] as const,
     detail: (id: string) => ["executions", id] as const,
     stages: (id: string) => ["executions", id, "stages"] as const,
+  },
+  graph: {
+    byInvestigation: (id: string) => ["investigations", id, "graph"] as const,
   },
   copilot: {
     chat: (id: string) => ["investigations", id, "copilot", "chat"] as const,

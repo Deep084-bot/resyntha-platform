@@ -109,10 +109,28 @@ describe("PaperCard", () => {
     );
   });
 
-  it("renders disabled bookmark button", () => {
+  it("renders bookmark button", () => {
     renderCard();
     const bookmarkBtn = screen.getByLabelText(/bookmark/i);
-    expect(bookmarkBtn).toBeDisabled();
+    expect(bookmarkBtn).toBeInTheDocument();
+    expect(bookmarkBtn).not.toBeDisabled();
+  });
+
+  it("renders bookmarked state", () => {
+    render(<PaperCard paper={mockPaper} onSelect={vi.fn()} isBookmarked />);
+    const bookmarkBtn = screen.getByLabelText(/remove bookmark/i);
+    expect(bookmarkBtn).toBeInTheDocument();
+  });
+
+  it("renders reading status dropdown when handler provided", () => {
+    render(
+      <PaperCard
+        paper={mockPaper}
+        onSelect={vi.fn()}
+        onSetReadingStatus={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText("Reading status")).toBeInTheDocument();
   });
 
   it("calls onSelect when title is clicked", async () => {

@@ -108,9 +108,12 @@ describe("DashboardPage", () => {
 
   it("renders investigation cards", async () => {
     await renderPage();
-    expect(screen.getByText("Alpha Project")).toBeInTheDocument();
-    expect(screen.getByText("Beta Research")).toBeInTheDocument();
-    expect(screen.getByText("Gamma Study")).toBeInTheDocument();
+    const alphaItems = screen.getAllByText("Alpha Project");
+    expect(alphaItems.length).toBeGreaterThanOrEqual(1);
+    const betaItems = screen.getAllByText("Beta Research");
+    expect(betaItems.length).toBeGreaterThanOrEqual(1);
+    const gammaItems = screen.getAllByText("Gamma Study");
+    expect(gammaItems.length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders search input", async () => {
@@ -127,14 +130,32 @@ describe("DashboardPage", () => {
     const searchInput = screen.getByRole("searchbox");
     await user.type(searchInput, "Alpha");
 
-    expect(screen.getByText("Alpha Project")).toBeInTheDocument();
-    expect(screen.queryByText("Beta Research")).not.toBeInTheDocument();
-    expect(screen.queryByText("Gamma Study")).not.toBeInTheDocument();
+    const alphaItems = screen.getAllByText("Alpha Project");
+    expect(alphaItems.length).toBeGreaterThanOrEqual(1);
+    const betaItems = screen.getAllByText("Beta Research");
+    expect(betaItems.length).toBe(1);
+    const gammaItems = screen.getAllByText("Gamma Study");
+    expect(gammaItems.length).toBe(1);
   });
 
-  it("renders Recent Activity section", async () => {
+  it("renders Recent Activity section with investigation items", async () => {
     await renderPage();
     expect(screen.getByText("Recent Activity")).toBeInTheDocument();
+    const alphaItems = screen.getAllByText("Alpha Project");
+    expect(alphaItems.length).toBeGreaterThanOrEqual(1);
+    const betaItems = screen.getAllByText("Beta Research");
+    expect(betaItems.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("renders empty activity state when no investigations exist", async () => {
+    vi.mocked(
+      (await import("@/hooks/useInvestigations")).useInvestigations,
+    ).mockReturnValueOnce({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof import("@/hooks/useInvestigations").useInvestigations>);
+    await renderPage();
     expect(
       screen.getByText(/recent activity will appear here/i),
     ).toBeInTheDocument();

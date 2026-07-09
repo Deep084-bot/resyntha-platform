@@ -38,6 +38,13 @@ class RetrievalDiagnostics:
     num_keywords: int = 0
     num_signals: int = 0
     estimated_prompt_chars: int = 0
+    retriever_type: str = "heuristic"
+    detected_intent: str = ""
+    aggregated_evidence_count: int = 0
+    comparison_mode: bool = False
+    reasoning_mode: bool = False
+    grouped_citation_count: int = 0
+    confidence_explanation: str = ""
 
 
 @dataclass

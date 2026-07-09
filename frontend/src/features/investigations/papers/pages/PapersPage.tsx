@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { BookOpen, Search, AlertCircle } from "lucide-react";
 
@@ -13,19 +13,48 @@ import { PaperFilters } from "../components/PaperFilters";
 import { PaperSort } from "../components/PaperSort";
 import { PaperCard } from "../components/PaperCard";
 import { PaperDetailDrawer } from "../components/PaperDetailDrawer";
-import type { Paper } from "@/types";
+import type { Paper, ReadingStatusValue } from "@/types";
 
 import { RunningMessage } from "@/features/investigations/components/RunningMessage";
 import { useInvestigationRun } from "@/features/investigations/layout/InvestigationRunContext";
 import { WorkspaceErrorBoundary } from "@/features/investigations/components/WorkspaceErrorBoundary";
+import { useBookmarks, useAddBookmark, useRemoveBookmark } from "@/features/investigations/bookmarks/hooks/useBookmarks";
+import { useSetReadingStatus } from "@/features/investigations/reading-status/hooks/useReadingStatus";
 
 export function PapersPage() {
   const { id } = useParams();
   const { data: papers, isLoading, isError, refetch } = usePapers(id);
+  const { data: bookmarks } = useBookmarks(id);
+  const addBookmark = useAddBookmark(id);
+  const removeBookmark = useRemoveBookmark(id);
+  const setReadingStatus = useSetReadingStatus(id);
   const { running } = useInvestigationRun();
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const paperIdFromUrl = searchParams.get("paperId");
+
+  const bookmarkMap = new Map(
+    (bookmarks ?? []).map((b) => [b.paper_id, b.id]),
+  );
+
+  const handleToggleBookmark = useCallback(
+    (paperId: string) => {
+      const existing = bookmarkMap.get(paperId);
+      if (existing) {
+        removeBookmark.mutate(existing);
+      } else {
+        addBookmark.mutate({ paper_id: paperId });
+      }
+    },
+    [bookmarkMap, addBookmark, removeBookmark],
+  );
+
+  const handleSetReadingStatus = useCallback(
+    (paperId: string, status: ReadingStatusValue) => {
+      setReadingStatus.mutate({ paperId, body: { status } });
+    },
+    [setReadingStatus],
+  );
 
   const {
     filters,
@@ -187,6 +216,9 @@ export function PapersPage() {
                 paper={paper}
                 onSelect={setSelectedPaper}
                 isSelected={selectedPaper?.id === paper.id}
+                isBookmarked={bookmarkMap.has(paper.id)}
+                onToggleBookmark={() => handleToggleBookmark(paper.id)}
+                onSetReadingStatus={(status) => handleSetReadingStatus(paper.id, status)}
               />
             ))}
           </div>

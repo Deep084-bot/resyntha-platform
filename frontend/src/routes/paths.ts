@@ -7,6 +7,7 @@ export const ROUTES = {
   INVESTIGATION_ARTIFACTS: (id: string) => `/investigations/${id}/artifacts`,
   INVESTIGATION_PAPERS: (id: string) => `/investigations/${id}/papers`,
   INVESTIGATION_EXECUTIONS: (id: string) => `/investigations/${id}/executions`,
+  INVESTIGATION_GRAPH: (id: string) => `/investigations/${id}/graph`,
   INVESTIGATION_VALIDATION: (id: string) => `/investigations/${id}/validation`,
   INVESTIGATION_KNOWLEDGE: (id: string) => `/investigations/${id}/knowledge`,
   INVESTIGATION_ANALYSIS: (id: string) => `/investigations/${id}/analysis`,

@@ -1,9 +1,10 @@
-"""Follow-up quality — generates contextual follow-up questions from retrieved sections."""
+"""Follow-up quality — generates contextual follow-up questions from retrieved sections or evidence bundles."""
 
 from __future__ import annotations
 
 import re
 
+from app.modules.copilot.evidence.models import EvidenceBundle
 from app.modules.copilot.retrieval.models import RetrievalResult
 
 
@@ -21,7 +22,8 @@ class FollowUpGenerator:
       1. Direct label-based questions for methodology/technology/dataset/gap sections.
       2. Content-specific questions from key findings.
       3. Gap/future-work exploration questions.
-      4. Deduplication (case-insensitive).
+      4. Evidence-bundle-aware questions when bundle is provided.
+      5. Deduplication (case-insensitive).
     """
 
     _MAX_FOLLOW_UPS = 5
@@ -40,24 +42,47 @@ class FollowUpGenerator:
         "key findings": "What are the key findings",
     }
 
-    def generate(self, retrieved: RetrievalResult) -> list[str]:
+    _EVIDENCE_PREFIXES = {
+        "methodology": "How do the methodologies compare",
+        "dataset": "Which datasets are most commonly used",
+        "limitation": "What are the main limitations shared across studies",
+        "future": "What future research directions are suggested",
+        "gap": "What research gaps remain unexplored",
+    }
+
+    def generate(
+        self,
+        retrieved: RetrievalResult | None = None,
+        bundle: EvidenceBundle | None = None,
+    ) -> list[str]:
         questions: list[str] = []
         seen: set[str] = set()
 
-        for section in retrieved.sections:
-            label_lower = section.label.strip().lower()
+        if retrieved:
+            for section in retrieved.sections:
+                label_lower = section.label.strip().lower()
+                if label_lower in self._PREFIXES:
+                    prefix = self._PREFIXES[label_lower]
+                    for q in self._build_label_questions(section, prefix):
+                        normalized = self._normalize(q)
+                        if normalized not in seen:
+                            questions.append(q)
+                            seen.add(normalized)
+                if len(questions) >= self._MAX_FOLLOW_UPS:
+                    break
 
-            if label_lower in self._PREFIXES:
-                prefix = self._PREFIXES[label_lower]
-                # Short follow-up questions about the specific section
-                for q in self._build_label_questions(section, prefix):
+        if bundle and bundle.items:
+            topics = self._extract_bundle_topics(bundle)
+            for topic in topics:
+                prefix = self._EVIDENCE_PREFIXES.get(topic)
+                if prefix:
+                    q = f"{prefix} in these studies?"
                     normalized = self._normalize(q)
                     if normalized not in seen:
                         questions.append(q)
                         seen.add(normalized)
-
-            if len(questions) >= self._MAX_FOLLOW_UPS:
-                break
+                if len(questions) >= self._MAX_FOLLOW_UPS:
+                    break
 
         if len(questions) < self._MAX_FOLLOW_UPS:
             for q in self._build_fallback_questions(retrieved):
@@ -92,7 +117,6 @@ class FollowUpGenerator:
                 continue
             line = re.sub(r"^\[.*?\]\s*", "", line)
             line = re.sub(r"^[-•*]\s*", "", line)
-            # Take first meaningful phrase (up to first colon or 80 chars)
             colon_idx = line.find(":")
             if colon_idx > 0:
                 line = line[:colon_idx]
@@ -106,11 +130,30 @@ class FollowUpGenerator:
         return topics
 
     @staticmethod
+    def _extract_bundle_topics(bundle: EvidenceBundle) -> list[str]:
+        topics: list[str] = []
+        seen_topics: set[str] = set()
+        claim_text = " ".join(item.claim.lower() for item in bundle.items)
+
+        for keyword, topic in [
+            ("methodolog", "methodology"),
+            ("dataset", "dataset"),
+            ("limit", "limitation"),
+            ("future", "future"),
+            ("gap", "gap"),
+        ]:
+            if keyword in claim_text and topic not in seen_topics:
+                topics.append(topic)
+                seen_topics.add(topic)
+
+        return topics
+
+    @staticmethod
     def _normalize(text: str) -> str:
         return re.sub(r"[^a-z0-9]", "", text.lower().strip())
 
     @staticmethod
-    def _build_fallback_questions(retrieved: RetrievalResult) -> list[str]:
+    def _build_fallback_questions(retrieved: RetrievalResult | None) -> list[str]:
         candidates = [
             "Can you summarise the key findings?",
             "What conclusions can be drawn from this investigation?",
@@ -120,6 +163,8 @@ class FollowUpGenerator:
             "How were the datasets used in the reviewed studies?",
             "What technologies were employed in this research?",
         ]
+        if retrieved is None or not retrieved.sections:
+            return candidates[:3]
         seen_labels = {s.label.strip().lower() for s in retrieved.sections}
         relevant: list[str] = []
         for q in candidates:
