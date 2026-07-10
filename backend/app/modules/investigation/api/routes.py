@@ -2,9 +2,10 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.cache import cached
 from app.database.dependencies import get_db
 from app.modules.investigation.schemas.request import (
     CreateInvestigationRequest,
@@ -57,6 +58,7 @@ async def list_investigations(
     "/{investigation_id}",
     response_model=InvestigationResponse,
 )
+@cached("investigation:{investigation_id}", ttl=300)
 async def get_investigation(
     investigation_id: uuid.UUID,
     service: InvestigationService = Depends(_get_service),

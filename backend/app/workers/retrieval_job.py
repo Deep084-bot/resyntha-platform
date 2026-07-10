@@ -11,13 +11,16 @@ import socket
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy.orm import Session
-
 from arq import Retry
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
-from app.config import get_settings
 import app.database.model_registry  # noqa: F401 — ensure all ORM models are loaded
+from app.cache import CacheService
+from app.cache.keys import all_investigation_pattern
+from app.config import get_settings
+from app.core.context import WorkerContext, clear_worker_context, set_worker_context
+from app.core.llm import ProviderFactory
 from app.database.session import SessionLocal
 from app.modules.analysis.service.service import AnalysisService
 from app.modules.artifact.service.service import ArtifactService
@@ -28,11 +31,10 @@ from app.modules.execution.service.service import (
     ExecutionService,
     ExecutionStageService,
 )
-from app.core.llm import ProviderFactory
 from app.modules.extraction.repository.repository import ExtractionRepository
 from app.modules.extraction.service.service import ExtractionService
 from app.modules.gap_detection.service.service import GapDetectionService
-from app.modules.investigation.domain.models import Investigation, InvestigationStatus
+from app.modules.investigation.domain.models import InvestigationStatus
 from app.modules.investigation.repository.repository import InvestigationRepository
 from app.modules.investigation.timeline.models import TimelineStage, TimelineStatus
 from app.modules.investigation.timeline.service import TimelineService
@@ -122,14 +124,22 @@ async def retrieval_job(
         attempt 3 → 20s delay
         attempt 4 → permanent FAILED
     """
+    from app.metrics import get_metrics_service as _get_metrics
+    _metrics = _get_metrics()
+
     attempt = ctx.get("job_try", 1)
     exec_id = str(execution_id)
     inv_id = str(investigation_id)
 
-    logger.info(
-        "retrieval_job_started",
+    set_worker_context(WorkerContext(
         execution_id=exec_id,
         investigation_id=inv_id,
+        stage="retrieval",
+    ))
+
+    _metrics.worker_jobs_started_total.inc()
+    logger.info(
+        "retrieval_job_started",
         attempt=attempt,
         query=query,
     )
@@ -172,40 +182,29 @@ async def retrieval_job(
             )
             return None
 
+        # Pre-load investigation — reused later to avoid a second query
+        investigation = InvestigationRepository(session).get_by_id(investigation_id)
+
         # ── Mark RUNNING (first attempt only) ────────────────────
         if attempt == 1:
             execution_service.update_execution(
                 execution_id,
                 UpdateExecutionRequest(status=ExecutionStatus.RUNNING),
             )
-            timeline_service.record_event(
-                investigation_id=investigation_id,
-                execution_id=execution_id,
-                stage=TimelineStage.RETRIEVING,
-                status=TimelineStatus.RUNNING,
-                message="Paper retrieval started",
-            )
-            timeline_service.record_event(
-                investigation_id=investigation_id,
-                execution_id=execution_id,
-                stage=TimelineStage.VALIDATING,
-                status=TimelineStatus.RUNNING,
-                message="Validation started",
-            )
-            timeline_service.record_event(
-                investigation_id=investigation_id,
-                execution_id=execution_id,
-                stage=TimelineStage.EXTRACTING,
-                status=TimelineStatus.RUNNING,
-                message="Knowledge extraction started",
-            )
-            timeline_service.record_event(
-                investigation_id=investigation_id,
-                execution_id=execution_id,
-                stage=TimelineStage.ANALYZING,
-                status=TimelineStatus.RUNNING,
-                message="Cross-paper analysis started",
-            )
+            # Batch timeline event creation — flush once instead of per-event
+            for event_data in [
+                (TimelineStage.RETRIEVING, TimelineStatus.RUNNING, "Paper retrieval started"),
+                (TimelineStage.VALIDATING, TimelineStatus.RUNNING, "Validation started"),
+                (TimelineStage.EXTRACTING, TimelineStatus.RUNNING, "Knowledge extraction started"),
+                (TimelineStage.ANALYZING, TimelineStatus.RUNNING, "Cross-paper analysis started"),
+            ]:
+                timeline_service.record_event(
+                    investigation_id=investigation_id,
+                    execution_id=execution_id,
+                    stage=event_data[0],
+                    status=event_data[1],
+                    message=event_data[2],
+                )
             session.commit()
 
             # ── Write worker metadata ────────────────────────────
@@ -261,6 +260,8 @@ async def retrieval_job(
                 message="Retrieval failed",
             )
             session.commit()
+            _metrics.worker_jobs_failed_total.inc()
+            _metrics.investigation_failed_total.inc()
             logger.error(
                 "retrieval_pipeline_failed",
                 execution_id=exec_id,
@@ -279,48 +280,32 @@ async def retrieval_job(
                 {"retrieval_metrics": retrieval_metrics},
             )
         else:
-            logger.warning("no_retrieval_metrics_found", metrics_keys=list(final_context.metrics.keys()))
+            logger.warning(
+                "no_retrieval_metrics_found",
+                metrics_keys=list(final_context.metrics.keys()),
+            )
 
         # ── Record SUCCESS for all stages that had RUNNING events ─
-        timeline_service.record_event(
-            investigation_id=investigation_id,
-            execution_id=execution_id,
-            stage=TimelineStage.VALIDATING,
-            status=TimelineStatus.SUCCESS,
-            message="Validation completed",
-        )
-        timeline_service.record_event(
-            investigation_id=investigation_id,
-            execution_id=execution_id,
-            stage=TimelineStage.EXTRACTING,
-            status=TimelineStatus.SUCCESS,
-            message="Knowledge extraction completed",
-        )
-        timeline_service.record_event(
-            investigation_id=investigation_id,
-            execution_id=execution_id,
-            stage=TimelineStage.ANALYZING,
-            status=TimelineStatus.SUCCESS,
-            message="Cross-paper analysis completed",
-        )
-        # ── Record investigation completion ──────────────────────
-        timeline_service.record_event(
-            investigation_id=investigation_id,
-            execution_id=execution_id,
-            stage=TimelineStage.COMPLETED,
-            status=TimelineStatus.SUCCESS,
-            message="Investigation completed",
-        )
+        for event_data in [
+            (TimelineStage.VALIDATING, TimelineStatus.SUCCESS, "Validation completed"),
+            (TimelineStage.EXTRACTING, TimelineStatus.SUCCESS, "Knowledge extraction completed"),
+            (TimelineStage.ANALYZING, TimelineStatus.SUCCESS, "Cross-paper analysis completed"),
+            (TimelineStage.COMPLETED, TimelineStatus.SUCCESS, "Investigation completed"),
+        ]:
+            timeline_service.record_event(
+                investigation_id=investigation_id,
+                execution_id=execution_id,
+                stage=event_data[0],
+                status=event_data[1],
+                message=event_data[2],
+            )
 
         # ── Success ──────────────────────────────────────────────
-        logger.info("execution_mark_completed_started", execution_id=exec_id)
-
-        before = execution_service.get_execution(execution_id)
         logger.info(
             "execution_status_before",
             execution_id=exec_id,
-            status=before.status.value if before else "NOT_FOUND",
-            completed_at=str(before.completed_at) if before and before.completed_at else None,
+            status=execution.status.value if execution else "NOT_FOUND",
+            completed_at=str(execution.completed_at) if execution and execution.completed_at else None,
         )
 
         updated = execution_service.update_execution(
@@ -333,7 +318,6 @@ async def retrieval_job(
             new_status=updated.status.value if updated else "UPDATE_RETURNED_NONE",
         )
 
-        investigation = InvestigationRepository(session).get_by_id(investigation_id)
         if investigation:
             investigation.status = InvestigationStatus.COMPLETED
             logger.info(
@@ -351,13 +335,28 @@ async def retrieval_job(
         # Launch background embedding generation (non-blocking, runs in thread pool)
         asyncio.create_task(_generate_embeddings_background(investigation_id))
 
-        verify = execution_service.get_execution(execution_id)
         logger.info(
             "execution_verify_after_commit",
             execution_id=exec_id,
-            status=verify.status.value if verify else "NOT_FOUND",
-            completed_at=str(verify.completed_at) if verify and verify.completed_at else None,
+            status=updated.status.value if updated else "NOT_FOUND",
         )
+
+        # ── Invalidate investigation caches ────────────────────────
+        cache = CacheService()
+        pattern = all_investigation_pattern(inv_id)
+        deleted = await cache.delete_pattern(pattern)
+        if deleted:
+            _metrics.worker_cache_invalidations_total.inc(amount=deleted)
+            logger.info(
+                "cache_invalidated_for_investigation",
+                investigation_id=inv_id,
+                pattern=pattern,
+                deleted_keys=deleted,
+            )
+
+        _metrics.worker_jobs_completed_total.inc()
+        _metrics.investigation_completed_total.inc()
+        _metrics.investigation_pipeline_duration_seconds.observe(elapsed)
 
         paper_count = final_context.metrics.get("paper_count", 0)
         logger.info(
@@ -408,4 +407,5 @@ async def retrieval_job(
         raise Retry(defer=delay)
 
     finally:
+        clear_worker_context()
         session.close()

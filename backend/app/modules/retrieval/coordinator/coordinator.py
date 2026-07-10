@@ -8,23 +8,37 @@ execution metadata.
 """
 
 import asyncio
+import json
 from collections.abc import Sequence
 
+from app.core.retrieval.base import BaseRetrievalProvider, RetrievalResult
 from app.modules.retrieval.coordinator.merger import MetadataMerger
 from app.modules.retrieval.coordinator.ranking import RankingEngine
 from app.modules.retrieval.coordinator.resolver import DuplicateResolver
 from app.modules.retrieval.domain.paper import Paper
-from app.core.retrieval.base import BaseRetrievalProvider, RetrievalResult
 from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
 
+def _decode_retrieval_result(data: dict) -> RetrievalResult:
+    """Decode a JSON dict back into a RetrievalResult (Pydantic v2)."""
+    papers = [Paper.model_validate(p) for p in data.get("papers", [])]
+    return RetrievalResult(
+        papers=papers,
+        papers_returned=data["papers_returned"],
+        response_time_ms=data["response_time_ms"],
+        error=data.get("error"),
+        success=data.get("success", True),
+    )
+
+
 class CachedProvider:
     """Optional caching wrapper around a ``BaseRetrievalProvider``.
 
-    Uses an async ``get``/``set`` interface compatible with ``redis.asyncio``.
-    Skips cache entirely when ``redis`` is ``None``.
+    Uses JSON over Redis for serialization (avoids pickle security and
+    performance overhead).  Skips cache entirely when ``redis`` is
+    ``None``.
     """
 
     def __init__(
@@ -66,17 +80,16 @@ class CachedProvider:
         return result
 
     async def _get_cached(self, key: str) -> RetrievalResult | None:
-        import pickle
-
         data = await self._redis.get(key)
         if data is None:
             return None
-        return pickle.loads(data)
+        if isinstance(data, bytes):
+            data = data.decode("utf-8")
+        return _decode_retrieval_result(json.loads(data))
 
     async def _set_cached(self, key: str, result: RetrievalResult) -> None:
-        import pickle
-
-        await self._redis.setex(key, self._ttl, pickle.dumps(result))
+        raw = json.dumps(result.model_dump(mode="json"))
+        await self._redis.setex(key, self._ttl, raw)
 
 
 class RetrievalCoordinator:

@@ -6,7 +6,7 @@ Aggregates all version-1 route collections under a single
 
 from fastapi import APIRouter
 
-from app.api.v1.health import router as health_router
+from app.health.routes import router as health_router
 from app.modules.artifact.api.routes import router as artifact_router
 from app.modules.bookmark.api.routes import router as bookmark_router
 from app.modules.collection.api.routes import router as collection_router

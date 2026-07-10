@@ -25,6 +25,20 @@ class PaperRepository:
         stmt = select(Paper).where(Paper.title == title)
         return self._session.scalar(stmt)
 
+    def batch_get_by_dois(self, dois: list[str]) -> dict[str, Paper]:
+        """Return a dict of DOI → Paper for all matching DOIs."""
+        if not dois:
+            return {}
+        stmt = select(Paper).where(Paper.doi.in_(dois))
+        return {p.doi: p for p in self._session.scalars(stmt).all() if p.doi}
+
+    def batch_get_by_titles(self, titles: list[str]) -> dict[str, Paper]:
+        """Return a dict of title → Paper for all matching titles."""
+        if not titles:
+            return {}
+        stmt = select(Paper).where(Paper.title.in_(titles))
+        return {p.title: p for p in self._session.scalars(stmt).all()}
+
     def create(self, paper: Paper) -> Paper:
         """Persist a new paper and return it with a generated id."""
         self._session.add(paper)

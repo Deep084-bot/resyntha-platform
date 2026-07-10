@@ -17,11 +17,19 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 
+def _redis_settings() -> RedisSettings | None:
+    """Create RedisSettings from the configured URL, or None if disabled."""
+    url = settings.REDIS_URL
+    if not url or not url.strip():
+        return None
+    return RedisSettings.from_dsn(url)
+
+
 class WorkerSettings:
     """ARQ worker settings — referenced by ``arq`` CLI and programmatic runner."""
 
     functions = [retrieval_job]
-    redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
+    redis_settings = _redis_settings()
     keep_result: int = 300
     keep_result_failed: int = 300
     max_retries: int = 0

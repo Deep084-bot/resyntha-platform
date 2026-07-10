@@ -11,6 +11,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.cache import cached
 from app.modules.artifact.domain.models import ArtifactType
 from app.modules.artifact.service.service import ArtifactService
 from app.modules.intelligence.api.dependencies import (
@@ -94,6 +95,7 @@ def _json_to_landscape(content: dict[str, Any]) -> LandscapeResponse:
     "/landscape",
     response_model=LandscapeResponse,
 )
+@cached("landscape:{investigation_id}", ttl=1800)
 async def get_landscape(
     investigation_id: uuid.UUID,
     inv_service: InvestigationService = Depends(get_investigation_service),
@@ -267,6 +269,7 @@ async def get_collaborations(
     "/graph",
     response_model=GraphDTO,
 )
+@cached("graph:{investigation_id}", ttl=1800)
 async def get_graph(
     investigation_id: uuid.UUID,
     inv_service: InvestigationService = Depends(get_investigation_service),

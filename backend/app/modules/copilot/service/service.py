@@ -147,6 +147,14 @@ class CopilotService:
     async def chat(
         self, investigation_id: uuid.UUID, question: str
     ) -> ChatResponse:
+        import time as _time
+
+        from app.metrics import get_metrics_service
+
+        _metrics = get_metrics_service()
+        _metrics.copilot_chat_requests_total.inc()
+        _answer_start = _time.monotonic()
+
         conversation = self._copilot_repo.get_conversation_by_investigation(
             investigation_id
         )
@@ -156,7 +164,9 @@ class CopilotService:
             )
 
         try:
+            _r_start = _time.monotonic()
             retrieved, analysis = self._retrieve_with_fallback(investigation_id, question)
+            _metrics.copilot_retrieval_duration_seconds.observe(_time.monotonic() - _r_start)
         except Exception as exc:
             logger.error("copilot_retrieval_error", error=str(exc)[:500])
             return self._error_response("Failed to retrieve investigation context.")
@@ -206,6 +216,7 @@ class CopilotService:
             return self._error_response("Failed to build prompt.")
 
         try:
+            _llm_start = _time.monotonic()
             answer_result, usage = await self._llm.generate_structured(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
@@ -213,6 +224,7 @@ class CopilotService:
                 temperature=0.3,
                 max_tokens=4096,
             )
+            _metrics.copilot_llm_duration_seconds.observe(_time.monotonic() - _llm_start)
         except LLMError as exc:
             logger.error("copilot_llm_error", error=str(exc)[:500])
             return self._error_response("The language model encountered an issue. Please try again.")
@@ -270,6 +282,7 @@ class CopilotService:
         )
         self._session.commit()
 
+        _metrics.copilot_total_answer_duration_seconds.observe(_time.monotonic() - _answer_start)
         return ChatResponse(
             answer=answer_result.answer,
             citations=validated_citations,
@@ -440,6 +453,9 @@ class CopilotService:
         question: str,
     ) -> tuple[RetrievalResult, QuestionAnalysis]:
         """Classify question, then try semantic retriever; fall back to heuristic."""
+        from app.metrics import get_metrics_service
+        _metrics = get_metrics_service()
+
         analysis = self._classifier.classify(question)
 
         try:
@@ -447,14 +463,17 @@ class CopilotService:
                 investigation_id, question, intent=analysis.intent,
             )
             if result.sections:
+                _metrics.retrieval_semantic_total.inc()
                 if result.diagnostics is not None:
                     result.diagnostics.detected_intent = analysis.intent.value
                 return result, analysis
             reason = result.metadata[0] if result.metadata else "empty_result"
         except Exception as exc:
+            _metrics.retrieval_failures_total.inc()
             logger.error("copilot_semantic_error", error=str(exc)[:500])
             reason = str(exc)[:200]
 
+        _metrics.retrieval_heuristic_fallback_total.inc()
         logger.info(
             "copilot_semantic_fallback",
             investigation_id=str(investigation_id),

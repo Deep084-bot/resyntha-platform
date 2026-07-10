@@ -1,6 +1,13 @@
-"""Local embedding provider using sentence-transformers."""
+"""Local embedding provider using sentence-transformers.
+
+CPU-bound operations (``model.encode``) are offloaded to a thread
+pool executor so the event loop is not blocked when this provider
+is called from an async context.
+"""
 
 from __future__ import annotations
+
+import asyncio
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -33,11 +40,17 @@ class SentenceTransformerProvider(EmbeddingProvider):
         return self._dim
 
     def embed(self, texts: list[str]) -> list[np.ndarray]:
+        """Synchronous embedding (blocks caller). Prefer ``embed_async`` in async code."""
         model = self._get_model()
         if not texts:
             return []
         embeddings = model.encode(texts, show_progress_bar=False, normalize_embeddings=True)
         return [np.array(e, dtype=np.float32) for e in embeddings]
+
+    async def embed_async(self, texts: list[str]) -> list[np.ndarray]:
+        """Non-blocking async version — offloads ``model.encode`` to a thread pool."""
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, self.embed, texts)
 
     def _get_model(self) -> SentenceTransformer:
         if self._model is None:

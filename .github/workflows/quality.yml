@@ -1,0 +1,70 @@
+name: Quality Checks
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [backend, frontend]
+      fail-fast: false
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.component }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Backend audit ────────────────────────────────────────────
+      - name: Set up Python (backend only)
+        if: matrix.component == 'backend'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit (backend only)
+        if: matrix.component == 'backend'
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+
+      - name: Run pip-audit
+        if: matrix.component == 'backend'
+        run: pip-audit
+        continue-on-error: true
+
+      # ── Frontend audit ───────────────────────────────────────────
+      - name: Set up Node (frontend only)
+        if: matrix.component == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies (frontend only)
+        if: matrix.component == 'frontend'
+        run: npm ci
+
+      - name: Run npm audit
+        if: matrix.component == 'frontend'
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        continue-on-error: true

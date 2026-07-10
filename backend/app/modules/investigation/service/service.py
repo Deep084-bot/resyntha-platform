@@ -47,6 +47,8 @@ class InvestigationService:
         self, request: CreateInvestigationRequest
     ) -> InvestigationResponse:
         """Create a new investigation and return its response representation."""
+        from app.metrics import get_metrics_service
+        get_metrics_service().investigation_created_total.inc()
         investigation = Investigation(
             title=request.title,
             topic=request.topic,
