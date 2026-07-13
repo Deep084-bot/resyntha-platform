@@ -17,7 +17,9 @@ class BookmarkService:
     def __init__(self, repo: BookmarkRepository) -> None:
         self._repo = repo
 
-    def add_bookmark(self, investigation_id: uuid.UUID, paper_id: uuid.UUID, notes: str | None = None) -> Bookmark:
+    def add_bookmark(
+        self, investigation_id: uuid.UUID, paper_id: uuid.UUID, notes: str | None = None
+    ) -> Bookmark:
         existing = self._repo.get_by_paper(investigation_id, paper_id)
         if existing is not None:
             return existing

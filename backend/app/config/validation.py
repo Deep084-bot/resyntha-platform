@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import re
 from urllib.parse import urlparse
 
-from app.config.environments import Environment
 from app.config.settings import Settings
 
 
@@ -45,7 +43,13 @@ def validate_settings(settings: Settings) -> None:
         validate_url_field(
             settings.DATABASE_URL,
             "DATABASE_URL",
-            allowed_schemes={"postgresql", "postgresql+psycopg", "postgresql+asyncpg", "sqlite", "sqlite+aiosqlite"},
+            allowed_schemes={
+                "postgresql",
+                "postgresql+psycopg",
+                "postgresql+asyncpg",
+                "sqlite",
+                "sqlite+aiosqlite",
+            },
         )
     )
 

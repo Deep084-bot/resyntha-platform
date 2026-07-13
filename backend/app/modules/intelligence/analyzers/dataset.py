@@ -47,7 +47,10 @@ class DatasetAnalyzer(BaseAnalyzer):
             pairs: list[tuple[str, int]] = []
             for mname in graph.methodologies:
                 count = co_occurrence.between(
-                    "dataset", dname, "methodology", mname,
+                    "dataset",
+                    dname,
+                    "methodology",
+                    mname,
                 )
                 if count:
                     pairs.append((mname, count))
@@ -59,7 +62,10 @@ class DatasetAnalyzer(BaseAnalyzer):
             pairs: list[tuple[str, int]] = []
             for tname in graph.technologies:
                 count = co_occurrence.between(
-                    "dataset", dname, "technology", tname,
+                    "dataset",
+                    dname,
+                    "technology",
+                    tname,
                 )
                 if count:
                     pairs.append((tname, count))
@@ -80,8 +86,7 @@ class DatasetAnalyzer(BaseAnalyzer):
                     "total_datasets": len(datasets),
                     "papers_with_dataset": len(paper_ids_with_dataset),
                     "avg_papers_per_dataset": round(
-                        sum(len(d.paper_ids) for d in datasets.values())
-                        / ds_count,
+                        sum(len(d.paper_ids) for d in datasets.values()) / ds_count,
                         2,
                     ),
                 },

@@ -79,11 +79,7 @@ def configure_logging() -> None:
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             add_context,
-            (
-                structlog.processors.JSONRenderer()
-                if use_json
-                else structlog.dev.ConsoleRenderer()
-            ),
+            (structlog.processors.JSONRenderer() if use_json else structlog.dev.ConsoleRenderer()),
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
         logger_factory=structlog.stdlib.LoggerFactory(),

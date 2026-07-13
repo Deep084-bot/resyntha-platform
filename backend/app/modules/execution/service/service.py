@@ -2,7 +2,7 @@
 
 import uuid
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
@@ -40,8 +40,7 @@ class ExecutionService:
         """Return ``True`` if the investigation has a PENDING or RUNNING execution."""
         executions = self._repository.list_by_investigation(investigation_id)
         return any(
-            e.status in (ExecutionStatus.PENDING, ExecutionStatus.RUNNING)
-            for e in executions
+            e.status in (ExecutionStatus.PENDING, ExecutionStatus.RUNNING) for e in executions
         )
 
     def create_execution(
@@ -61,7 +60,8 @@ class ExecutionService:
         return ExecutionResponse.model_validate(saved)
 
     def get_execution(
-        self, execution_id: uuid.UUID,
+        self,
+        execution_id: uuid.UUID,
     ) -> ExecutionResponse | None:
         """Return an execution by id, or ``None``."""
         execution = self._repository.get_by_id(execution_id)
@@ -70,7 +70,8 @@ class ExecutionService:
         return ExecutionResponse.model_validate(execution)
 
     def list_executions(
-        self, investigation_id: uuid.UUID,
+        self,
+        investigation_id: uuid.UUID,
     ) -> Sequence[ExecutionResponse]:
         """Return all executions for an investigation."""
         executions = self._repository.list_by_investigation(investigation_id)
@@ -96,13 +97,13 @@ class ExecutionService:
         if request.status is not None:
             execution.status = request.status
             if request.status == ExecutionStatus.RUNNING:
-                execution.started_at = datetime.now(timezone.utc)
+                execution.started_at = datetime.now(UTC)
             if request.status in (
                 ExecutionStatus.COMPLETED,
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELLED,
             ):
-                execution.completed_at = datetime.now(timezone.utc)
+                execution.completed_at = datetime.now(UTC)
 
         updated = self._repository.update(execution)
         self._session.commit()
@@ -151,7 +152,7 @@ class ExecutionStageService:
             stage_name=stage_name,
             status=ExecutionStageStatus.RUNNING,
             attempt=attempt,
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
         self._repository.create(stage)
         self._session.commit()
@@ -182,7 +183,7 @@ class ExecutionStageService:
                 stage=stage_name,
             )
             return
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if metadata is not None:
             stage.status = ExecutionStageStatus.PARTIAL_SUCCESS
             stage._metadata = metadata
@@ -190,9 +191,7 @@ class ExecutionStageService:
             stage.status = ExecutionStageStatus.COMPLETED
         stage.completed_at = now
         if stage.started_at:
-            stage.duration_ms = int(
-                (now - stage.started_at).total_seconds() * 1000
-            )
+            stage.duration_ms = int((now - stage.started_at).total_seconds() * 1000)
         self._repository.update(stage)
         self._session.commit()
 
@@ -211,19 +210,18 @@ class ExecutionStageService:
                 stage=stage_name,
             )
             return
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         stage.status = ExecutionStageStatus.FAILED
         stage.completed_at = now
         if stage.started_at:
-            stage.duration_ms = int(
-                (now - stage.started_at).total_seconds() * 1000
-            )
+            stage.duration_ms = int((now - stage.started_at).total_seconds() * 1000)
         stage.error_message = error_message
         self._repository.update(stage)
         self._session.commit()
 
     def list_stages(
-        self, execution_id: uuid.UUID,
+        self,
+        execution_id: uuid.UUID,
     ) -> Sequence[ExecutionStageResponse]:
         """Return all stages for an execution, oldest first."""
         stages = self._repository.list_by_execution(execution_id)

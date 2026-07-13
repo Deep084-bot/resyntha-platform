@@ -38,9 +38,7 @@ class InstitutionAnalyzer(BaseAnalyzer):
                 "institution_type_distribution": type_dist,
                 "top_institutions": top[:max_results],
                 "institutions_by_type": {
-                    t: sorted(
-                        entries, key=lambda x: x["paper_count"], reverse=True
-                    )[:max_results]
+                    t: sorted(entries, key=lambda x: x["paper_count"], reverse=True)[:max_results]
                     for t, entries in institutions_by_type.items()
                 },
             },

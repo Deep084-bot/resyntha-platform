@@ -111,18 +111,28 @@ class SemanticRetriever:
 
         analyzed = self._analyzer.analyze(question)
         diag.num_keywords = len(analyzed.keywords)
-        diag.num_signals = sum([
-            1 for s in [
-                analyzed.methodology_signals, analyzed.dataset_signals,
-                analyzed.technology_signals, analyzed.domain_signals,
-                analyzed.author_signals, analyzed.gap_signals,
-            ] if s
-        ])
+        diag.num_signals = sum(
+            [
+                1
+                for s in [
+                    analyzed.methodology_signals,
+                    analyzed.dataset_signals,
+                    analyzed.technology_signals,
+                    analyzed.domain_signals,
+                    analyzed.author_signals,
+                    analyzed.gap_signals,
+                ]
+                if s
+            ]
+        )
 
         diag.detected_intent = intent.value if intent else ""
 
         # Compute intent-aware strategy
-        strategy = _INTENT_STRATEGIES.get(intent, _INTENT_STRATEGIES[QuestionIntent.GENERAL_RESEARCH_QUESTION])
+        resolved_intent = intent or QuestionIntent.GENERAL_RESEARCH_QUESTION
+        strategy = _INTENT_STRATEGIES.get(
+            resolved_intent, _INTENT_STRATEGIES[QuestionIntent.GENERAL_RESEARCH_QUESTION]
+        )
         effective_top_k = strategy.get("top_k", top_k)
         priority_labels: set[str] = strategy.get("priority_labels", set())
         priority_sources: set[str] = strategy.get("priority_sources", set())
@@ -149,10 +159,11 @@ class SemanticRetriever:
         diag.retrieval_duration_ms = (time.perf_counter() - embed_start) * 1000
 
         # Vector search (with intent-adjusted top_k)
-        search_start = time.perf_counter()
         try:
             results = self._vector_repo.search(
-                investigation_id, query_vec, top_k=effective_top_k,
+                investigation_id,
+                query_vec,
+                top_k=effective_top_k,
             )
         except Exception as exc:
             logger.error("semantic_retriever_search_error", error=str(exc)[:500])
@@ -161,8 +172,6 @@ class SemanticRetriever:
                 metadata=["Vector search failed."],
                 diagnostics=diag,
             )
-        search_latency = (time.perf_counter() - search_start) * 1000
-
         if not results:
             diag.retrieval_duration_ms = (time.perf_counter() - start) * 1000
             return RetrievalResult(
@@ -171,7 +180,6 @@ class SemanticRetriever:
             )
 
         # Convert to RetrievedSections with hybrid scores + intent boost
-        hybrid_start = time.perf_counter()
         sections: list[RetrievedSection] = []
         for chunk_emb, similarity in results:
             section = RetrievedSection(
@@ -180,8 +188,9 @@ class SemanticRetriever:
                 content=chunk_emb.content,
             )
             hybrid_score = self._hybrid.score(section, analyzed, similarity)
-            if (priority_labels and section.label in priority_labels) or \
-               (priority_sources and section.source in priority_sources):
+            if (priority_labels and section.label in priority_labels) or (
+                priority_sources and section.source in priority_sources
+            ):
                 hybrid_score = min(hybrid_score + _PRIORITY_BOOST, 1.0)
             section.score = hybrid_score
             sections.append(section)
@@ -250,8 +259,7 @@ class SemanticRetriever:
                 selected.append(truncated)
                 stats["truncated_count"] = int(stats["truncated_count"]) + 1
                 meta.append(
-                    f"{section.source} → {section.label} "
-                    f"(score={section.score:.2f}, TRUNCATED)"
+                    f"{section.source} → {section.label} (score={section.score:.2f}, TRUNCATED)"
                 )
             else:
                 stats["dropped_budget"] = int(stats["dropped_budget"]) + 1

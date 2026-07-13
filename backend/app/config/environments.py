@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class Environment(str, Enum):
+class Environment(StrEnum):
     DEVELOPMENT = "development"
     TESTING = "testing"
     PRODUCTION = "production"

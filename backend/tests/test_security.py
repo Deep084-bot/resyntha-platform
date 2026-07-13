@@ -21,7 +21,6 @@ from app.security.config import build_security_headers
 from app.security.headers import DEFAULT_SECURITY_HEADERS
 from app.security.upload import ALLOWED_EXTENSIONS, ALLOWED_MIME_TYPES, validate_upload
 
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -70,16 +69,9 @@ class TestSecurityHeadersConfig:
     def test_default_headers_have_expected_values(self) -> None:
         assert DEFAULT_SECURITY_HEADERS["X-Content-Type-Options"] == "nosniff"
         assert DEFAULT_SECURITY_HEADERS["X-Frame-Options"] == "DENY"
-        assert (
-            DEFAULT_SECURITY_HEADERS["Referrer-Policy"]
-            == "strict-origin-when-cross-origin"
-        )
-        assert (
-            DEFAULT_SECURITY_HEADERS["Cross-Origin-Opener-Policy"] == "same-origin"
-        )
-        assert (
-            DEFAULT_SECURITY_HEADERS["Cross-Origin-Resource-Policy"] == "same-origin"
-        )
+        assert DEFAULT_SECURITY_HEADERS["Referrer-Policy"] == "strict-origin-when-cross-origin"
+        assert DEFAULT_SECURITY_HEADERS["Cross-Origin-Opener-Policy"] == "same-origin"
+        assert DEFAULT_SECURITY_HEADERS["Cross-Origin-Resource-Policy"] == "same-origin"
 
 
 class TestSecurityHeadersMiddleware:
@@ -87,10 +79,7 @@ class TestSecurityHeadersMiddleware:
         resp = client.get("/api/v1/live")
         assert resp.headers.get("x-content-type-options") == "nosniff"
         assert resp.headers.get("x-frame-options") == "DENY"
-        assert (
-            resp.headers.get("referrer-policy")
-            == "strict-origin-when-cross-origin"
-        )
+        assert resp.headers.get("referrer-policy") == "strict-origin-when-cross-origin"
         # Permissions-Policy should be present
         assert "permissions-policy" in resp.headers
 
@@ -100,7 +89,8 @@ class TestSecurityHeadersMiddleware:
         app = _make_test_app()
         app.add_middleware(SecurityHeadersMiddlewareFromModule)
         with patch.object(
-            security_middleware_module, "get_settings",
+            security_middleware_module,
+            "get_settings",
         ) as mock_get_settings:
             disabled = get_settings().model_copy(
                 update={"SECURITY_HEADERS_ENABLED": False},
@@ -302,8 +292,9 @@ class TestErrorResponses:
         """Verify the exception_handler returns 500 with no internals."""
         import asyncio
 
-        from app.core.exceptions import unhandled_exception_handler
         from fastapi import Request
+
+        from app.core.exceptions import unhandled_exception_handler
 
         async def _run() -> None:
             scope = {
@@ -314,7 +305,8 @@ class TestErrorResponses:
             }
             request = Request(scope)
             response = await unhandled_exception_handler(
-                request, RuntimeError("secret"),
+                request,
+                RuntimeError("secret"),
             )
             assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
             body = json.loads(response.body)
@@ -441,8 +433,8 @@ class TestDisabledSecurity:
 
 class TestProductionValidation:
     def test_wildcard_cors_rejected(self) -> None:
-        from app.config.validation import ConfigurationError, validate_settings
         from app.config.environments import Environment
+        from app.config.validation import ConfigurationError, validate_settings
 
         settings = get_settings()
         # Temporarily set production with wildcard origin

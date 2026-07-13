@@ -20,7 +20,9 @@ class ExtractedKnowledge(Base):
     __tablename__ = "extracted_knowledge"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     investigation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -69,5 +71,7 @@ class ExtractedKnowledge(Base):
     tokens_used: Mapped[int | None] = mapped_column(Integer, nullable=True)
     confidence_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
     )

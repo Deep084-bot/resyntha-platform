@@ -40,11 +40,9 @@ describe("TopBar", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders user menu", () => {
+  it("renders developer mode indicator", () => {
     renderTopBar();
-    expect(
-      screen.getByRole("button", { name: /user menu/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Developer Mode")).toBeInTheDocument();
   });
 });
 

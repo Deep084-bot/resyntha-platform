@@ -4,7 +4,6 @@ Transforms extracted knowledge into structured intelligence via
 a normalized ResearchGraph and composable analyzers.
 """
 
-from app.modules.intelligence.api import IntelligenceService, LandscapeResponse
 from app.modules.intelligence.aggregation import (
     CollaborationSection,
     DatasetSection,
@@ -22,11 +21,6 @@ from app.modules.intelligence.aggregation import (
     TechnologySection,
     TemporalSection,
 )
-from app.modules.intelligence.presentation import (
-    BaseRenderer,
-    JsonRenderer,
-    MarkdownRenderer,
-)
 from app.modules.intelligence.analyzers import (
     AnalysisResults,
     AnalyzerResult,
@@ -39,6 +33,7 @@ from app.modules.intelligence.analyzers import (
     TechnologyAnalyzer,
     TemporalAnalyzer,
 )
+from app.modules.intelligence.api import IntelligenceService, LandscapeResponse
 from app.modules.intelligence.config import IntelligenceConfig
 from app.modules.intelligence.context import AnalysisContext
 from app.modules.intelligence.graph import (
@@ -56,6 +51,11 @@ from app.modules.intelligence.graph import (
     ResearchGraphBuilder,
     TechnologyNode,
     TechnologyType,
+)
+from app.modules.intelligence.presentation import (
+    BaseRenderer,
+    JsonRenderer,
+    MarkdownRenderer,
 )
 from app.modules.intelligence.services import (
     CentralityService,

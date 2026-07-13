@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi import HTTPException
@@ -12,7 +12,6 @@ from app.modules.bookmark.service.service import BookmarkService
 from app.modules.collection.service.service import CollectionService
 from app.modules.notes.service.service import NoteService
 from app.modules.reading_status.service.service import ReadingStatusService
-
 
 # ── Helper ────────────────────────────────────────────────────────
 
@@ -121,7 +120,7 @@ class TestNoteService:
         repo = MagicMock()
         repo.get_by_id.return_value = MagicMock()  # note exists
         service = NoteService(repo)
-        link = service.add_link(_fake_uuid(), "paper", "paper:123")
+        service.add_link(_fake_uuid(), "paper", "paper:123")
         repo.create_link.assert_called_once()
 
     def test_list_links(self) -> None:
@@ -143,7 +142,7 @@ class TestNoteService:
     def test_create_highlight(self) -> None:
         repo = MagicMock()
         service = NoteService(repo)
-        note = service.create_note(
+        service.create_note(
             _fake_uuid(),
             title="Highlight",
             content="Selected text",
@@ -265,7 +264,7 @@ class TestCollectionService:
         repo = MagicMock()
         repo.get_by_id.return_value = MagicMock()
         service = CollectionService(repo)
-        link = service.add_paper(_fake_uuid(), _fake_uuid())
+        service.add_paper(_fake_uuid(), _fake_uuid())
         repo.add_paper.assert_called_once()
 
     def test_remove_paper_from_collection(self) -> None:

@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 from app.modules.artifact.domain.models import ArtifactType
-from app.modules.copilot.context.builder import ContextBuilder, _ARTIFACT_PRIORITY
+from app.modules.copilot.context.builder import _ARTIFACT_PRIORITY, ContextBuilder
 
 
 def _make_artifact(
@@ -21,14 +21,16 @@ def _make_artifact(
     status_mock.value = status
     art.status = status_mock
     art.payload = payload
-    art.created_at = datetime(2026, 7, 8, tzinfo=timezone.utc)
+    art.created_at = datetime(2026, 7, 8, tzinfo=UTC)
     return art
 
 
 AT = ArtifactType
 
 
-def _make_paper(title: str, authors: list[str] | None = None, abstract: str = "", doi: str = "") -> MagicMock:
+def _make_paper(
+    title: str, authors: list[str] | None = None, abstract: str = "", doi: str = ""
+) -> MagicMock:
     p = MagicMock()
     p.id = uuid.uuid4()
     p.title = title
@@ -63,7 +65,9 @@ def test_build_prioritises_knowledge_package_first() -> None:
     inv_id = uuid.uuid4()
 
     builder._artifact_repo.list_by_investigation.return_value = [
-        _make_artifact(AT.KNOWLEDGE_PACKAGE, {"key_findings": ["Finding 1"], "summary": "Summary text"}),
+        _make_artifact(
+            AT.KNOWLEDGE_PACKAGE, {"key_findings": ["Finding 1"], "summary": "Summary text"}
+        ),
         _make_artifact(AT.RESEARCH_LANDSCAPE, {"research_domains": ["ML"]}),
     ]
     builder._paper_repo.list_by_investigation.return_value = []
@@ -96,9 +100,9 @@ def test_build_uses_latest_artifact_version() -> None:
     inv_id = uuid.uuid4()
 
     old = _make_artifact(AT.KNOWLEDGE_PACKAGE, {"summary": "Old"})
-    old.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    old.created_at = datetime(2026, 1, 1, tzinfo=UTC)
     new = _make_artifact(AT.KNOWLEDGE_PACKAGE, {"summary": "New"})
-    new.created_at = datetime(2026, 7, 8, tzinfo=timezone.utc)
+    new.created_at = datetime(2026, 7, 8, tzinfo=UTC)
 
     builder._artifact_repo.list_by_investigation.return_value = [old, new]
     builder._paper_repo.list_by_investigation.return_value = []
@@ -116,7 +120,9 @@ def test_build_preserves_citation_mappings() -> None:
     builder._artifact_repo.list_by_investigation.return_value = [
         _make_artifact(AT.KNOWLEDGE_PACKAGE, {"key_findings": ["Finding"], "summary": "S"}),
     ]
-    paper1 = _make_paper("Attention Is All You Need", authors=["Vaswani"], doi="10.1234/transformer")
+    paper1 = _make_paper(
+        "Attention Is All You Need", authors=["Vaswani"], doi="10.1234/transformer"
+    )
     paper2 = _make_paper("BERT", authors=["Devlin"], doi="10.1234/bert")
     builder._paper_repo.list_by_investigation.return_value = [paper1, paper2]
 

@@ -17,4 +17,7 @@ sentence-transformers
 
 [dev]
 pytest
+pytest-cov
 ruff
+mypy
+pip-audit

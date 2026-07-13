@@ -11,7 +11,6 @@ before leaving the provider.
 
 import asyncio
 import json
-
 from collections.abc import AsyncIterator
 
 from groq import APIError, APITimeoutError, AsyncGroq, RateLimitError
@@ -134,7 +133,7 @@ class GroqProvider(BaseLLMProvider):
             raise LLMAPIError(msg) from last_error
         raise RuntimeError(msg) from last_error
 
-    async def generate_stream(
+    async def generate_stream(  # type: ignore[override]
         self,
         system_prompt: str,
         user_prompt: str,

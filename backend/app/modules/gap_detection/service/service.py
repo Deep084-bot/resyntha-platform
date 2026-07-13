@@ -133,9 +133,7 @@ class GapDetectionService:
             if gap.confidence >= 0.7:
                 high_confidence += 1
 
-        recommendations = [
-            g.recommendation for g in gaps if g.recommendation
-        ]
+        recommendations = [g.recommendation for g in gaps if g.recommendation]
 
         return ResearchGapReport(
             summary=GapSummary(

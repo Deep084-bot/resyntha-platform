@@ -165,12 +165,12 @@ class TestExceptionLogging:
     def test_unhandled_exception_logs_error(self, client: TestClient) -> None:
         with patch(
             "app.core.middleware.request_logging.logger.error",
-        ) as mock_error:
+        ):
             with patch(
                 "app.api.v1.health.router",
             ):
                 # Trigger a 404 or error
-                resp = client.get("/api/v1/nonexistent")
+                client.get("/api/v1/nonexistent")
                 # 404 doesn't raise exceptions, it's normal handling
                 # We need to actually trigger an exception in a handler
                 pass
@@ -206,7 +206,7 @@ class TestExceptionLogging:
             raise ValueError(msg)
 
         with pytest.raises(ValueError, match="secret internal detail"):
-            resp = client.get("/api/v1/_test_hidden_error")
+            client.get("/api/v1/_test_hidden_error")
 
     def test_exception_log_includes_endpoint(self, client: TestClient) -> None:
         from app.main import app as test_app

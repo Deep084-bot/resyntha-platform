@@ -7,16 +7,17 @@ concerns leak into this file.
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
-from sqlalchemy import DateTime, Enum as SAEnum, Integer, String, Text, func
+from sqlalchemy import DateTime, Integer, String, Text, func
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
 
 
-class InvestigationStatus(str, Enum):
+class InvestigationStatus(StrEnum):
     """Lifecycle states for an investigation."""
 
     CREATED = "created"
@@ -64,6 +65,4 @@ class Investigation(Base):
         onupdate=func.now(),
         nullable=False,
     )
-    _metadata: Mapped[dict | None] = mapped_column(
-        "metadata", JSONB, default=dict, nullable=True
-    )
+    _metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, default=dict, nullable=True)

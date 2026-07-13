@@ -36,7 +36,12 @@ class LandscapeAggregator:
         collab_data = collaboration.data if collaboration else {}
 
         overview = self._build_overview(
-            inst_data, meth_data, tech_data, ds_data, collab_data, temp_data,
+            inst_data,
+            meth_data,
+            tech_data,
+            ds_data,
+            collab_data,
+            temp_data,
         )
         institutions_sec = self._build_institution_section(inst_data)
         methodologies_sec = self._build_methodology_section(meth_data)
@@ -46,7 +51,12 @@ class LandscapeAggregator:
         collaborations_sec = self._build_collaboration_section(collab_data)
         statistics_sec = self._build_statistics_section(temp_data)
         observations = self._build_observations(
-            inst_data, meth_data, tech_data, ds_data, collab_data, temp_data,
+            inst_data,
+            meth_data,
+            tech_data,
+            ds_data,
+            collab_data,
+            temp_data,
         )
 
         return LandscapeResult(
@@ -241,7 +251,8 @@ class LandscapeAggregator:
                 top_by_centrality=author_net_raw.get("top_by_centrality", []),
             ),
             top_institution_collaborations=data.get(
-                "institution_collaborations", [],
+                "institution_collaborations",
+                [],
             ),
             top_author_collaborations=data.get("author_collaborations", []),
         )
@@ -269,118 +280,144 @@ class LandscapeAggregator:
         top_inst = _safe_list(inst, "top_institutions")
         if top_inst:
             e = top_inst[0]
-            obs.append(Observation(
-                category="institution",
-                label="Most active institution",
-                value=f"{e['name']} ({e['paper_count']} papers)",
-            ))
+            obs.append(
+                Observation(
+                    category="institution",
+                    label="Most active institution",
+                    value=f"{e['name']} ({e['paper_count']} papers)",
+                )
+            )
 
         type_dist = inst.get("institution_type_distribution", {})
         if len(type_dist) > 1:
             most_common_type = max(type_dist, key=type_dist.get)
-            obs.append(Observation(
-                category="institution",
-                label="Most common institution type",
-                value=f"{most_common_type} ({type_dist[most_common_type]} institutions)",
-            ))
+            obs.append(
+                Observation(
+                    category="institution",
+                    label="Most common institution type",
+                    value=f"{most_common_type} ({type_dist[most_common_type]} institutions)",
+                )
+            )
 
         top_meth = _safe_list(meth, "methodologies")
         if top_meth:
             e = top_meth[0]
-            obs.append(Observation(
-                category="methodology",
-                label="Most common methodology",
-                value=f"{e['name']} ({e['paper_count']} papers)",
-            ))
+            obs.append(
+                Observation(
+                    category="methodology",
+                    label="Most common methodology",
+                    value=f"{e['name']} ({e['paper_count']} papers)",
+                )
+            )
 
         total_meth = meth.get("total_methodologies", 0)
         if total_meth:
-            obs.append(Observation(
-                category="methodology",
-                label="Methodology diversity",
-                value=f"{total_meth} distinct methodologies used",
-            ))
+            obs.append(
+                Observation(
+                    category="methodology",
+                    label="Methodology diversity",
+                    value=f"{total_meth} distinct methodologies used",
+                )
+            )
 
         top_tech = _safe_list(tech, "top_technologies")
         if top_tech:
-            obs.append(Observation(
-                category="technology",
-                label="Most used technology",
-                value=f"{top_tech[0][0]} ({top_tech[0][1]} papers)",
-            ))
+            obs.append(
+                Observation(
+                    category="technology",
+                    label="Most used technology",
+                    value=f"{top_tech[0][0]} ({top_tech[0][1]} papers)",
+                )
+            )
 
         first_year_map = tech.get("first_appearance_by_year", {})
         if first_year_map:
             latest = max(first_year_map.items(), key=lambda x: x[1] or 0)
             if latest[1] is not None:
-                obs.append(Observation(
-                    category="technology",
-                    label="Newest technology",
-                    value=f"{latest[0]} (first appeared {latest[1]})",
-                ))
+                obs.append(
+                    Observation(
+                        category="technology",
+                        label="Newest technology",
+                        value=f"{latest[0]} (first appeared {latest[1]})",
+                    )
+                )
 
         tech_div = tech.get("diversity", {})
         if tech_div.get("total_technologies", 0):
             avg = tech_div.get("avg_papers_per_technology", 0.0)
-            obs.append(Observation(
-                category="technology",
-                label="Technology adoption rate",
-                value=f"{avg} papers per technology on average",
-            ))
+            obs.append(
+                Observation(
+                    category="technology",
+                    label="Technology adoption rate",
+                    value=f"{avg} papers per technology on average",
+                )
+            )
 
         top_ds = _safe_list(ds, "top_datasets")
         if top_ds:
-            obs.append(Observation(
-                category="dataset",
-                label="Most used dataset",
-                value=f"{top_ds[0][0]} ({top_ds[0][1]} papers)",
-            ))
+            obs.append(
+                Observation(
+                    category="dataset",
+                    label="Most used dataset",
+                    value=f"{top_ds[0][0]} ({top_ds[0][1]} papers)",
+                )
+            )
 
         ds_div = ds.get("diversity", {})
         if ds_div.get("total_datasets", 0):
             avg = ds_div.get("avg_papers_per_dataset", 0.0)
-            obs.append(Observation(
-                category="dataset",
-                label="Dataset reuse rate",
-                value=f"{avg} papers per dataset on average",
-            ))
+            obs.append(
+                Observation(
+                    category="dataset",
+                    label="Dataset reuse rate",
+                    value=f"{avg} papers per dataset on average",
+                )
+            )
 
         years = temp.get("years_covered", [])
         if len(years) >= 1:
             span = f"{years[0]}" if len(years) == 1 else f"{years[0]}–{years[-1]}"
-            obs.append(Observation(
-                category="temporal",
-                label="Research time span",
-                value=span,
-            ))
+            obs.append(
+                Observation(
+                    category="temporal",
+                    label="Research time span",
+                    value=span,
+                )
+            )
 
         total_papers = temp.get("total_papers", 0)
         if total_papers:
-            obs.append(Observation(
-                category="temporal",
-                label="Total research output",
-                value=f"{total_papers} papers in corpus",
-            ))
+            obs.append(
+                Observation(
+                    category="temporal",
+                    label="Total research output",
+                    value=f"{total_papers} papers in corpus",
+                )
+            )
 
         collab_inst = collab.get("institution_network", {})
         tot_inst = collab_inst.get("total_institutions", 0)
         tot_collabs = collab_inst.get("total_collaborations", 0)
         if tot_inst:
             rate = round(tot_collabs / max(tot_inst, 1), 2)
-            obs.append(Observation(
-                category="collaboration",
-                label="Institution collaboration intensity",
-                value=f"{rate} collaborations per institution",
-            ))
+            obs.append(
+                Observation(
+                    category="collaboration",
+                    label="Institution collaboration intensity",
+                    value=f"{rate} collaborations per institution",
+                )
+            )
 
         collab_author = collab.get("author_network", {})
         auth_edges = collab_author.get("total_collaborations", 0)
         if auth_edges:
-            obs.append(Observation(
-                category="collaboration",
-                label="Author collaboration network",
-                value=f"{auth_edges} co-authorship connections",
-            ))
+            obs.append(
+                Observation(
+                    category="collaboration",
+                    label="Author collaboration network",
+                    value=f"{auth_edges} co-authorship connections",
+                )
+            )
 
         return obs
 

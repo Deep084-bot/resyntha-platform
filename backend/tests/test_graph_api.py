@@ -18,7 +18,6 @@ from app.modules.intelligence.graph.api.schemas import (
 )
 from app.modules.intelligence.graph.api.service import GraphApiService
 
-
 # ── DTO tests ─────────────────────────────────────────────────────
 
 
@@ -72,9 +71,16 @@ class TestGraphDTOs:
                 GraphNodeDTO(id="n2", type=NodeType.AUTHOR, label="A1"),
             ],
             edges=[
-                GraphEdgeDTO(id="e1", source="n1", target="n2", label="AUTHORED_BY", type="AUTHORED_BY"),
+                GraphEdgeDTO(
+                    id="e1", source="n1", target="n2", label="AUTHORED_BY", type="AUTHORED_BY"
+                ),
             ],
-            metadata=GraphMetadataDTO(total_nodes=2, total_edges=1, node_counts={"paper": 1, "author": 1}, edge_counts={"AUTHORED_BY": 1}),
+            metadata=GraphMetadataDTO(
+                total_nodes=2,
+                total_edges=1,
+                node_counts={"paper": 1, "author": 1},
+                edge_counts={"AUTHORED_BY": 1},
+            ),
         )
         assert dto.metadata.total_nodes == 2
         assert dto.metadata.total_edges == 1
@@ -87,15 +93,29 @@ class TestGraphDTOs:
         assert dto.nodes == []
 
     def test_node_metadata_flexible(self) -> None:
-        node = GraphNodeDTO(id="d1", type=NodeType.DATASET, label="ImageNet", metadata={"name": "ImageNet", "related_papers": ["p1", "p2"]})
+        node = GraphNodeDTO(
+            id="d1",
+            type=NodeType.DATASET,
+            label="ImageNet",
+            metadata={"name": "ImageNet", "related_papers": ["p1", "p2"]},
+        )
         assert node.metadata["name"] == "ImageNet"
         assert len(node.metadata["related_papers"]) == 2
 
     def test_serialization_roundtrip(self) -> None:
         dto = GraphDTO(
             nodes=[GraphNodeDTO(id="n1", type=NodeType.PAPER, label="Paper")],
-            edges=[GraphEdgeDTO(id="e1", source="n1", target="author:X", label="AUTHORED_BY", type="AUTHORED_BY")],
-            metadata=GraphMetadataDTO(total_nodes=1, total_edges=1, node_counts={"paper": 1}, edge_counts={"AUTHORED_BY": 1}),
+            edges=[
+                GraphEdgeDTO(
+                    id="e1", source="n1", target="author:X", label="AUTHORED_BY", type="AUTHORED_BY"
+                )
+            ],
+            metadata=GraphMetadataDTO(
+                total_nodes=1,
+                total_edges=1,
+                node_counts={"paper": 1},
+                edge_counts={"AUTHORED_BY": 1},
+            ),
         )
         raw = dto.model_dump()
         restored = GraphDTO.model_validate(raw)

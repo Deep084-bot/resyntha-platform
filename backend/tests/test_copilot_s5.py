@@ -35,10 +35,12 @@ from app.modules.copilot.retrieval.models import (
 from app.modules.copilot.retrieval.semantic_retriever import SemanticRetriever
 from app.modules.copilot.service.service import CopilotService
 
-
 # ── Helpers ─────────────────────────────────────────────────────
 
-def _make_section(content: str = "Test content.", source: str = "KP", label: str = "Findings", score: float = 0.0) -> RetrievedSection:
+
+def _make_section(
+    content: str = "Test content.", source: str = "KP", label: str = "Findings", score: float = 0.0
+) -> RetrievedSection:
     return RetrievedSection(source=source, label=label, content=content, score=score)
 
 
@@ -56,6 +58,7 @@ def _make_result(sections: list[RetrievedSection] | None = None) -> RetrievalRes
 def _make_validation(kept: int = 2, total: int = 3) -> CitationValidationResult:
     from app.modules.copilot.quality.validator import CitationValidationResult
     from app.modules.copilot.schemas.response import Citation
+
     return CitationValidationResult(
         validated=[Citation(paper_title=f"Paper {i}", relevance="relevant") for i in range(kept)],
         discarded=[Citation(paper_title=f"Bad {i}", relevance="") for i in range(total - kept)],
@@ -67,58 +70,127 @@ def _make_validation(kept: int = 2, total: int = 3) -> CitationValidationResult:
 
 # ── Question Classification ─────────────────────────────────────
 
+
 class TestQuestionClassifier:
     def _classify(self, question: str) -> QuestionIntent:
         return QuestionClassifier().classify(question).intent
 
     def test_paper_summary(self) -> None:
-        assert self._classify('Summarise "Attention Is All You Need"') == QuestionIntent.PAPER_SUMMARY
+        assert (
+            self._classify('Summarise "Attention Is All You Need"') == QuestionIntent.PAPER_SUMMARY
+        )
         assert self._classify('What does "BERT" say about masking?') == QuestionIntent.PAPER_SUMMARY
-        assert self._classify('Summarise the key findings of "Vision Transformer"') == QuestionIntent.PAPER_SUMMARY
+        assert (
+            self._classify('Summarise the key findings of "Vision Transformer"')
+            == QuestionIntent.PAPER_SUMMARY
+        )
 
     def test_paper_comparison(self) -> None:
-        assert self._classify('Compare "ViT" and "Swin Transformer"') == QuestionIntent.PAPER_COMPARISON
-        assert self._classify('What are the differences between "ResNet" and "DenseNet"?') == QuestionIntent.PAPER_COMPARISON
+        assert (
+            self._classify('Compare "ViT" and "Swin Transformer"')
+            == QuestionIntent.PAPER_COMPARISON
+        )
+        assert (
+            self._classify('What are the differences between "ResNet" and "DenseNet"?')
+            == QuestionIntent.PAPER_COMPARISON
+        )
 
     def test_methodology_comparison(self) -> None:
-        assert self._classify('Compare the methodologies used in these papers') == QuestionIntent.METHODOLOGY_COMPARISON
-        assert self._classify('Which method performs best?') == QuestionIntent.METHODOLOGY_COMPARISON
-        assert self._classify('Compare approaches for image classification') == QuestionIntent.METHODOLOGY_COMPARISON
+        assert (
+            self._classify("Compare the methodologies used in these papers")
+            == QuestionIntent.METHODOLOGY_COMPARISON
+        )
+        assert (
+            self._classify("Which method performs best?") == QuestionIntent.METHODOLOGY_COMPARISON
+        )
+        assert (
+            self._classify("Compare approaches for image classification")
+            == QuestionIntent.METHODOLOGY_COMPARISON
+        )
 
     def test_dataset_comparison(self) -> None:
-        assert self._classify('Compare the datasets used in this area') == QuestionIntent.DATASET_COMPARISON
-        assert self._classify('Which dataset is most commonly used?') == QuestionIntent.DATASET_COMPARISON
-        assert self._classify('Which benchmarks are most common?') == QuestionIntent.DATASET_COMPARISON
+        assert (
+            self._classify("Compare the datasets used in this area")
+            == QuestionIntent.DATASET_COMPARISON
+        )
+        assert (
+            self._classify("Which dataset is most commonly used?")
+            == QuestionIntent.DATASET_COMPARISON
+        )
+        assert (
+            self._classify("Which benchmarks are most common?") == QuestionIntent.DATASET_COMPARISON
+        )
 
     def test_technology_comparison(self) -> None:
-        assert self._classify('Compare the technologies used') == QuestionIntent.TECHNOLOGY_COMPARISON
-        assert self._classify('Which framework performs better?') == QuestionIntent.TECHNOLOGY_COMPARISON
-        assert self._classify('Compare the tools and libraries used') == QuestionIntent.TECHNOLOGY_COMPARISON
+        assert (
+            self._classify("Compare the technologies used") == QuestionIntent.TECHNOLOGY_COMPARISON
+        )
+        assert (
+            self._classify("Which framework performs better?")
+            == QuestionIntent.TECHNOLOGY_COMPARISON
+        )
+        assert (
+            self._classify("Compare the tools and libraries used")
+            == QuestionIntent.TECHNOLOGY_COMPARISON
+        )
 
     def test_limitation_analysis(self) -> None:
-        assert self._classify('What are the limitations of current approaches?') == QuestionIntent.LIMITATION_ANALYSIS
-        assert self._classify('What drawbacks exist in these methods?') == QuestionIntent.LIMITATION_ANALYSIS
-        assert self._classify('What weaknesses were identified?') == QuestionIntent.LIMITATION_ANALYSIS
+        assert (
+            self._classify("What are the limitations of current approaches?")
+            == QuestionIntent.LIMITATION_ANALYSIS
+        )
+        assert (
+            self._classify("What drawbacks exist in these methods?")
+            == QuestionIntent.LIMITATION_ANALYSIS
+        )
+        assert (
+            self._classify("What weaknesses were identified?") == QuestionIntent.LIMITATION_ANALYSIS
+        )
 
     def test_research_gap_exploration(self) -> None:
-        assert self._classify('What research gaps exist in this field?') == QuestionIntent.RESEARCH_GAP_EXPLORATION
-        assert self._classify('What open problems remain?') == QuestionIntent.RESEARCH_GAP_EXPLORATION
-        assert self._classify('What future work is suggested?') == QuestionIntent.RESEARCH_GAP_EXPLORATION
-        assert self._classify('What challenges still need to be addressed?') == QuestionIntent.RESEARCH_GAP_EXPLORATION
+        assert (
+            self._classify("What research gaps exist in this field?")
+            == QuestionIntent.RESEARCH_GAP_EXPLORATION
+        )
+        assert (
+            self._classify("What open problems remain?") == QuestionIntent.RESEARCH_GAP_EXPLORATION
+        )
+        assert (
+            self._classify("What future work is suggested?")
+            == QuestionIntent.RESEARCH_GAP_EXPLORATION
+        )
+        assert (
+            self._classify("What challenges still need to be addressed?")
+            == QuestionIntent.RESEARCH_GAP_EXPLORATION
+        )
 
     def test_trend_analysis(self) -> None:
-        assert self._classify('What are the current trends in this field?') == QuestionIntent.TREND_ANALYSIS
-        assert self._classify('What are the emerging research directions?') == QuestionIntent.TREND_ANALYSIS
-        assert self._classify('What is the state of the art?') == QuestionIntent.TREND_ANALYSIS
+        assert (
+            self._classify("What are the current trends in this field?")
+            == QuestionIntent.TREND_ANALYSIS
+        )
+        assert (
+            self._classify("What are the emerging research directions?")
+            == QuestionIntent.TREND_ANALYSIS
+        )
+        assert self._classify("What is the state of the art?") == QuestionIntent.TREND_ANALYSIS
 
     def test_evidence_lookup(self) -> None:
-        assert self._classify('What is attention in transformers?') == QuestionIntent.EVIDENCE_LOOKUP
-        assert self._classify('Define self-supervised learning') == QuestionIntent.EVIDENCE_LOOKUP
-        assert self._classify('Explain how backpropagation works') == QuestionIntent.EVIDENCE_LOOKUP
+        assert (
+            self._classify("What is attention in transformers?") == QuestionIntent.EVIDENCE_LOOKUP
+        )
+        assert self._classify("Define self-supervised learning") == QuestionIntent.EVIDENCE_LOOKUP
+        assert self._classify("Explain how backpropagation works") == QuestionIntent.EVIDENCE_LOOKUP
 
     def test_general_research_question(self) -> None:
-        assert self._classify('How does this investigation contribute to the field?') == QuestionIntent.GENERAL_RESEARCH_QUESTION
-        assert self._classify('What conclusions can we draw?') == QuestionIntent.GENERAL_RESEARCH_QUESTION
+        assert (
+            self._classify("How does this investigation contribute to the field?")
+            == QuestionIntent.GENERAL_RESEARCH_QUESTION
+        )
+        assert (
+            self._classify("What conclusions can we draw?")
+            == QuestionIntent.GENERAL_RESEARCH_QUESTION
+        )
 
     def test_paper_mention_extraction(self) -> None:
         qc = QuestionClassifier()
@@ -133,6 +205,7 @@ class TestQuestionClassifier:
 
 
 # ── Intent-Aware Retrieval ──────────────────────────────────────
+
 
 class TestIntentAwareRetrieval:
     def test_paper_summary_increases_top_k(self) -> None:
@@ -174,7 +247,9 @@ class TestIntentAwareRetrieval:
         mock_embedder.embed_query.return_value = [0.1, 0.2, 0.3, 0.4]
         retriever._embedder = mock_embedder
 
-        result = retriever.retrieve(uuid.uuid4(), "What gaps exist?", intent=QuestionIntent.RESEARCH_GAP_EXPLORATION)
+        result = retriever.retrieve(
+            uuid.uuid4(), "What gaps exist?", intent=QuestionIntent.RESEARCH_GAP_EXPLORATION
+        )
         assert result.sections
         gap_sections = [s for s in result.sections if s.source == "Gap Report"]
         assert len(gap_sections) > 0
@@ -199,7 +274,9 @@ class TestIntentAwareRetrieval:
         mock_embedder.embed_query.return_value = [0.1, 0.1, 0.1, 0.1]
         retriever._embedder = mock_embedder
 
-        result = retriever.retrieve(uuid.uuid4(), "What are the trends?", intent=QuestionIntent.TREND_ANALYSIS)
+        result = retriever.retrieve(
+            uuid.uuid4(), "What are the trends?", intent=QuestionIntent.TREND_ANALYSIS
+        )
         assert result.diagnostics is not None
         assert result.diagnostics.detected_intent == "trend_analysis"
 
@@ -218,6 +295,7 @@ class TestIntentAwareRetrieval:
 
 # ── Evidence Aggregation ────────────────────────────────────────
 
+
 class TestEvidenceAggregator:
     def test_aggregate_empty(self) -> None:
         aggregator = EvidenceAggregator()
@@ -226,15 +304,21 @@ class TestEvidenceAggregator:
 
     def test_aggregate_single_section(self) -> None:
         aggregator = EvidenceAggregator()
-        section = _make_section(content="Transformer models achieve state-of-the-art results on NLP benchmarks.")
+        section = _make_section(
+            content="Transformer models achieve state-of-the-art results on NLP benchmarks."
+        )
         bundle = aggregator.aggregate([section])
         assert len(bundle.items) >= 1
 
     def test_aggregate_deduplicates_overlap(self) -> None:
         aggregator = EvidenceAggregator()
         sections = [
-            _make_section("Transformer models achieve state-of-the-art results on NLP benchmark tasks."),
-            _make_section("Transformer models achieve state-of-the-art results on NLP benchmark tasks across many datasets."),
+            _make_section(
+                "Transformer models achieve state-of-the-art results on NLP benchmark tasks."
+            ),
+            _make_section(
+                "Transformer models achieve state-of-the-art results on NLP benchmark tasks across many datasets."
+            ),
         ]
         bundle = aggregator.aggregate(sections)
         assert len(bundle.items) >= 1
@@ -250,7 +334,9 @@ class TestEvidenceAggregator:
 
     def test_aggregate_detects_inference(self) -> None:
         aggregator = EvidenceAggregator()
-        section = _make_section(content="This suggests that deeper models may perform better on complex tasks.")
+        section = _make_section(
+            content="This suggests that deeper models may perform better on complex tasks."
+        )
         bundle = aggregator.aggregate([section])
         assert any(item.is_inference for item in bundle.items)
 
@@ -266,7 +352,9 @@ class TestEvidenceAggregator:
 
     def test_aggregate_preserves_provenance(self) -> None:
         aggregator = EvidenceAggregator()
-        section = _make_section(content="Deep Learning is dominant.", source="KP", label="Methodologies")
+        section = _make_section(
+            content="Deep Learning is dominant.", source="KP", label="Methodologies"
+        )
         bundle = aggregator.aggregate([section])
         assert bundle.items
         assert bundle.items[0].source_chunks
@@ -275,6 +363,7 @@ class TestEvidenceAggregator:
 
 # ── Citation Grouping ───────────────────────────────────────────
 
+
 class TestCitationGrouper:
     def test_group_empty(self) -> None:
         grouper = CitationGrouper()
@@ -282,12 +371,14 @@ class TestCitationGrouper:
 
     def test_group_single_claim(self) -> None:
         grouper = CitationGrouper()
-        bundle = EvidenceBundle(items=[
-            EvidenceItem(
-                claim="Attention is key.",
-                supporting_papers=[SupportingPaper(title="Paper A", relevance="relevant")],
-            ),
-        ])
+        bundle = EvidenceBundle(
+            items=[
+                EvidenceItem(
+                    claim="Attention is key.",
+                    supporting_papers=[SupportingPaper(title="Paper A", relevance="relevant")],
+                ),
+            ]
+        )
         grouped = grouper.group(bundle)
         assert len(grouped) == 1
         assert grouped[0].claim == "Attention is key."
@@ -295,21 +386,24 @@ class TestCitationGrouper:
 
     def test_group_multiple_claims_shared_paper(self) -> None:
         grouper = CitationGrouper()
-        bundle = EvidenceBundle(items=[
-            EvidenceItem(
-                claim="Attention is key.",
-                supporting_papers=[SupportingPaper(title="Paper A")],
-            ),
-            EvidenceItem(
-                claim="CNNs are effective.",
-                supporting_papers=[SupportingPaper(title="Paper B")],
-            ),
-        ])
+        bundle = EvidenceBundle(
+            items=[
+                EvidenceItem(
+                    claim="Attention is key.",
+                    supporting_papers=[SupportingPaper(title="Paper A")],
+                ),
+                EvidenceItem(
+                    claim="CNNs are effective.",
+                    supporting_papers=[SupportingPaper(title="Paper B")],
+                ),
+            ]
+        )
         grouped = grouper.group(bundle)
         assert len(grouped) == 2
 
 
 # ── Confidence Explanation ──────────────────────────────────────
+
 
 class TestConfidenceExplanation:
     def test_calibrate_with_explanation_returns_tuple(self) -> None:
@@ -332,42 +426,55 @@ class TestConfidenceExplanation:
 
 # ── Follow-Up with Evidence Bundle ──────────────────────────────
 
+
 class TestFollowUpS5:
     def test_generate_from_bundle(self) -> None:
         from app.modules.copilot.quality.followup import FollowUpGenerator
+
         fg = FollowUpGenerator()
-        bundle = EvidenceBundle(items=[
-            EvidenceItem(claim="Transformers use attention mechanisms."),
-            EvidenceItem(claim="Common limitations include computational cost."),
-        ])
+        bundle = EvidenceBundle(
+            items=[
+                EvidenceItem(claim="Transformers use attention mechanisms."),
+                EvidenceItem(claim="Common limitations include computational cost."),
+            ]
+        )
         questions = fg.generate(bundle=bundle)
         assert isinstance(questions, list)
         assert len(questions) > 0
 
     def test_generate_from_retrieved(self) -> None:
         from app.modules.copilot.quality.followup import FollowUpGenerator
+
         fg = FollowUpGenerator()
-        result = _make_result(sections=[
-            _make_section(content="Methodologies used: Deep Learning.", label="Methodologies"),
-        ])
+        result = _make_result(
+            sections=[
+                _make_section(content="Methodologies used: Deep Learning.", label="Methodologies"),
+            ]
+        )
         questions = fg.generate(retrieved=result)
         assert isinstance(questions, list)
 
     def test_generate_prefers_bundle(self) -> None:
         from app.modules.copilot.quality.followup import FollowUpGenerator
+
         fg = FollowUpGenerator()
-        bundle = EvidenceBundle(items=[
-            EvidenceItem(claim="Methodology gap exists."),
-        ])
-        result = _make_result(sections=[
-            _make_section(content="Some content.", label="Gaps"),
-        ])
+        bundle = EvidenceBundle(
+            items=[
+                EvidenceItem(claim="Methodology gap exists."),
+            ]
+        )
+        result = _make_result(
+            sections=[
+                _make_section(content="Some content.", label="Gaps"),
+            ]
+        )
         questions = fg.generate(retrieved=result, bundle=bundle)
         assert isinstance(questions, list)
         assert len(questions) > 0
 
 
 # ── Diagnostics Extension ───────────────────────────────────────
+
 
 class TestDiagnosticsS5:
     def test_detected_intent_default(self) -> None:
@@ -419,6 +526,7 @@ class TestDiagnosticsS5:
 
 # ── Error Handling / Graceful Degradation ───────────────────────
 
+
 class TestErrorHandlingS5:
     def test_insufficient_evidence_returns_empty_bundle(self) -> None:
         aggregator = EvidenceAggregator()
@@ -439,7 +547,9 @@ class TestErrorHandlingS5:
         mock_embedder.embed_query.return_value = [0.1, 0.1, 0.1, 0.1]
         retriever._embedder = mock_embedder
 
-        result = retriever.retrieve(uuid.uuid4(), "What gaps exist?", intent=QuestionIntent.RESEARCH_GAP_EXPLORATION)
+        result = retriever.retrieve(
+            uuid.uuid4(), "What gaps exist?", intent=QuestionIntent.RESEARCH_GAP_EXPLORATION
+        )
         assert result.sections == []
 
     def test_empty_comparison_no_crash(self) -> None:
@@ -464,9 +574,11 @@ class TestErrorHandlingS5:
 
 # ── PromptBuilder S5 features ───────────────────────────────────
 
+
 class TestPromptBuilderS5:
     def test_response_model_has_new_fields(self) -> None:
         from app.modules.copilot.prompt.builder import LLMCopilotAnswer
+
         model = LLMCopilotAnswer(answer="test")
         assert hasattr(model, "evidence")
         assert hasattr(model, "grouped_citations")
@@ -474,22 +586,27 @@ class TestPromptBuilderS5:
 
     def test_build_system_prompt_accepts_evidence_bundle(self) -> None:
         from app.modules.copilot.prompt.builder import PromptBuilder
+
         pb = PromptBuilder()
         result = _make_result(sections=[_make_section()])
-        bundle = EvidenceBundle(items=[
-            EvidenceItem(claim="Test evidence claim."),
-        ])
+        bundle = EvidenceBundle(
+            items=[
+                EvidenceItem(claim="Test evidence claim."),
+            ]
+        )
         prompt = pb.build_system_prompt(result, evidence_bundle=bundle)
         assert "Evidence Summary" in prompt
 
     def test_build_system_prompt_accepts_intent(self) -> None:
         from app.modules.copilot.prompt.builder import PromptBuilder
+
         pb = PromptBuilder()
         prompt = pb.build_system_prompt(_make_result(), intent="research_gap_exploration")
         assert "research gaps" in prompt.lower()
 
 
 # ── CopilotService S5 Integration ───────────────────────────────
+
 
 class TestCopilotServiceS5:
     def test_retrieve_with_fallback_returns_analysis(self) -> None:
@@ -524,7 +641,7 @@ class TestCopilotServiceS5:
 
     def test_evidence_aggregation_in_chat_flow(self) -> None:
         """Verify evidence aggregation runs during chat without error."""
-        from unittest.mock import AsyncMock, MagicMock as Mock
+        from unittest.mock import AsyncMock
 
         mock_session = MagicMock()
         service = CopilotService(mock_session)
@@ -562,6 +679,7 @@ class TestCopilotServiceS5:
         result = None
         try:
             import asyncio
+
             result = asyncio.run(service.chat(inv_id, "What are the findings?"))
         except Exception:
             pass

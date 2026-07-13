@@ -1,9 +1,8 @@
-"""Evidence aggregator — merges duplicate evidence, groups related findings, preserves provenance."""
+"""Evidence aggregator — merges duplicates, groups related findings, preserves provenance."""
 
 from __future__ import annotations
 
 import re
-from collections import Counter
 
 from app.modules.copilot.evidence.models import (
     EvidenceBundle,
@@ -58,18 +57,22 @@ class EvidenceAggregator:
                 papers = self._extract_papers(section.content, paper_title_map)
                 all_papers.update(p.title for p in papers)
 
-                items.append(EvidenceItem(
-                    claim=claim_text,
-                    supporting_papers=papers,
-                    source_chunks=[SourceChunk(
-                        source=section.source,
-                        label=section.label,
-                        content=section.content,
-                        score=getattr(section, "score", 0.0),
-                    )],
-                    confidence=min(getattr(section, "score", 0.0) / 100.0, 1.0),
-                    is_inference=is_inference,
-                ))
+                items.append(
+                    EvidenceItem(
+                        claim=claim_text,
+                        supporting_papers=papers,
+                        source_chunks=[
+                            SourceChunk(
+                                source=section.source,
+                                label=section.label,
+                                content=section.content,
+                                score=getattr(section, "score", 0.0),
+                            )
+                        ],
+                        confidence=min(getattr(section, "score", 0.0) / 100.0, 1.0),
+                        is_inference=is_inference,
+                    )
+                )
 
         if not items:
             return EvidenceBundle()
@@ -77,7 +80,9 @@ class EvidenceAggregator:
         char_count = sum(len(i.claim) for i in items)
         total_sources = sum(len(i.source_chunks) for i in items)
         original_chars = sum(len(s.content) for s in sections) if sections else 1
-        compression_ratio = round(1.0 - (char_count / original_chars), 4) if original_chars > 0 else 0.0
+        compression_ratio = (
+            round(1.0 - (char_count / original_chars), 4) if original_chars > 0 else 0.0
+        )
 
         return EvidenceBundle(
             items=items,
@@ -99,9 +104,18 @@ class EvidenceAggregator:
             cleaned = re.sub(r"^[-•*]\s*", "", cleaned)
             if not cleaned or len(cleaned) < _MIN_CLAIM_LENGTH:
                 continue
-            is_inference = any(w in cleaned.lower() for w in (
-                "suggests", "may", "might", "could", "possibly", "potentially", "appears",
-            ))
+            is_inference = any(
+                w in cleaned.lower()
+                for w in (
+                    "suggests",
+                    "may",
+                    "might",
+                    "could",
+                    "possibly",
+                    "potentially",
+                    "appears",
+                )
+            )
             claims.append((cleaned, is_inference))
         return claims
 
@@ -128,7 +142,9 @@ class EvidenceAggregator:
         return len(intersection) / min(len(words_a), len(words_b))
 
     @staticmethod
-    def _extract_papers(content: str, paper_title_map: dict[str, str] | None) -> list[SupportingPaper]:
+    def _extract_papers(
+        content: str, paper_title_map: dict[str, str] | None
+    ) -> list[SupportingPaper]:
         if not paper_title_map:
             return []
         papers: list[SupportingPaper] = []

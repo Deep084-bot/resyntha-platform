@@ -1,14 +1,13 @@
 """Copilot service — investigation-aware research assistant."""
 
 import json
-import time
 import uuid
 from collections.abc import AsyncIterator
 
 from sqlalchemy.orm import Session
 
 from app.core.llm import BaseLLMProvider, ProviderFactory
-from app.core.llm.exceptions import LLMError, LLMParsingError
+from app.core.llm.exceptions import LLMError
 from app.modules.copilot.classification.classifier import QuestionClassifier
 from app.modules.copilot.classification.models import QuestionAnalysis, QuestionIntent
 from app.modules.copilot.evidence.aggregator import EvidenceAggregator
@@ -18,10 +17,10 @@ from app.modules.copilot.prompt.builder import LLMCopilotAnswer, PromptBuilder
 from app.modules.copilot.quality.confidence import ConfidenceCalibrator
 from app.modules.copilot.quality.followup import FollowUpGenerator
 from app.modules.copilot.quality.validator import CitationValidator
+from app.modules.copilot.repository.repository import CopilotRepository
 from app.modules.copilot.retrieval.models import RetrievalDiagnostics, RetrievalResult
 from app.modules.copilot.retrieval.retriever import InvestigationRetriever
 from app.modules.copilot.retrieval.semantic_retriever import SemanticRetriever
-from app.modules.copilot.repository.repository import CopilotRepository
 from app.modules.copilot.schemas.response import (
     ChatResponse,
     Citation,
@@ -35,7 +34,9 @@ from app.observability.logger import get_logger
 logger = get_logger(__name__)
 
 
-_MALFORMED_ANSWER_PLACEHOLDER = "I encountered an issue processing the response. Please try rephrasing your question."
+_MALFORMED_ANSWER_PLACEHOLDER = (
+    "I encountered an issue processing the response. Please try rephrasing your question."
+)
 
 
 class _AnswerStreamExtractor:
@@ -55,7 +56,7 @@ class _AnswerStreamExtractor:
         current = self._parse_answer(buffer)
         if current is None:
             return ""
-        new_text = current[self._prev_len:]
+        new_text = current[self._prev_len :]
         if new_text and self._reset_on_next:
             self._reset_on_next = False
             # If we had a reset signal, start fresh but keep the last chunk
@@ -79,27 +80,27 @@ class _AnswerStreamExtractor:
         i = start
         while i < len(buffer):
             ch = buffer[i]
-            if ch == '\\':
+            if ch == "\\":
                 if i + 1 < len(buffer):
                     next_ch = buffer[i + 1]
-                    if next_ch == '"' or next_ch == '\\' or next_ch == '/':
+                    if next_ch == '"' or next_ch == "\\" or next_ch == "/":
                         result.append(next_ch)
                         i += 2
-                    elif next_ch == 'n':
-                        result.append('\n')
+                    elif next_ch == "n":
+                        result.append("\n")
                         i += 2
-                    elif next_ch == 't':
-                        result.append('\t')
+                    elif next_ch == "t":
+                        result.append("\t")
                         i += 2
-                    elif next_ch == 'u':
+                    elif next_ch == "u":
                         # unicode escape — check if enough chars remain
                         if i + 5 < len(buffer):
                             try:
-                                hex_str = buffer[i + 2:i + 6]
+                                hex_str = buffer[i + 2 : i + 6]
                                 result.append(chr(int(hex_str, 16)))
                                 i += 6
                             except (ValueError, IndexError):
-                                result.append('?')
+                                result.append("?")
                                 i += 1
                         else:
                             # truncated unicode at buffer boundary
@@ -111,7 +112,7 @@ class _AnswerStreamExtractor:
                     break
             elif ch == '"':
                 break
-            elif ch == '\n' or ch == '\r':
+            elif ch == "\n" or ch == "\r":
                 i += 1
             else:
                 result.append(ch)
@@ -142,11 +143,10 @@ class CopilotService:
             self._llm = llm_provider
         else:
             from app.config import get_settings
+
             self._llm = ProviderFactory.create(get_settings().LLM_PROVIDER)
 
-    async def chat(
-        self, investigation_id: uuid.UUID, question: str
-    ) -> ChatResponse:
+    async def chat(self, investigation_id: uuid.UUID, question: str) -> ChatResponse:
         import time as _time
 
         from app.metrics import get_metrics_service
@@ -155,13 +155,9 @@ class CopilotService:
         _metrics.copilot_chat_requests_total.inc()
         _answer_start = _time.monotonic()
 
-        conversation = self._copilot_repo.get_conversation_by_investigation(
-            investigation_id
-        )
+        conversation = self._copilot_repo.get_conversation_by_investigation(investigation_id)
         if conversation is None:
-            conversation = self._copilot_repo.create_conversation(
-                investigation_id
-            )
+            conversation = self._copilot_repo.create_conversation(investigation_id)
 
         try:
             _r_start = _time.monotonic()
@@ -176,10 +172,18 @@ class CopilotService:
         # Evidence aggregation
         evidence_bundle: EvidenceBundle | None = None
         try:
-            paper_title_map = {s.content.split("Title: ")[-1].split("\n")[0]: s.content
-                               for s in retrieved.sections if "Title:" in s.content} if retrieved.sections else None
+            paper_title_map = (
+                {
+                    s.content.split("Title: ")[-1].split("\n")[0]: s.content
+                    for s in retrieved.sections
+                    if "Title:" in s.content
+                }
+                if retrieved.sections
+                else None
+            )
             evidence_bundle = self._evidence_aggregator.aggregate(
-                retrieved.sections, paper_title_map,
+                retrieved.sections,
+                paper_title_map,
             )
             if retrieved.diagnostics is not None:
                 retrieved.diagnostics.aggregated_evidence_count = len(evidence_bundle.items)
@@ -192,25 +196,35 @@ class CopilotService:
             if evidence_bundle and evidence_bundle.items:
                 grouped = self._citation_grouper.group(evidence_bundle)
                 grouped_citations = [
-                    {"claim": g.claim, "papers": [{"paper_title": p.title, "relevance": p.relevance} for p in g.papers]}
+                    {
+                        "claim": g.claim,
+                        "papers": [
+                            {"paper_title": p.title, "relevance": p.relevance} for p in g.papers
+                        ],
+                    }
                     for g in grouped
                 ]
                 if retrieved.diagnostics is not None:
-                    retrieved.diagnostics.grouped_citation_count = sum(len(g.papers) for g in grouped)
+                    retrieved.diagnostics.grouped_citation_count = sum(
+                        len(g.papers) for g in grouped
+                    )
         except Exception as exc:
             logger.error("copilot_grouping_error", error=str(exc)[:500])
 
         try:
             system_prompt = self._prompt_builder.build_system_prompt(
-                retrieved, history, evidence_bundle=evidence_bundle, intent=analysis.intent.value,
+                retrieved,
+                history,
+                evidence_bundle=evidence_bundle,
+                intent=analysis.intent.value,
             ).replace("{question}", question)
             user_prompt = self._prompt_builder.build_user_prompt(history, question)
             if retrieved.diagnostics is not None:
-                retrieved.diagnostics.estimated_prompt_chars = (
-                    len(system_prompt) + len(user_prompt)
-                )
+                retrieved.diagnostics.estimated_prompt_chars = len(system_prompt) + len(user_prompt)
                 retrieved.diagnostics.comparison_mode = analysis.is_comparison
-                retrieved.diagnostics.reasoning_mode = analysis.intent != QuestionIntent.GENERAL_RESEARCH_QUESTION
+                retrieved.diagnostics.reasoning_mode = (
+                    analysis.intent != QuestionIntent.GENERAL_RESEARCH_QUESTION
+                )
         except Exception as exc:
             logger.error("copilot_prompt_error", error=str(exc)[:500])
             return self._error_response("Failed to build prompt.")
@@ -227,25 +241,28 @@ class CopilotService:
             _metrics.copilot_llm_duration_seconds.observe(_time.monotonic() - _llm_start)
         except LLMError as exc:
             logger.error("copilot_llm_error", error=str(exc)[:500])
-            return self._error_response("The language model encountered an issue. Please try again.")
+            return self._error_response(
+                "The language model encountered an issue. Please try again."
+            )
         except Exception as exc:
             logger.error("copilot_generation_error", error=str(exc)[:500])
             return self._error_response("An unexpected error occurred during generation.")
 
-        citation_validation = self._citation_validator.validate(
-            answer_result.citations, retrieved
-        )
+        citation_validation = self._citation_validator.validate(answer_result.citations, retrieved)
         validated_citations = citation_validation.validated
 
-        calibrated_confidence, confidence_explanation = self._confidence_calibrator.calibrate_with_explanation(
-            retrieved, citation_validation, answer_result.confidence
+        calibrated_confidence, confidence_explanation = (
+            self._confidence_calibrator.calibrate_with_explanation(
+                retrieved, citation_validation, answer_result.confidence
+            )
         )
 
         if retrieved.diagnostics is not None:
             retrieved.diagnostics.confidence_explanation = confidence_explanation
 
         followup_questions = self._followup_generator.generate(
-            retrieved=retrieved, bundle=evidence_bundle,
+            retrieved=retrieved,
+            bundle=evidence_bundle,
         )
 
         if citation_validation.discarded:
@@ -296,13 +313,9 @@ class CopilotService:
     async def chat_stream(
         self, investigation_id: uuid.UUID, question: str
     ) -> AsyncIterator[StreamToken | StreamDone | StreamError]:
-        conversation = self._copilot_repo.get_conversation_by_investigation(
-            investigation_id
-        )
+        conversation = self._copilot_repo.get_conversation_by_investigation(investigation_id)
         if conversation is None:
-            conversation = self._copilot_repo.create_conversation(
-                investigation_id
-            )
+            conversation = self._copilot_repo.create_conversation(investigation_id)
 
         history = self._get_history_str(conversation.id)
 
@@ -318,22 +331,27 @@ class CopilotService:
         try:
             evidence_bundle = self._evidence_aggregator.aggregate(retrieved.sections)
             if retrieved.diagnostics is not None:
-                retrieved.diagnostics.aggregated_evidence_count = len(evidence_bundle.items) if evidence_bundle else 0
+                retrieved.diagnostics.aggregated_evidence_count = (
+                    len(evidence_bundle.items) if evidence_bundle else 0
+                )
         except Exception as exc:
             logger.error("copilot_evidence_error", error=str(exc)[:500])
 
         try:
             system_prompt = self._prompt_builder.build_system_prompt(
-                retrieved, history, evidence_bundle=evidence_bundle, intent=analysis.intent.value,
+                retrieved,
+                history,
+                evidence_bundle=evidence_bundle,
+                intent=analysis.intent.value,
             ).replace("{question}", question)
             user_prompt = self._prompt_builder.build_user_prompt(history, question)
             if retrieved.diagnostics is not None:
-                retrieved.diagnostics.estimated_prompt_chars = (
-                    len(system_prompt) + len(user_prompt)
-                )
+                retrieved.diagnostics.estimated_prompt_chars = len(system_prompt) + len(user_prompt)
                 retrieved.diagnostics.detected_intent = analysis.intent.value
                 retrieved.diagnostics.comparison_mode = analysis.is_comparison
-                retrieved.diagnostics.reasoning_mode = analysis.intent != QuestionIntent.GENERAL_RESEARCH_QUESTION
+                retrieved.diagnostics.reasoning_mode = (
+                    analysis.intent != QuestionIntent.GENERAL_RESEARCH_QUESTION
+                )
         except Exception as exc:
             logger.error("copilot_prompt_error", error=str(exc)[:500])
             yield StreamError(message="Failed to build prompt.")
@@ -384,11 +402,14 @@ class CopilotService:
                 parsed.get("citations", []), retrieved
             )
             citations = citation_validation.validated
-            calibrated, confidence_explanation = self._confidence_calibrator.calibrate_with_explanation(
-                retrieved, citation_validation, float(parsed.get("confidence", 0.0))
+            calibrated, confidence_explanation = (
+                self._confidence_calibrator.calibrate_with_explanation(
+                    retrieved, citation_validation, float(parsed.get("confidence", 0.0))
+                )
             )
             suggested_questions = self._followup_generator.generate(
-                retrieved=retrieved, bundle=evidence_bundle,
+                retrieved=retrieved,
+                bundle=evidence_bundle,
             )
             confidence = calibrated
             reasoning = str(parsed.get("reasoning", ""))
@@ -435,9 +456,7 @@ class CopilotService:
         )
 
     def get_history(self, investigation_id: uuid.UUID) -> list[CopilotMessageResponse]:
-        conversation = self._copilot_repo.get_conversation_by_investigation(
-            investigation_id
-        )
+        conversation = self._copilot_repo.get_conversation_by_investigation(investigation_id)
         if conversation is None:
             return []
         return [
@@ -454,13 +473,16 @@ class CopilotService:
     ) -> tuple[RetrievalResult, QuestionAnalysis]:
         """Classify question, then try semantic retriever; fall back to heuristic."""
         from app.metrics import get_metrics_service
+
         _metrics = get_metrics_service()
 
         analysis = self._classifier.classify(question)
 
         try:
             result = self._retriever.retrieve(
-                investigation_id, question, intent=analysis.intent,
+                investigation_id,
+                question,
+                intent=analysis.intent,
             )
             if result.sections:
                 _metrics.retrieval_semantic_total.inc()
@@ -525,10 +547,10 @@ class CopilotService:
             pass
 
         # Try to find JSON object boundaries
-        start = text.find('{')
-        end = text.rfind('}')
+        start = text.find("{")
+        end = text.rfind("}")
         if start != -1 and end != -1 and end > start:
-            candidate = text[start:end + 1]
+            candidate = text[start : end + 1]
             try:
                 return json.loads(candidate)
             except json.JSONDecodeError:
@@ -540,19 +562,17 @@ class CopilotService:
                 parts = text.split(fence)
                 for part in parts:
                     part = part.strip()
-                    if part.startswith('{'):
-                        end_idx = part.rfind('}')
+                    if part.startswith("{"):
+                        end_idx = part.rfind("}")
                         if end_idx != -1:
                             try:
-                                return json.loads(part[:end_idx + 1])
+                                return json.loads(part[: end_idx + 1])
                             except json.JSONDecodeError:
                                 pass
 
         return None
 
-    def _serialize_diagnostics(
-        self, diagnostics: RetrievalDiagnostics | None
-    ) -> dict:
+    def _serialize_diagnostics(self, diagnostics: RetrievalDiagnostics | None) -> dict:
         if diagnostics is None:
             return {}
         return {
@@ -609,9 +629,7 @@ class CopilotService:
                 )
 
         raw_questions = metadata.get("suggested_questions") or []
-        suggested_questions = [
-            str(q) for q in raw_questions if isinstance(q, str)
-        ]
+        suggested_questions = [str(q) for q in raw_questions if isinstance(q, str)]
 
         created_at = getattr(message, "created_at", None)
         created_at_value = created_at.isoformat() if created_at is not None else ""

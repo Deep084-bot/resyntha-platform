@@ -51,26 +51,23 @@ class EvaluationGapRule(BaseGapRule):
                 continue
             if method not in method_findings:
                 method_findings[method] = []
-            for finding in (rec.key_findings or []):
+            for finding in rec.key_findings or []:
                 method_findings[method].append(finding)
-            for lim in (rec.limitations or []):
+            for lim in rec.limitations or []:
                 method_findings[method].append(lim)
 
         for method, texts in method_findings.items():
             if len(texts) < self.MIN_METHOD_FREQ * 2:
                 continue
 
-            metric_mentions = [
-                t for t in texts if _METRIC_TERMS.search(t)
-            ]
+            metric_mentions = [t for t in texts if _METRIC_TERMS.search(t)]
 
             if not metric_mentions:
                 continue
 
-            unique_metrics = len(set(
-                m.group(0).lower() for t in metric_mentions
-                for m in _METRIC_TERMS.finditer(t)
-            ))
+            unique_metrics = len(
+                set(m.group(0).lower() for t in metric_mentions for m in _METRIC_TERMS.finditer(t))
+            )
 
             ratio = len(metric_mentions) / len(texts)
             if unique_metrics <= 2 and ratio >= self.SINGLE_METRIC_RATIO:

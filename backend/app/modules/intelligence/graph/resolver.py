@@ -48,7 +48,10 @@ class EntityResolver:
 _DEFAULT_ALIASES: dict[tuple[str, str], str] = {
     # ── Institutions ──────────────────────────────────────────
     ("institution", "mit"): "Massachusetts Institute of Technology",
-    ("institution", "massachusetts institute of technology"): "Massachusetts Institute of Technology",  # noqa: E501
+    (
+        "institution",
+        "massachusetts institute of technology",
+    ): "Massachusetts Institute of Technology",  # noqa: E501
     ("institution", "stanford"): "Stanford University",
     ("institution", "stanford university"): "Stanford University",
     ("institution", "uc berkeley"): "UC Berkeley",

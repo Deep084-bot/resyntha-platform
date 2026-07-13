@@ -64,11 +64,13 @@ class TestCoOccurrenceService:
         graph = _graph(
             technologies={
                 "PyTorch": TechnologyNode(
-                    name="PyTorch", type=TechnologyType.FRAMEWORK,
+                    name="PyTorch",
+                    type=TechnologyType.FRAMEWORK,
                     paper_ids=[P1, P2],
                 ),
                 "TensorFlow": TechnologyNode(
-                    name="TensorFlow", type=TechnologyType.FRAMEWORK,
+                    name="TensorFlow",
+                    type=TechnologyType.FRAMEWORK,
                     paper_ids=[P1, P2, P3],
                 ),
             },
@@ -82,7 +84,8 @@ class TestCoOccurrenceService:
             papers={"p1": _paper("p1")},
             technologies={
                 "PyTorch": TechnologyNode(
-                    name="PyTorch", type=TechnologyType.FRAMEWORK,
+                    name="PyTorch",
+                    type=TechnologyType.FRAMEWORK,
                     paper_ids=[P1],
                 ),
             },
@@ -184,7 +187,9 @@ class TestTrendService:
             papers={"p1": _paper("p1", year=2023)},
             technologies={
                 "PyTorch": TechnologyNode(
-                    name="PyTorch", type=TechnologyType.FRAMEWORK, paper_ids=["p1"],
+                    name="PyTorch",
+                    type=TechnologyType.FRAMEWORK,
+                    paper_ids=["p1"],
                 ),
             },
         )
@@ -200,7 +205,8 @@ class TestTrendService:
             },
             technologies={
                 "PyTorch": TechnologyNode(
-                    name="PyTorch", type=TechnologyType.FRAMEWORK,
+                    name="PyTorch",
+                    type=TechnologyType.FRAMEWORK,
                     paper_ids=["p1", "p2", "p3"],
                 ),
             },
@@ -221,7 +227,9 @@ class TestTrendService:
             },
             technologies={
                 "T": TechnologyNode(
-                    name="T", type=TechnologyType.OTHER, paper_ids=["p1", "p2"],
+                    name="T",
+                    type=TechnologyType.OTHER,
+                    paper_ids=["p1", "p2"],
                 ),
             },
         )
@@ -242,7 +250,9 @@ class TestTrendService:
             },
             technologies={
                 "T": TechnologyNode(
-                    name="T", type=TechnologyType.OTHER, paper_ids=["p1", "p2", "p3"],
+                    name="T",
+                    type=TechnologyType.OTHER,
+                    paper_ids=["p1", "p2", "p3"],
                 ),
             },
         )
@@ -258,7 +268,8 @@ class TestTrendService:
             },
             technologies={
                 "T": TechnologyNode(
-                    name="T", type=TechnologyType.OTHER,
+                    name="T",
+                    type=TechnologyType.OTHER,
                     paper_ids=["p1", "p1b", "p2"],
                 ),
             },
@@ -272,7 +283,9 @@ class TestTrendService:
             papers={"p1": _paper("p1", year=2023)},
             technologies={
                 "T": TechnologyNode(
-                    name="T", type=TechnologyType.OTHER, paper_ids=["p1"],
+                    name="T",
+                    type=TechnologyType.OTHER,
+                    paper_ids=["p1"],
                 ),
             },
         )
@@ -288,7 +301,9 @@ class TestTrendService:
             },
             technologies={
                 "T": TechnologyNode(
-                    name="T", type=TechnologyType.OTHER, paper_ids=["p1", "p2", "p3"],
+                    name="T",
+                    type=TechnologyType.OTHER,
+                    paper_ids=["p1", "p2", "p3"],
                 ),
             },
         )
@@ -303,7 +318,9 @@ class TestTrendService:
             },
             technologies={
                 "T": TechnologyNode(
-                    name="T", type=TechnologyType.OTHER, paper_ids=["p1", "p2"],
+                    name="T",
+                    type=TechnologyType.OTHER,
+                    paper_ids=["p1", "p2"],
                 ),
             },
         )
@@ -319,7 +336,8 @@ class TestTrendService:
             },
             technologies={
                 "T": TechnologyNode(
-                    name="T", type=TechnologyType.OTHER,
+                    name="T",
+                    type=TechnologyType.OTHER,
                     paper_ids=["p1", "p1b", "p2"],
                 ),
             },
@@ -336,7 +354,8 @@ class TestTrendService:
             },
             technologies={
                 "T": TechnologyNode(
-                    name="T", type=TechnologyType.OTHER,
+                    name="T",
+                    type=TechnologyType.OTHER,
                     paper_ids=["p1", "p2", "p3"],
                 ),
             },
@@ -355,11 +374,13 @@ class TestTrendService:
             },
             technologies={
                 "Growing": TechnologyNode(
-                    name="Growing", type=TechnologyType.OTHER,
+                    name="Growing",
+                    type=TechnologyType.OTHER,
                     paper_ids=["p1", "p2", "p3"],
                 ),
                 "Flat": TechnologyNode(
-                    name="Flat", type=TechnologyType.OTHER,
+                    name="Flat",
+                    type=TechnologyType.OTHER,
                     paper_ids=["p4", "p5"],
                 ),
             },
@@ -426,7 +447,9 @@ class TestStatisticsService:
         graph = _graph(
             technologies={
                 f"T{i}": TechnologyNode(
-                    name=f"T{i}", type=TechnologyType.OTHER, paper_ids=[f"p{i}"],
+                    name=f"T{i}",
+                    type=TechnologyType.OTHER,
+                    paper_ids=[f"p{i}"],
                 )
                 for i in range(5)
             },
@@ -477,7 +500,8 @@ class TestCentralityService:
         graph = _graph(
             papers={
                 P1: PaperNode(
-                    id=P1, title="",
+                    id=P1,
+                    title="",
                     authors=[
                         AuthorNode(name="Alice"),
                         AuthorNode(name="Bob"),
@@ -493,11 +517,13 @@ class TestCentralityService:
         graph = _graph(
             papers={
                 P1: PaperNode(
-                    id=P1, title="",
+                    id=P1,
+                    title="",
                     authors=[AuthorNode(name="Alice"), AuthorNode(name="Bob")],
                 ),
                 P2: PaperNode(
-                    id=P2, title="",
+                    id=P2,
+                    title="",
                     authors=[AuthorNode(name="Alice"), AuthorNode(name="Bob")],
                 ),
             },
@@ -520,7 +546,8 @@ class TestCentralityService:
         graph = _graph(
             papers={
                 P1: PaperNode(
-                    id=P1, title="",
+                    id=P1,
+                    title="",
                     institutions=[
                         InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
                         InstitutionNode(name="Stanford", type=InstitutionType.UNIVERSITY),
@@ -536,14 +563,16 @@ class TestCentralityService:
         graph = _graph(
             papers={
                 P1: PaperNode(
-                    id=P1, title="",
+                    id=P1,
+                    title="",
                     institutions=[
                         InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
                         InstitutionNode(name="Stanford", type=InstitutionType.UNIVERSITY),
                     ],
                 ),
                 P2: PaperNode(
-                    id=P2, title="",
+                    id=P2,
+                    title="",
                     institutions=[
                         InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
                         InstitutionNode(name="Stanford", type=InstitutionType.UNIVERSITY),
@@ -569,11 +598,13 @@ class TestCentralityService:
         graph = _graph(
             papers={
                 P1: PaperNode(
-                    id=P1, title="",
+                    id=P1,
+                    title="",
                     authors=[AuthorNode(name="Alice"), AuthorNode(name="Bob")],
                 ),
                 P2: PaperNode(
-                    id=P2, title="",
+                    id=P2,
+                    title="",
                     authors=[AuthorNode(name="Alice"), AuthorNode(name="Charlie")],
                 ),
             },
@@ -588,7 +619,8 @@ class TestCentralityService:
         graph = _graph(
             papers={
                 P1: PaperNode(
-                    id=P1, title="",
+                    id=P1,
+                    title="",
                     institutions=[
                         InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
                         InstitutionNode(name="Stanford", type=InstitutionType.UNIVERSITY),

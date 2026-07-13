@@ -5,10 +5,10 @@ next.  Keeping results as an enum (rather than boolean flags) makes the
 protocol explicit and extensible.
 """
 
-from enum import Enum
+from enum import StrEnum
 
 
-class PipelineResult(str, Enum):
+class PipelineResult(StrEnum):
     """Outcome of a single pipeline stage.
 
     ``SUCCESS``

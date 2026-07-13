@@ -19,17 +19,13 @@ class CopilotRepository:
             .first()
         )
 
-    def create_conversation(
-        self, investigation_id: uuid.UUID
-    ) -> CopilotConversation:
+    def create_conversation(self, investigation_id: uuid.UUID) -> CopilotConversation:
         conversation = CopilotConversation(investigation_id=investigation_id)
         self._session.add(conversation)
         self._session.flush()
         return conversation
 
-    def get_messages(
-        self, conversation_id: uuid.UUID
-    ) -> Sequence[CopilotMessage]:
+    def get_messages(self, conversation_id: uuid.UUID) -> Sequence[CopilotMessage]:
         return (
             self._session.query(CopilotMessage)
             .filter(CopilotMessage.conversation_id == conversation_id)

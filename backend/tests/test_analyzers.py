@@ -53,6 +53,7 @@ from tests.test_intelligence import P1_STR, P1_UUID, _fake_record
 # Helpers
 # ======================================================================
 
+
 def _empty_graph() -> ResearchGraph:
     return ResearchGraph(
         papers={},
@@ -110,7 +111,8 @@ class TestAnalyzerResult:
 
     def test_with_data(self) -> None:
         result = AnalyzerResult(
-            analyzer_name="test", data={"count": 42, "items": [1, 2]},
+            analyzer_name="test",
+            data={"count": 42, "items": [1, 2]},
         )
         assert result.data["count"] == 42
         assert result.data["items"] == [1, 2]
@@ -243,16 +245,22 @@ class TestInstitutionAnalyzer:
             authors={},
             institutions={
                 "MIT": InstitutionNode(
-                    name="MIT", type=InstitutionType.UNIVERSITY,
-                    paper_ids=["p1"], author_names=["Alice"],
+                    name="MIT",
+                    type=InstitutionType.UNIVERSITY,
+                    paper_ids=["p1"],
+                    author_names=["Alice"],
                 ),
                 "Stanford": InstitutionNode(
-                    name="Stanford", type=InstitutionType.UNIVERSITY,
-                    paper_ids=["p2"], author_names=["Bob"],
+                    name="Stanford",
+                    type=InstitutionType.UNIVERSITY,
+                    paper_ids=["p2"],
+                    author_names=["Bob"],
                 ),
                 "Google": InstitutionNode(
-                    name="Google", type=InstitutionType.COMPANY,
-                    paper_ids=["p1", "p2"], author_names=["Alice", "Bob"],
+                    name="Google",
+                    type=InstitutionType.COMPANY,
+                    paper_ids=["p1", "p2"],
+                    author_names=["Alice", "Bob"],
                 ),
             },
             methodologies={},
@@ -282,8 +290,10 @@ class TestInstitutionAnalyzer:
             authors={},
             institutions={
                 "MIT": InstitutionNode(
-                    name="MIT", type=InstitutionType.UNIVERSITY,
-                    paper_ids=["p1"], author_names=[],
+                    name="MIT",
+                    type=InstitutionType.UNIVERSITY,
+                    paper_ids=["p1"],
+                    author_names=[],
                 ),
             },
             methodologies={},
@@ -310,8 +320,10 @@ class TestInstitutionAnalyzer:
         # Manually patch config into a graph with more institutions
         context.graph.institutions = {
             f"Inst{i}": InstitutionNode(
-                name=f"Inst{i}", type=InstitutionType.OTHER,
-                paper_ids=["p1"], author_names=[],
+                name=f"Inst{i}",
+                type=InstitutionType.OTHER,
+                paper_ids=["p1"],
+                author_names=[],
             )
             for i in range(5)
         }
@@ -340,7 +352,9 @@ class TestMethodologyAnalyzer:
             institutions={},
             methodologies={
                 "CNN": MethodologyNode(
-                    name="CNN", paper_ids=["p1"], techniques=[],
+                    name="CNN",
+                    paper_ids=["p1"],
+                    techniques=[],
                 ),
             },
             datasets={},
@@ -365,7 +379,8 @@ class TestMethodologyAnalyzer:
             institutions={},
             methodologies={
                 "CNN": MethodologyNode(
-                    name="CNN", paper_ids=["p1"],
+                    name="CNN",
+                    paper_ids=["p1"],
                     techniques=["convolution", "pooling"],
                 ),
             },
@@ -388,13 +403,18 @@ class TestMethodologyAnalyzer:
             institutions={},
             methodologies={
                 "CNN": MethodologyNode(
-                    name="CNN", paper_ids=["p1", "p2"], techniques=[],
+                    name="CNN",
+                    paper_ids=["p1", "p2"],
+                    techniques=[],
                 ),
                 "RNN": MethodologyNode(
-                    name="RNN", paper_ids=["p3"], techniques=[],
+                    name="RNN",
+                    paper_ids=["p3"],
+                    techniques=[],
                 ),
                 "Transformer": MethodologyNode(
-                    name="Transformer", paper_ids=["p1", "p2", "p3", "p4"],
+                    name="Transformer",
+                    paper_ids=["p1", "p2", "p3", "p4"],
                     techniques=[],
                 ),
             },
@@ -424,7 +444,9 @@ class TestMethodologyAnalyzer:
         )
         context.graph.methodologies = {
             f"M{i}": MethodologyNode(
-                name=f"M{i}", paper_ids=[f"p{i}"], techniques=[],
+                name=f"M{i}",
+                paper_ids=[f"p{i}"],
+                techniques=[],
             )
             for i in range(10)
         }
@@ -520,10 +542,14 @@ class TestTemporalAnalyzer:
             institutions={},
             methodologies={
                 "CNN": MethodologyNode(
-                    name="CNN", paper_ids=["p1", "p3"], techniques=[],
+                    name="CNN",
+                    paper_ids=["p1", "p3"],
+                    techniques=[],
                 ),
                 "RNN": MethodologyNode(
-                    name="RNN", paper_ids=["p2"], techniques=[],
+                    name="RNN",
+                    paper_ids=["p2"],
+                    techniques=[],
                 ),
             },
             datasets={},
@@ -547,7 +573,9 @@ class TestTemporalAnalyzer:
             institutions={},
             methodologies={
                 "Orphan": MethodologyNode(
-                    name="Orphan", paper_ids=["nonexistent"], techniques=[],
+                    name="Orphan",
+                    paper_ids=["nonexistent"],
+                    techniques=[],
                 ),
             },
             datasets={},
@@ -568,8 +596,10 @@ class TestTemporalAnalyzer:
             authors={},
             institutions={
                 "MIT": InstitutionNode(
-                    name="MIT", type=InstitutionType.UNIVERSITY,
-                    paper_ids=["p1", "p2"], author_names=[],
+                    name="MIT",
+                    type=InstitutionType.UNIVERSITY,
+                    paper_ids=["p1", "p2"],
+                    author_names=[],
                 ),
             },
             methodologies={},
@@ -590,7 +620,11 @@ class TestTemporalAnalyzer:
         records = [_fake_record(paper_id=P1_UUID, methodology="CNN")]
         paper_map = {
             P1_STR: PaperMetadata(
-                year=2023, citation_count=None, venue=None, authors=None, doi=None,
+                year=2023,
+                citation_count=None,
+                venue=None,
+                authors=None,
+                doi=None,
             ),
         }
         graph = builder.build(records, paper_map=paper_map)
@@ -699,13 +733,17 @@ class TestIntelligenceEngine:
             authors={},
             institutions={
                 "MIT": InstitutionNode(
-                    name="MIT", type=InstitutionType.UNIVERSITY,
-                    paper_ids=["p1"], author_names=["Alice"],
+                    name="MIT",
+                    type=InstitutionType.UNIVERSITY,
+                    paper_ids=["p1"],
+                    author_names=["Alice"],
                 ),
             },
             methodologies={
                 "CNN": MethodologyNode(
-                    name="CNN", paper_ids=["p1"], techniques=[],
+                    name="CNN",
+                    paper_ids=["p1"],
+                    techniques=[],
                 ),
             },
             datasets={},
@@ -720,7 +758,9 @@ class TestIntelligenceEngine:
         )
         results = engine.run()
         assert set(results.analyzer_names) == {
-            "institution", "methodology", "temporal",
+            "institution",
+            "methodology",
+            "temporal",
         }
         assert results["institution"].data["total_institutions"] == 1
         assert results["methodology"].data["total_methodologies"] == 1
@@ -748,7 +788,8 @@ class TestTechnologyAnalyzer:
             papers={"p1": _paper("p1")},
             technologies={
                 "PyTorch": TechnologyNode(
-                    name="PyTorch", type=TechnologyType.FRAMEWORK,
+                    name="PyTorch",
+                    type=TechnologyType.FRAMEWORK,
                     paper_ids=["p1"],
                 ),
             },
@@ -779,7 +820,8 @@ class TestTechnologyAnalyzer:
             technologies={
                 "A": TechnologyNode(name="A", type=TechnologyType.OTHER, paper_ids=["p1"]),
                 "B": TechnologyNode(
-                    name="B", type=TechnologyType.OTHER,
+                    name="B",
+                    type=TechnologyType.OTHER,
                     paper_ids=["p1", "p2", "p3"],
                 ),
             },
@@ -797,7 +839,9 @@ class TestTechnologyAnalyzer:
             },
             technologies={
                 "T": TechnologyNode(
-                    name="T", type=TechnologyType.OTHER, paper_ids=["p1", "p2"],
+                    name="T",
+                    type=TechnologyType.OTHER,
+                    paper_ids=["p1", "p2"],
                 ),
             },
         )
@@ -811,7 +855,9 @@ class TestTechnologyAnalyzer:
             papers={"p1": _paper("p1")},
             technologies={
                 "PyTorch": TechnologyNode(
-                    name="PyTorch", type=TechnologyType.FRAMEWORK, paper_ids=["p1"],
+                    name="PyTorch",
+                    type=TechnologyType.FRAMEWORK,
+                    paper_ids=["p1"],
                 ),
             },
             methodologies={
@@ -830,7 +876,9 @@ class TestTechnologyAnalyzer:
             papers={"p1": _paper("p1")},
             technologies={
                 "PyTorch": TechnologyNode(
-                    name="PyTorch", type=TechnologyType.FRAMEWORK, paper_ids=["p1"],
+                    name="PyTorch",
+                    type=TechnologyType.FRAMEWORK,
+                    paper_ids=["p1"],
                 ),
             },
             datasets={
@@ -864,7 +912,9 @@ class TestTechnologyAnalyzer:
             papers={"p1": _paper("p1"), "p2": _paper("p2")},
             technologies={
                 "A": TechnologyNode(
-                    name="A", type=TechnologyType.OTHER, paper_ids=["p1", "p2"],
+                    name="A",
+                    type=TechnologyType.OTHER,
+                    paper_ids=["p1", "p2"],
                 ),
                 "B": TechnologyNode(name="B", type=TechnologyType.OTHER, paper_ids=["p1"]),
             },
@@ -953,7 +1003,9 @@ class TestDatasetAnalyzer:
             },
             technologies={
                 "PyTorch": TechnologyNode(
-                    name="PyTorch", type=TechnologyType.FRAMEWORK, paper_ids=["p1"],
+                    name="PyTorch",
+                    type=TechnologyType.FRAMEWORK,
+                    paper_ids=["p1"],
                 ),
             },
         )
@@ -973,10 +1025,7 @@ class TestDatasetAnalyzer:
         config = IntelligenceConfig(max_results_per_analyzer=2)
         graph = _graph_with_services(
             papers={f"p{i}": _paper(f"p{i}") for i in range(5)},
-            datasets={
-                f"D{i}": DatasetNode(name=f"D{i}", paper_ids=[f"p{i}"])
-                for i in range(5)
-            },
+            datasets={f"D{i}": DatasetNode(name=f"D{i}", paper_ids=[f"p{i}"]) for i in range(5)},
         )
         ctx = AnalysisContext(graph=graph, config=config, investigation_id="test")
         analyzer = DatasetAnalyzer(ctx)
@@ -1004,7 +1053,8 @@ class TestCollaborationAnalyzer:
         graph = _graph_with_services(
             papers={
                 "p1": PaperNode(
-                    id="p1", title="",
+                    id="p1",
+                    title="",
                     authors=[
                         AuthorNode(name="Alice"),
                         AuthorNode(name="Bob"),
@@ -1024,7 +1074,8 @@ class TestCollaborationAnalyzer:
         graph = _graph_with_services(
             papers={
                 "p1": PaperNode(
-                    id="p1", title="",
+                    id="p1",
+                    title="",
                     institutions=[
                         InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
                         InstitutionNode(name="Stanford", type=InstitutionType.UNIVERSITY),
@@ -1044,7 +1095,8 @@ class TestCollaborationAnalyzer:
         graph = _graph_with_services(
             papers={
                 "p1": PaperNode(
-                    id="p1", title="",
+                    id="p1",
+                    title="",
                     authors=[AuthorNode(name="Alice"), AuthorNode(name="Bob")],
                 ),
             },
@@ -1063,7 +1115,8 @@ class TestCollaborationAnalyzer:
         graph = _graph_with_services(
             papers={
                 "p1": PaperNode(
-                    id="p1", title="",
+                    id="p1",
+                    title="",
                     institutions=[
                         InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
                         InstitutionNode(name="Stanford", type=InstitutionType.UNIVERSITY),
@@ -1086,7 +1139,8 @@ class TestCollaborationAnalyzer:
         graph = _graph_with_services(
             papers={
                 "p1": PaperNode(
-                    id="p1", title="",
+                    id="p1",
+                    title="",
                     authors=[AuthorNode(name="Alice")],
                     institutions=[
                         InstitutionNode(name="MIT", type=InstitutionType.UNIVERSITY),
@@ -1104,7 +1158,8 @@ class TestCollaborationAnalyzer:
         graph = _graph_with_services(
             papers={
                 "p1": PaperNode(
-                    id="p1", title="",
+                    id="p1",
+                    title="",
                     authors=[
                         AuthorNode(name="Alice"),
                         AuthorNode(name="Bob"),

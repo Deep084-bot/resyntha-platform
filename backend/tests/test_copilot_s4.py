@@ -23,12 +23,13 @@ from app.modules.copilot.retrieval.models import (
     RetrievalResult,
     RetrievedSection,
 )
-from app.modules.copilot.retrieval.retriever import InvestigationRetriever
 from app.modules.copilot.retrieval.semantic_retriever import SemanticRetriever
 from app.modules.copilot.service.service import CopilotService
 
 
-def _make_section(content: str = "Test content.", source: str = "KP", label: str = "Findings", score: float = 0.0) -> RetrievedSection:
+def _make_section(
+    content: str = "Test content.", source: str = "KP", label: str = "Findings", score: float = 0.0
+) -> RetrievedSection:
     return RetrievedSection(source=source, label=label, content=content, score=score)
 
 

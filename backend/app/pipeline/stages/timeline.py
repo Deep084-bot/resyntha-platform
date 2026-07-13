@@ -7,12 +7,12 @@ outcome and records a SUCCESS event.  The RUNNING and FAILURE events
 are owned by the API route (which invokes the pipeline).
 """
 
-from app.pipeline.context import PipelineContext
-from app.pipeline.result import PipelineResult
-from app.pipeline.stage import PipelineStage
 from app.modules.investigation.timeline.models import TimelineStage as TimelineStageEnum
 from app.modules.investigation.timeline.models import TimelineStatus
 from app.modules.investigation.timeline.service import TimelineService
+from app.pipeline.context import PipelineContext
+from app.pipeline.result import PipelineResult
+from app.pipeline.stage import PipelineStage
 
 
 class TimelineStage(PipelineStage):

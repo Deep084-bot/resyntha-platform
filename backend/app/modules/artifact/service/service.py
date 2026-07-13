@@ -79,18 +79,14 @@ class ArtifactService:
         self._session.commit()
         return ArtifactResponse.model_validate(updated)
 
-    def get_artifact(
-        self, artifact_id: uuid.UUID
-    ) -> ArtifactResponse | None:
+    def get_artifact(self, artifact_id: uuid.UUID) -> ArtifactResponse | None:
         """Return an artifact by id, or ``None``."""
         artifact = self._repository.get_by_id(artifact_id)
         if artifact is None:
             return None
         return ArtifactResponse.model_validate(artifact)
 
-    def list_artifacts(
-        self, investigation_id: uuid.UUID
-    ) -> Sequence[ArtifactResponse]:
+    def list_artifacts(self, investigation_id: uuid.UUID) -> Sequence[ArtifactResponse]:
         """Return all artifacts for an investigation."""
         artifacts = self._repository.list_by_investigation(investigation_id)
         return [ArtifactResponse.model_validate(a) for a in artifacts]

@@ -13,4 +13,3 @@ async def check_redis() -> bool:
 
     except Exception:
         return False
-    

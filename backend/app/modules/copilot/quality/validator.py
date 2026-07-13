@@ -46,8 +46,11 @@ class CitationValidator:
     ) -> CitationValidationResult:
         if not raw_citations:
             return CitationValidationResult(
-                validated=[], discarded=[], total_examined=0,
-                kept_count=0, discarded_count=0,
+                validated=[],
+                discarded=[],
+                total_examined=0,
+                kept_count=0,
+                discarded_count=0,
             )
 
         context_text = self._build_context_text(retrieved)
@@ -55,16 +58,8 @@ class CitationValidator:
         discarded: list[Citation] = []
 
         for raw in raw_citations:
-            title = (
-                raw.get("paper_title", "")
-                if isinstance(raw, dict)
-                else ""
-            )
-            relevance = (
-                raw.get("relevance", "")
-                if isinstance(raw, dict)
-                else ""
-            )
+            title = raw.get("paper_title", "") if isinstance(raw, dict) else ""
+            relevance = raw.get("relevance", "") if isinstance(raw, dict) else ""
 
             citation = Citation(
                 paper_title=title,

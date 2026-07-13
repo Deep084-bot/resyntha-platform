@@ -15,9 +15,7 @@ class TemporalAnalyzer(BaseAnalyzer):
         papers_per_year: dict[int, int] = {}
         for paper in graph.papers.values():
             if paper.year is not None:
-                papers_per_year[paper.year] = (
-                    papers_per_year.get(paper.year, 0) + 1
-                )
+                papers_per_year[paper.year] = papers_per_year.get(paper.year, 0) + 1
 
         methodology_trends: dict[str, dict[int, int]] = {}
         for mname, mnode in graph.methodologies.items():
@@ -47,15 +45,12 @@ class TemporalAnalyzer(BaseAnalyzer):
                 "papers_per_year": dict(sorted(papers_per_year.items())),
                 "methodology_trends": methodology_trends,
                 "institution_trends": institution_trends,
-            } | {
+            }
+            | {
                 k: v
                 for k, v in {
-                    "technology_trends": self._compute_entity_trends(
-                        graph.technologies
-                    ),
-                    "dataset_trends": self._compute_entity_trends(
-                        graph.datasets
-                    ),
+                    "technology_trends": self._compute_entity_trends(graph.technologies),
+                    "dataset_trends": self._compute_entity_trends(graph.datasets),
                 }.items()
                 if v
             },

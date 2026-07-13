@@ -21,4 +21,7 @@ Requires-Dist: numpy
 Requires-Dist: sentence-transformers
 Provides-Extra: dev
 Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: pip-audit; extra == "dev"

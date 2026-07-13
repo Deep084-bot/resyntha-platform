@@ -38,7 +38,8 @@ class RetrieveStage(PipelineStage):
             return PipelineResult.FAILED
 
         papers, metrics = await self._service.retrieve_with_metrics(
-            query, paper_limit,
+            query,
+            paper_limit,
         )
         context.add_artifact("papers", papers)
         context.record_metric("retrieval", metrics)

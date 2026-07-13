@@ -119,16 +119,15 @@ class ContextBuilder:
             authors = ", ".join(getattr(p, "authors", []) or [])
             abstract = (p.abstract or "")[:400]
             doi = p.doi or "N/A"
-            lines.append(
-                f"Title: {p.title}\n"
-                f"Authors: {authors}\n"
-                f"Abstract: {abstract}\n"
-                f"DOI: {doi}"
-            )
+            lines.append(f"Title: {p.title}\nAuthors: {authors}\nAbstract: {abstract}\nDOI: {doi}")
         return "\n\n".join(lines)
 
     def _build_extract_map(self, investigation_id: uuid.UUID) -> dict[str, dict]:
-        extractions = self._extraction_repo.list_by_investigation(investigation_id) if hasattr(self._extraction_repo, 'list_by_investigation') else []
+        extractions = (
+            self._extraction_repo.list_by_investigation(investigation_id)
+            if hasattr(self._extraction_repo, "list_by_investigation")
+            else []
+        )
         result: dict[str, dict] = {}
         for ext in extractions:
             paper_id = str(getattr(ext, "paper_id", ""))
@@ -170,7 +169,10 @@ class ContextBuilder:
             summary = self._summarise_gap_report(payload, char_budget)
         elif artifact.artifact_type == ArtifactType.RESEARCH_LANDSCAPE:
             summary = self._summarise_landscape(payload, papers, char_budget)
-        elif artifact.artifact_type in (ArtifactType.PAPER_COLLECTION, ArtifactType.VALIDATED_COLLECTION):
+        elif artifact.artifact_type in (
+            ArtifactType.PAPER_COLLECTION,
+            ArtifactType.VALIDATED_COLLECTION,
+        ):
             summary = self._summarise_paper_collection(payload, papers, char_budget)
         else:
             summary = json.dumps(payload, indent=1)[:char_budget]
@@ -188,7 +190,9 @@ class ContextBuilder:
             value = payload.get(key)
             if value:
                 if isinstance(value, list):
-                    text = "\n".join(f"- {v}" if isinstance(v, str) else json.dumps(v) for v in value[:10])
+                    text = "\n".join(
+                        f"- {v}" if isinstance(v, str) else json.dumps(v) for v in value[:10]
+                    )
                 elif isinstance(value, dict):
                     text = json.dumps(value, indent=1)[:1500]
                 else:
@@ -234,7 +238,13 @@ class ContextBuilder:
     def _summarise_landscape(self, payload: dict, papers: Sequence[Paper], budget: int) -> str:
         parts: list[str] = []
 
-        for key in ("research_domains", "methodologies", "technologies", "datasets", "evaluation_metrics"):
+        for key in (
+            "research_domains",
+            "methodologies",
+            "technologies",
+            "datasets",
+            "evaluation_metrics",
+        ):
             items = payload.get(key, [])
             if items:
                 names = []
@@ -276,7 +286,9 @@ class ContextBuilder:
                 result = result[:last_break]
         return result
 
-    def _summarise_paper_collection(self, payload: dict, papers: Sequence[Paper], budget: int) -> str:
+    def _summarise_paper_collection(
+        self, payload: dict, papers: Sequence[Paper], budget: int
+    ) -> str:
         papers_data = payload.get("papers") or payload.get("results") or payload.get("items") or []
         if not papers_data:
             return self.get_papers_context(papers, limit=10)
@@ -292,10 +304,7 @@ class ContextBuilder:
                     abstract = str(p.get("abstract", "") or "")[:300]
                     doi = p.get("doi", "N/A")
                     parts.append(
-                        f"Title: {title}\n"
-                        f"Authors: {authors}\n"
-                        f"Abstract: {abstract}\n"
-                        f"DOI: {doi}"
+                        f"Title: {title}\nAuthors: {authors}\nAbstract: {abstract}\nDOI: {doi}"
                     )
                 elif isinstance(p, str):
                     parts.append(f"- {p}")

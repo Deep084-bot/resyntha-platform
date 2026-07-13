@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import time
 import uuid
-from collections.abc import Sequence
 
 from sqlalchemy.orm import Session
 
-from app.modules.artifact.domain.models import Artifact, ArtifactType
+from app.modules.artifact.domain.models import ArtifactType
 from app.modules.artifact.repository.repository import ArtifactRepository
 from app.modules.copilot.chunking.pipeline import ChunkingPipeline
 from app.modules.copilot.embeddings.base import EmbeddingProvider
@@ -50,7 +49,8 @@ class EmbeddingLifecycle:
             self._embedder = create_embedding_provider("local")
 
     def generate_for_investigation(
-        self, investigation_id: uuid.UUID,
+        self,
+        investigation_id: uuid.UUID,
     ) -> dict:
         """Generate embeddings for all ready artifacts in an investigation.
 
@@ -72,9 +72,9 @@ class EmbeddingLifecycle:
 
         artifacts = self._artifact_repo.list_by_investigation(investigation_id)
         ready_artifacts = [
-            a for a in artifacts
-            if a.artifact_type in self._INTERESTING_TYPES
-            and a.status.value == "ready"
+            a
+            for a in artifacts
+            if a.artifact_type in self._INTERESTING_TYPES and a.status.value == "ready"
         ]
 
         if not ready_artifacts:
@@ -107,7 +107,7 @@ class EmbeddingLifecycle:
         version = current_max + 1
 
         for i in range(0, len(all_chunks), batch_size):
-            batch = all_chunks[i:i + batch_size]
+            batch = all_chunks[i : i + batch_size]
             texts = [chunk.content for chunk in batch]
             try:
                 embeddings = self._embedder.embed(texts)

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from collections.abc import Sequence
 
 import numpy as np
 from sqlalchemy import select, text
@@ -21,7 +20,9 @@ class VectorRepository:
 
     # ── Write ───────────────────────────────────────────────────
 
-    def store_chunk(self, chunk: Chunk, embedding: np.ndarray, artifact_version: int = 0) -> ChunkEmbedding:
+    def store_chunk(
+        self, chunk: Chunk, embedding: np.ndarray, artifact_version: int = 0
+    ) -> ChunkEmbedding:
         row = ChunkEmbedding(
             investigation_id=chunk.investigation_id,
             artifact_id=chunk.artifact_id,
@@ -39,7 +40,10 @@ class VectorRepository:
         return row
 
     def store_chunks(
-        self, chunks: list[Chunk], embeddings: list[np.ndarray], artifact_version: int = 0,
+        self,
+        chunks: list[Chunk],
+        embeddings: list[np.ndarray],
+        artifact_version: int = 0,
     ) -> list[ChunkEmbedding]:
         if not chunks or not embeddings or len(chunks) != len(embeddings):
             return []
@@ -64,13 +68,19 @@ class VectorRepository:
     # ── Read ────────────────────────────────────────────────────
 
     def count_by_investigation(self, investigation_id: uuid.UUID) -> int:
-        return self._session.query(ChunkEmbedding).filter(
-            ChunkEmbedding.investigation_id == investigation_id,
-        ).count()
+        return (
+            self._session.query(ChunkEmbedding)
+            .filter(
+                ChunkEmbedding.investigation_id == investigation_id,
+            )
+            .count()
+        )
 
     def get_max_version(self, investigation_id: uuid.UUID) -> int:
         result = self._session.execute(
-            select(text("coalesce(max(artifact_version), 0)")).select_from(ChunkEmbedding).where(
+            select(text("coalesce(max(artifact_version), 0)"))
+            .select_from(ChunkEmbedding)
+            .where(
                 ChunkEmbedding.investigation_id == investigation_id,
             )
         )
@@ -120,8 +130,4 @@ class VectorRepository:
     def get_chunks_by_ids(self, chunk_ids: list[uuid.UUID]) -> list[ChunkEmbedding]:
         if not chunk_ids:
             return []
-        return (
-            self._session.query(ChunkEmbedding)
-            .filter(ChunkEmbedding.id.in_(chunk_ids))
-            .all()
-        )
+        return self._session.query(ChunkEmbedding).filter(ChunkEmbedding.id.in_(chunk_ids)).all()

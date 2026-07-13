@@ -1,7 +1,7 @@
 """Validation service — orchestrates all validators and produces
 validated paper results."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.modules.retrieval.domain.paper import Paper
 from app.modules.validation.domain.validated_paper import (
@@ -94,7 +94,7 @@ class ValidationService:
                     validation_status=status,
                     validation_messages=[i.message for i in issues],
                     validation_score=max(score, 0),
-                    validation_timestamp=datetime.now(timezone.utc).isoformat(),
+                    validation_timestamp=datetime.now(UTC).isoformat(),
                 ),
             )
 
@@ -102,9 +102,7 @@ class ValidationService:
         warning_count = sum(1 for v in validated if v.validation_status == ValidationStatus.WARNING)
         invalid_count = sum(1 for v in validated if v.validation_status == ValidationStatus.INVALID)
         avg_score = (
-            sum(v.validation_score for v in validated) / len(validated)
-            if validated
-            else 0.0
+            sum(v.validation_score for v in validated) / len(validated) if validated else 0.0
         )
 
         summary = ValidationSummary(
@@ -114,7 +112,7 @@ class ValidationService:
             invalid=invalid_count,
             duplicates=duplicate_count,
             average_score=round(avg_score, 1),
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
         logger.info(

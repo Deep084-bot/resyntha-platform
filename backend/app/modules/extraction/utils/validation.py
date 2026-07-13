@@ -80,7 +80,9 @@ class ExtractionValidator:
             if len(name.split()) >= 2:
                 score += 0.05
         elif entity_type == "institution":
-            if any(t in name.lower() for t in ("university", "institute", "college", "lab", "school")):
+            if any(
+                t in name.lower() for t in ("university", "institute", "college", "lab", "school")
+            ):
                 score += 0.15
             score += 0.05
         elif entity_type == "dataset":

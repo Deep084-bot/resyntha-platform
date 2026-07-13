@@ -7,16 +7,17 @@ auditable history.
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
 
 
-class TimelineStage(str, Enum):
+class TimelineStage(StrEnum):
     """Stages an investigation passes through during its lifecycle."""
 
     CREATED = "created"
@@ -31,7 +32,7 @@ class TimelineStage(str, Enum):
     CANCELLED = "cancelled"
 
 
-class TimelineStatus(str, Enum):
+class TimelineStatus(StrEnum):
     """Outcome of a timeline stage."""
 
     SUCCESS = "success"
@@ -76,6 +77,4 @@ class InvestigationTimeline(Base):
         server_default=func.now(),
         nullable=False,
     )
-    metadata_: Mapped[dict | None] = mapped_column(
-        "metadata", JSONB, default=dict, nullable=True
-    )
+    metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, default=dict, nullable=True)

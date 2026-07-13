@@ -9,11 +9,11 @@ and records ``paper_count`` in metrics.
 import uuid
 from collections.abc import Sequence
 
+from app.modules.paper.service.service import PaperService
+from app.modules.retrieval.domain.paper import Paper as PaperDTO
 from app.pipeline.context import PipelineContext
 from app.pipeline.result import PipelineResult
 from app.pipeline.stage import PipelineStage
-from app.modules.paper.service.service import PaperService
-from app.modules.retrieval.domain.paper import Paper as PaperDTO
 
 
 class PersistStage(PipelineStage):
@@ -39,7 +39,8 @@ class PersistStage(PipelineStage):
 
         investigation_id = context.investigation_id
         paper_ids: list[uuid.UUID] = self._paper_service.persist_retrieved_papers(
-            investigation_id, papers,
+            investigation_id,
+            papers,
         )
         context.add_artifact("paper_ids", paper_ids)
         context.record_metric("paper_count", len(papers))

@@ -41,9 +41,7 @@ class SectionScorer:
         "applications": ["application", "use case"],
     }
 
-    def score(
-        self, section: RetrievedSection, question: AnalyzedQuestion
-    ) -> float:
+    def score(self, section: RetrievedSection, question: AnalyzedQuestion) -> float:
         score = 0.0
         content_lower = section.content.lower()
         label_lower = section.label.lower()
@@ -56,9 +54,7 @@ class SectionScorer:
 
         return score
 
-    def _keyword_overlap(
-        self, text: str, keywords: set[str], weight: float
-    ) -> float:
+    def _keyword_overlap(self, text: str, keywords: set[str], weight: float) -> float:
         count = 0
         for kw in keywords:
             pattern = re.compile(rf"\b{re.escape(kw)}\b", re.IGNORECASE)
@@ -66,27 +62,21 @@ class SectionScorer:
             count += len(matches)
         return count * weight
 
-    def _bigram_overlap(
-        self, text: str, bigrams: set[str], weight: float
-    ) -> float:
+    def _bigram_overlap(self, text: str, bigrams: set[str], weight: float) -> float:
         count = 0
         for bg in bigrams:
             if bg in text:
                 count += text.count(bg)
         return count * weight
 
-    def _phrase_match(
-        self, text: str, phrases: list[str], weight: float
-    ) -> float:
+    def _phrase_match(self, text: str, phrases: list[str], weight: float) -> float:
         count = 0
         for phrase in phrases:
             if phrase in text:
                 count += 1
         return count * weight
 
-    def _label_match(
-        self, label: str, question: AnalyzedQuestion, weight: float
-    ) -> float:
+    def _label_match(self, label: str, question: AnalyzedQuestion, weight: float) -> float:
         aliases = self._LABEL_ALIASES.get(label, [])
         all_terms = [label] + aliases
         count = 0

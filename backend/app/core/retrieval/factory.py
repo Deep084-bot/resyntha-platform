@@ -105,8 +105,7 @@ class RetrievalProviderRegistry:
         provider_cls = _PROVIDER_REGISTRY.get(provider_name)
         if provider_cls is None:
             raise ValueError(
-                f"Unknown retrieval provider: {provider_name!r}. "
-                f"Available: {list_providers()}",
+                f"Unknown retrieval provider: {provider_name!r}. Available: {list_providers()}",
             )
         return provider_cls(**kwargs)
 

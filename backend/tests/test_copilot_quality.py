@@ -2,21 +2,17 @@
 
 from __future__ import annotations
 
-import uuid
-from unittest.mock import MagicMock
-
 from app.modules.copilot.quality.confidence import ConfidenceCalibrator
 from app.modules.copilot.quality.followup import FollowUpGenerator
 from app.modules.copilot.quality.validator import CitationValidator
 from app.modules.copilot.retrieval.models import (
-    RetrievalDiagnostics,
     RetrievalResult,
     RetrievedSection,
 )
 from app.modules.copilot.schemas.response import Citation
 
-
 # ── CitationValidator tests ────────────────────────────────────
+
 
 class TestCitationValidator:
     def _make_retrieved(self, sections: list[RetrievedSection] | None = None) -> RetrievalResult:
@@ -31,9 +27,13 @@ class TestCitationValidator:
 
     def test_validate_keeps_matching_citation(self) -> None:
         validator = CitationValidator()
-        retrieved = self._make_retrieved([
-            RetrievedSection(source="KP", label="Papers", content="Attention Is All You Need is a key paper."),
-        ])
+        retrieved = self._make_retrieved(
+            [
+                RetrievedSection(
+                    source="KP", label="Papers", content="Attention Is All You Need is a key paper."
+                ),
+            ]
+        )
         result = validator.validate(
             [{"paper_title": "Attention Is All You Need", "relevance": "Core reference"}],
             retrieved,
@@ -44,9 +44,13 @@ class TestCitationValidator:
 
     def test_validate_discards_hallucinated_citation(self) -> None:
         validator = CitationValidator()
-        retrieved = self._make_retrieved([
-            RetrievedSection(source="KP", label="Papers", content="Deep Learning is discussed."),
-        ])
+        retrieved = self._make_retrieved(
+            [
+                RetrievedSection(
+                    source="KP", label="Papers", content="Deep Learning is discussed."
+                ),
+            ]
+        )
         result = validator.validate(
             [{"paper_title": "Nonexistent Paper 2024", "relevance": "Key"}],
             retrieved,
@@ -56,9 +60,13 @@ class TestCitationValidator:
 
     def test_validate_mixed_citations(self) -> None:
         validator = CitationValidator()
-        retrieved = self._make_retrieved([
-            RetrievedSection(source="KP", label="Papers", content="Paper A and Paper B are discussed."),
-        ])
+        retrieved = self._make_retrieved(
+            [
+                RetrievedSection(
+                    source="KP", label="Papers", content="Paper A and Paper B are discussed."
+                ),
+            ]
+        )
         result = validator.validate(
             [
                 {"paper_title": "Paper A", "relevance": "Relevant"},
@@ -78,14 +86,16 @@ class TestCitationValidator:
         validator = CitationValidator()
         assert validator._citation_exists(
             "Attention Is All You Need (Vaswani et al., 2017)",
-            "The paper Attention Is All You Need was published in 2017."
+            "The paper Attention Is All You Need was published in 2017.",
         )
 
     def test_success_ratio(self) -> None:
         validator = CitationValidator()
-        retrieved = self._make_retrieved([
-            RetrievedSection(source="KP", label="Papers", content="Paper A."),
-        ])
+        retrieved = self._make_retrieved(
+            [
+                RetrievedSection(source="KP", label="Papers", content="Paper A."),
+            ]
+        )
         result = validator.validate(
             [
                 {"paper_title": "Paper A", "relevance": "Yes"},
@@ -103,11 +113,13 @@ class TestCitationValidator:
 
 # ── ConfidenceCalibrator tests ─────────────────────────────────
 
+
 class TestConfidenceCalibrator:
     def test_calibrate_empty_retrieval(self) -> None:
         calibrator = ConfidenceCalibrator()
         retrieved = RetrievalResult()
         from app.modules.copilot.quality.validator import CitationValidationResult
+
         cv = CitationValidationResult([], [], 0, 0, 0)
         confidence = calibrator.calibrate(retrieved, cv)
         assert confidence == 0.1
@@ -116,12 +128,20 @@ class TestConfidenceCalibrator:
         calibrator = ConfidenceCalibrator()
         retrieved = RetrievalResult(
             sections=[
-                RetrievedSection(source="KP", label="Findings", content="Important findings here." * 50, score=80.0),
-                RetrievedSection(source="Landscape", label="Methods", content="Various methods." * 30, score=60.0),
+                RetrievedSection(
+                    source="KP",
+                    label="Findings",
+                    content="Important findings here." * 50,
+                    score=80.0,
+                ),
+                RetrievedSection(
+                    source="Landscape", label="Methods", content="Various methods." * 30, score=60.0
+                ),
             ],
             total_char_count=4000,
         )
         from app.modules.copilot.quality.validator import CitationValidationResult
+
         cv = CitationValidationResult(
             validated=[Citation(paper_title="Paper A")],
             discarded=[],
@@ -143,6 +163,7 @@ class TestConfidenceCalibrator:
             total_char_count=11,
         )
         from app.modules.copilot.quality.validator import CitationValidationResult
+
         cv = CitationValidationResult([], [], 0, 0, 0)
         confidence = calibrator.calibrate(retrieved, cv, model_confidence=0.0)
         # Low evidence + no citations = low confidence
@@ -150,18 +171,22 @@ class TestConfidenceCalibrator:
 
     def test_evidence_coverage_full(self) -> None:
         calibrator = ConfidenceCalibrator()
-        retrieved = RetrievalResult(sections=[
-            RetrievedSection(source="KP", label="A", content="X", score=10.0),
-            RetrievedSection(source="KP", label="B", content="Y", score=5.0),
-        ])
+        retrieved = RetrievalResult(
+            sections=[
+                RetrievedSection(source="KP", label="A", content="X", score=10.0),
+                RetrievedSection(source="KP", label="B", content="Y", score=5.0),
+            ]
+        )
         assert calibrator._evidence_coverage(retrieved) == 1.0
 
     def test_evidence_coverage_partial(self) -> None:
         calibrator = ConfidenceCalibrator()
-        retrieved = RetrievalResult(sections=[
-            RetrievedSection(source="KP", label="A", content="X", score=10.0),
-            RetrievedSection(source="KP", label="B", content="Y", score=0.0),
-        ])
+        retrieved = RetrievalResult(
+            sections=[
+                RetrievedSection(source="KP", label="A", content="X", score=10.0),
+                RetrievedSection(source="KP", label="B", content="Y", score=0.0),
+            ]
+        )
         assert calibrator._evidence_coverage(retrieved) == 0.5
 
     def test_evidence_coverage_empty(self) -> None:
@@ -176,28 +201,35 @@ class TestConfidenceCalibrator:
     def test_citation_count_score(self) -> None:
         calibrator = ConfidenceCalibrator()
         from app.modules.copilot.quality.validator import CitationValidationResult
+
         cv = CitationValidationResult(
             validated=[Citation()],
             discarded=[],
-            total_examined=1, kept_count=1, discarded_count=0,
+            total_examined=1,
+            kept_count=1,
+            discarded_count=0,
         )
         score = calibrator._citation_count_score(cv)
         assert 0 < score < 1.0
 
     def test_retrieval_score_avg(self) -> None:
         calibrator = ConfidenceCalibrator()
-        retrieved = RetrievalResult(sections=[
-            RetrievedSection(source="KP", label="A", content="X", score=50.0),
-            RetrievedSection(source="KP", label="B", content="Y", score=30.0),
-        ])
+        retrieved = RetrievalResult(
+            sections=[
+                RetrievedSection(source="KP", label="A", content="X", score=50.0),
+                RetrievedSection(source="KP", label="B", content="Y", score=30.0),
+            ]
+        )
         score = calibrator._retrieval_score(retrieved)
         assert score == 0.4  # (50+30)/2/100
 
     def test_retrieval_score_no_positive(self) -> None:
         calibrator = ConfidenceCalibrator()
-        retrieved = RetrievalResult(sections=[
-            RetrievedSection(source="KP", label="A", content="X", score=0.0),
-        ])
+        retrieved = RetrievalResult(
+            sections=[
+                RetrievedSection(source="KP", label="A", content="X", score=0.0),
+            ]
+        )
         assert calibrator._retrieval_score(retrieved) == 0.0
 
     def test_cap_model_confidence(self) -> None:
@@ -209,49 +241,70 @@ class TestConfidenceCalibrator:
 
 # ── FollowUpGenerator tests ────────────────────────────────────
 
+
 class TestFollowUpGenerator:
     def test_generate_from_methodologies(self) -> None:
         generator = FollowUpGenerator()
-        retrieved = RetrievalResult(sections=[
-            RetrievedSection(source="KP", label="Methodologies", content="Deep Learning, Transformers, CNNs."),
-        ])
+        retrieved = RetrievalResult(
+            sections=[
+                RetrievedSection(
+                    source="KP", label="Methodologies", content="Deep Learning, Transformers, CNNs."
+                ),
+            ]
+        )
         questions = generator.generate(retrieved)
         assert questions
         assert any("methodolog" in q.lower() for q in questions)
 
     def test_generate_from_technologies(self) -> None:
         generator = FollowUpGenerator()
-        retrieved = RetrievalResult(sections=[
-            RetrievedSection(source="Landscape", label="Technologies", content="PyTorch, TensorFlow."),
-        ])
+        retrieved = RetrievalResult(
+            sections=[
+                RetrievedSection(
+                    source="Landscape", label="Technologies", content="PyTorch, TensorFlow."
+                ),
+            ]
+        )
         questions = generator.generate(retrieved)
         assert questions
         assert any("technolog" in q.lower() for q in questions)
 
     def test_generate_from_datasets(self) -> None:
         generator = FollowUpGenerator()
-        retrieved = RetrievalResult(sections=[
-            RetrievedSection(source="Landscape", label="Datasets", content="ImageNet, COCO."),
-        ])
+        retrieved = RetrievalResult(
+            sections=[
+                RetrievedSection(source="Landscape", label="Datasets", content="ImageNet, COCO."),
+            ]
+        )
         questions = generator.generate(retrieved)
         assert questions
         assert any("dataset" in q.lower() for q in questions)
 
     def test_generate_from_gaps(self) -> None:
         generator = FollowUpGenerator()
-        retrieved = RetrievalResult(sections=[
-            RetrievedSection(source="Gap Report", label="Research Gaps", content="Missing multimodal benchmark."),
-        ])
+        retrieved = RetrievalResult(
+            sections=[
+                RetrievedSection(
+                    source="Gap Report",
+                    label="Research Gaps",
+                    content="Missing multimodal benchmark.",
+                ),
+            ]
+        )
         questions = generator.generate(retrieved)
         assert questions
         assert any("gap" in q.lower() or "challenge" in q.lower() for q in questions)
 
     def test_generate_no_duplicates(self) -> None:
         generator = FollowUpGenerator()
-        retrieved = RetrievalResult(sections=[
-            RetrievedSection(source="KP", label="Methodologies", content="Deep Learning."),
-            RetrievedSection(source="Landscape", label="Methodologies", content="Deep Learning is popular."),
-        ])
+        retrieved = RetrievalResult(
+            sections=[
+                RetrievedSection(source="KP", label="Methodologies", content="Deep Learning."),
+                RetrievedSection(
+                    source="Landscape", label="Methodologies", content="Deep Learning is popular."
+                ),
+            ]
+        )
         questions = generator.generate(retrieved)
         assert len(questions) <= 5
         # Check for case-insensitive uniqueness
@@ -267,8 +320,16 @@ class TestFollowUpGenerator:
         generator = FollowUpGenerator()
         sections = [
             RetrievedSection(source="KP", label=label, content="Content about " + label + ".")
-            for label in ["Methodologies", "Technologies", "Datasets", "Research Gaps", "Limitations",
-                          "Future Work", "Applications", "Key Findings"]
+            for label in [
+                "Methodologies",
+                "Technologies",
+                "Datasets",
+                "Research Gaps",
+                "Limitations",
+                "Future Work",
+                "Applications",
+                "Key Findings",
+            ]
         ]
         retrieved = RetrievalResult(sections=sections)
         questions = generator.generate(retrieved)
@@ -286,9 +347,11 @@ class TestFollowUpGenerator:
         assert FollowUpGenerator._normalize("What   methodologies!!!") == "whatmethodologies"
 
     def test_build_fallback_questions(self) -> None:
-        retrieved = RetrievalResult(sections=[
-            RetrievedSection(source="KP", label="Key Findings", content="Finding 1."),
-        ])
+        retrieved = RetrievalResult(
+            sections=[
+                RetrievedSection(source="KP", label="Key Findings", content="Finding 1."),
+            ]
+        )
         fallback = FollowUpGenerator._build_fallback_questions(retrieved)
         assert fallback
         assert any("finding" in q.lower() for q in fallback)

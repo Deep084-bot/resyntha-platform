@@ -55,12 +55,10 @@ class MethodCombinationGapRule(BaseGapRule):
                         paper_titles_by_pair[pair].add(rec.paper_title)
 
         top_methods = {
-            m for m, c in method_counter.most_common(15)
-            if c >= self.MIN_INDIVIDUAL_FREQ
+            m for m, c in method_counter.most_common(15) if c >= self.MIN_INDIVIDUAL_FREQ
         }
         top_techniques = {
-            t for t, c in technique_counter.most_common(15)
-            if c >= self.MIN_INDIVIDUAL_FREQ
+            t for t, c in technique_counter.most_common(15) if c >= self.MIN_INDIVIDUAL_FREQ
         }
 
         considered_pairs: set[tuple[str, str]] = set()
@@ -87,9 +85,7 @@ class MethodCombinationGapRule(BaseGapRule):
                             f"but they co-occur in only {co_occurrences} paper(s)."
                         ),
                         category=GapCategory.METHOD_COMBINATION,
-                        confidence=min(
-                            round((method_freq + tech_freq) / 20, 2), 0.9
-                        ),
+                        confidence=min(round((method_freq + tech_freq) / 20, 2), 0.9),
                         severity=(
                             GapSeverity.HIGH
                             if method_freq >= 5 and tech_freq >= 5

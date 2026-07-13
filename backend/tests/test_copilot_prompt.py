@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from pydantic import ValidationError
 import pytest
+from pydantic import ValidationError
 
 from app.modules.copilot.prompt.builder import LLMCopilotAnswer, PromptBuilder
+from app.modules.copilot.retrieval.models import RetrievalResult, RetrievedSection
 
 
 class TestLLMCopilotAnswer:
@@ -50,10 +51,11 @@ class TestLLMCopilotAnswer:
 
 class TestPromptBuilder:
     def _make_result(self, content: str = "Test context data") -> RetrievalResult:
-        from app.modules.copilot.retrieval.models import RetrievalResult, RetrievedSection
-        return RetrievalResult(sections=[
-            RetrievedSection(source="Test", label="Data", content=content),
-        ])
+        return RetrievalResult(
+            sections=[
+                RetrievedSection(source="Test", label="Data", content=content),
+            ]
+        )
 
     def test_build_system_prompt_contains_context(self) -> None:
         builder = PromptBuilder()
@@ -98,9 +100,12 @@ class TestPromptBuilder:
     def test_build_system_prompt_contains_sections(self) -> None:
         builder = PromptBuilder()
         from app.modules.copilot.retrieval.models import RetrievalResult, RetrievedSection
-        result = RetrievalResult(sections=[
-            RetrievedSection(source="KP", label="Key Findings", content="Finding 1."),
-        ])
+
+        result = RetrievalResult(
+            sections=[
+                RetrievedSection(source="KP", label="Key Findings", content="Finding 1."),
+            ]
+        )
         prompt = builder.build_system_prompt(result, history="User: test")
         assert "KP" in prompt
         assert "Key Findings" in prompt
@@ -110,14 +115,18 @@ class TestPromptBuilder:
     def test_build_system_prompt_no_history(self) -> None:
         builder = PromptBuilder()
         from app.modules.copilot.retrieval.models import RetrievalResult, RetrievedSection
-        result = RetrievalResult(sections=[
-            RetrievedSection(source="KP", label="Findings", content="Finding 1."),
-        ])
+
+        result = RetrievalResult(
+            sections=[
+                RetrievedSection(source="KP", label="Findings", content="Finding 1."),
+            ]
+        )
         prompt = builder.build_system_prompt(result)
         assert "Previous Conversation" not in prompt
 
     def test_build_system_prompt_empty_sections(self) -> None:
         builder = PromptBuilder()
         from app.modules.copilot.retrieval.models import RetrievalResult
+
         prompt = builder.build_system_prompt(RetrievalResult())
         assert "No relevant investigation sections found" in prompt

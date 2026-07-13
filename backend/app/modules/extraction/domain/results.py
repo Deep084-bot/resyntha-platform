@@ -7,14 +7,14 @@ dropping failures.
 
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
 from app.modules.extraction.domain.models import ExtractedKnowledge
 
 
-class FailureReason(str, Enum):
+class FailureReason(StrEnum):
     """Why a single paper extraction did not succeed."""
 
     RATE_LIMIT = "rate_limit"

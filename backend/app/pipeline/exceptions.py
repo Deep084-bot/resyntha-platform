@@ -7,7 +7,7 @@ can catch them with a single ``except PipelineException``.
 """
 
 
-class PipelineException(Exception):
+class PipelineException(Exception):  # noqa: N818
     """Base exception for all pipeline errors."""
 
 

@@ -31,8 +31,6 @@ def _discover_providers() -> None:
     if _PROVIDER_REGISTRY:
         return
 
-    from app.core.llm.groq import GroqProvider
-
     register_provider("groq", GroqProvider)
 
     try:
@@ -70,7 +68,6 @@ class ProviderFactory:
         provider_cls = _PROVIDER_REGISTRY.get(name)
         if provider_cls is None:
             raise ValueError(
-                f"Unknown LLM provider: {name!r}. "
-                f"Available: {list(_PROVIDER_REGISTRY)}",
+                f"Unknown LLM provider: {name!r}. Available: {list(_PROVIDER_REGISTRY)}",
             )
         return provider_cls(**kwargs)

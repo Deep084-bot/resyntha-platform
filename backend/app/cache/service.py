@@ -107,9 +107,7 @@ class CacheService:
             cursor = 0
             keys_to_delete: list[str] = []
             while True:
-                cursor, keys = await client.scan(
-                    cursor=cursor, match=pattern, count=100
-                )
+                cursor, keys = await client.scan(cursor=cursor, match=pattern, count=100)
                 keys_to_delete.extend(keys)
                 if cursor == 0:
                     break

@@ -15,24 +15,30 @@ from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
-PAYLOAD_TOO_LARGE_BODY = json.dumps({
-    "error": "payload_too_large",
-    "message": "Request body exceeds the maximum allowed size",
-}).encode()
+PAYLOAD_TOO_LARGE_BODY = json.dumps(
+    {
+        "error": "payload_too_large",
+        "message": "Request body exceeds the maximum allowed size",
+    }
+).encode()
 
 
 async def _send_413(send: Send) -> None:
-    await send({
-        "type": "http.response.start",
-        "status": 413,
-        "headers": [
-            (b"content-type", b"application/problem+json"),
-        ],
-    })
-    await send({
-        "type": "http.response.body",
-        "body": PAYLOAD_TOO_LARGE_BODY,
-    })
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 413,
+            "headers": [
+                (b"content-type", b"application/problem+json"),
+            ],
+        }
+    )
+    await send(
+        {
+            "type": "http.response.body",
+            "body": PAYLOAD_TOO_LARGE_BODY,
+        }
+    )
 
 
 class RequestSizeLimitMiddleware:
@@ -95,5 +101,5 @@ class RequestSizeLimitMiddleware:
             await _send_413(send)
 
 
-class _SizeLimitExceeded(Exception):
+class _SizeLimitExceeded(Exception):  # noqa: N818
     """Internal signal raised when the body exceeds the size limit."""

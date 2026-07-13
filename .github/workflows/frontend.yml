@@ -47,8 +47,8 @@ jobs:
       - name: Run tests with Vitest
         run: npx vitest run --coverage
 
-      - name: Build
-        run: npm run build
+      - name: Build (Vite only)
+        run: npx vite build
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4

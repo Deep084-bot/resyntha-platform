@@ -120,9 +120,17 @@ class AnalysisService:
 
         all_terms = list(
             self._calculator.flatten_list_of_lists(
-                [all_techniques, all_limitations, all_future_work,
-                 all_contributions, all_datasets, all_technologies,
-                 all_metrics, all_domains, all_keywords],
+                [
+                    all_techniques,
+                    all_limitations,
+                    all_future_work,
+                    all_contributions,
+                    all_datasets,
+                    all_technologies,
+                    all_metrics,
+                    all_domains,
+                    all_keywords,
+                ],
             ),
         )
 

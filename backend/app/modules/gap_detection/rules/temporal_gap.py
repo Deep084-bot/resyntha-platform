@@ -47,7 +47,7 @@ class TemporalGapRule(BaseGapRule):
                 continue
             all_years.add(year_str)
 
-            for tech in (rec.relevant_techniques or []):
+            for tech in rec.relevant_techniques or []:
                 key = tech.strip().lower()
                 if key:
                     technique_years[key].add(year_str)
@@ -68,7 +68,7 @@ class TemporalGapRule(BaseGapRule):
             else sorted_years[-1]
         )
         recent_set = (
-            set(sorted_years[-self.RECENT_YEARS:])
+            set(sorted_years[-self.RECENT_YEARS :])
             if len(sorted_years) >= self.RECENT_YEARS
             else {sorted_years[-1]}
         )
@@ -80,21 +80,19 @@ class TemporalGapRule(BaseGapRule):
             early_count = sum(1 for y in years if y in early_years)
             recent_count = sum(1 for y in years if y in recent_set)
             if early_count >= self.MIN_EARLY_APPEARANCES and recent_count == 0:
-                candidates.append((
-                    term, early_count, years, technique_papers[term], "technique"
-                ))
+                candidates.append((term, early_count, years, technique_papers[term], "technique"))
 
         for term, years in methodology_years.items():
             early_count = sum(1 for y in years if y in early_years)
             recent_count = sum(1 for y in years if y in recent_set)
             if early_count >= self.MIN_EARLY_APPEARANCES and recent_count == 0:
-                candidates.append((
-                    term, early_count, years, methodology_papers[term], "methodology"
-                ))
+                candidates.append(
+                    (term, early_count, years, methodology_papers[term], "methodology")
+                )
 
         candidates.sort(key=lambda x: x[1], reverse=True)
 
-        for term, early_count, years, papers, kind in candidates[:self.MAX_RESULTS]:
+        for term, early_count, years, papers, kind in candidates[: self.MAX_RESULTS]:
             year_range = f"{min(years)}–{max(years)}" if len(years) > 1 else list(years)[0]
             gap = Gap(
                 id=f"temporal-gap-{term[:40]}",

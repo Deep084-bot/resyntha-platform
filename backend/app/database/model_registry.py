@@ -22,6 +22,10 @@ import app.modules.bookmark.domain.models  # noqa: F401
 # collections
 import app.modules.collection.domain.models  # noqa: F401
 
+# copilot
+import app.modules.copilot.domain.models  # noqa: F401
+import app.modules.copilot.vector.models  # noqa: F401
+
 # execution
 import app.modules.execution.domain.models  # noqa: F401
 
@@ -43,7 +47,3 @@ import app.modules.reading_status.domain.models  # noqa: F401
 
 # validation
 import app.modules.validation.domain.models  # noqa: F401
-
-# copilot
-import app.modules.copilot.domain.models  # noqa: F401
-import app.modules.copilot.vector.models  # noqa: F401

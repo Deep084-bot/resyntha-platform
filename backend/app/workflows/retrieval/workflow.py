@@ -69,11 +69,13 @@ class RetrievalWorkflow:
 
         try:
             papers = await self._retrieval_service.retrieve(
-                query, paper_limit,
+                query,
+                paper_limit,
             )
 
             paper_ids = self._paper_service.persist_retrieved_papers(
-                investigation_id, papers,
+                investigation_id,
+                papers,
             )
 
             logger.info(

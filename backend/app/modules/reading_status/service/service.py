@@ -17,12 +17,16 @@ class ReadingStatusService:
     def __init__(self, repo: ReadingStatusRepository) -> None:
         self._repo = repo
 
-    def set_status(self, investigation_id: uuid.UUID, paper_id: uuid.UUID, status: str) -> PaperReadingStatus:
+    def set_status(
+        self, investigation_id: uuid.UUID, paper_id: uuid.UUID, status: str
+    ) -> PaperReadingStatus:
         if status not in VALID_STATUSES:
             status = "unread"
         return self._repo.upsert(investigation_id, paper_id, status)
 
-    def get_status(self, investigation_id: uuid.UUID, paper_id: uuid.UUID) -> PaperReadingStatus | None:
+    def get_status(
+        self, investigation_id: uuid.UUID, paper_id: uuid.UUID
+    ) -> PaperReadingStatus | None:
         return self._repo.get(investigation_id, paper_id)
 
     def list_by_investigation(self, investigation_id: uuid.UUID) -> Sequence[PaperReadingStatus]:

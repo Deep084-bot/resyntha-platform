@@ -141,10 +141,10 @@ def parse_llm_json(
             continue
 
     for extractor in [_find_json_object, _find_json_array]:
-        candidate = extractor(sanitized)
-        if candidate is not None:
+        parsed = extractor(sanitized)
+        if parsed is not None:
             try:
-                return json.loads(candidate)
+                return json.loads(parsed)
             except (json.JSONDecodeError, ValueError):
                 continue
 

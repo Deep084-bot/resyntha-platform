@@ -5,8 +5,8 @@ All tests are pure-unit — no DB, no LLM calls.
 
 import uuid
 
-from pydantic import ValidationError
 import pytest
+from pydantic import ValidationError
 
 from app.modules.extraction.domain.knowledge import (
     Author,
@@ -20,8 +20,8 @@ from app.modules.extraction.domain.knowledge import (
 from app.modules.extraction.utils.normalization import ExtractionNormalizer
 from app.modules.extraction.utils.validation import ExtractionValidator
 
-
 # ── ExtractionOutput schema ──────────────────────────────────────
+
 
 class TestExtractionOutput:
     """Validates the output Pydantic schema."""
@@ -92,6 +92,7 @@ class TestExtractionOutput:
 
 # ── Author extraction ───────────────────────────────────────────
 
+
 class TestAuthorExtraction:
     """Tests for author name extraction and normalisation."""
 
@@ -112,6 +113,7 @@ class TestAuthorExtraction:
 
 
 # ── Institution extraction ──────────────────────────────────────
+
 
 class TestInstitutionExtraction:
     """Tests for institution name extraction and normalisation."""
@@ -139,6 +141,7 @@ class TestInstitutionExtraction:
 
 # ── Dataset extraction ──────────────────────────────────────────
 
+
 class TestDatasetExtraction:
     """Tests for dataset name extraction and normalisation."""
 
@@ -160,6 +163,7 @@ class TestDatasetExtraction:
 
 
 # ── Technology extraction ───────────────────────────────────────
+
 
 class TestTechnologyExtraction:
     """Tests for technology name extraction and normalisation."""
@@ -183,18 +187,24 @@ class TestTechnologyExtraction:
 
 # ── Normalization ───────────────────────────────────────────────
 
+
 class TestNormalization:
     """General normalisation tests."""
 
     def test_duplicate_removal_via_canonical(self) -> None:
         """Same entity spelled differently should resolve to same canonical form."""
-        assert ExtractionNormalizer.normalize_dataset("imagenet") == ExtractionNormalizer.normalize_dataset("ImageNet")
+        assert ExtractionNormalizer.normalize_dataset(
+            "imagenet"
+        ) == ExtractionNormalizer.normalize_dataset("ImageNet")
 
     def test_institution_alias_equivalence(self) -> None:
-        assert ExtractionNormalizer.normalize_institution("MIT") == ExtractionNormalizer.normalize_institution("mit")
+        assert ExtractionNormalizer.normalize_institution(
+            "MIT"
+        ) == ExtractionNormalizer.normalize_institution("mit")
 
 
 # ── Validation ──────────────────────────────────────────────────
+
 
 class TestValidation:
     """Validation logic tests."""
@@ -261,6 +271,7 @@ class TestValidation:
 
 
 # ── PaperKnowledge ──────────────────────────────────────────────
+
 
 class TestPaperKnowledge:
     """PaperKnowledge wrapper tests."""

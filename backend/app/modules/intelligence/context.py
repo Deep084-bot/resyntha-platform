@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-
     from app.modules.intelligence.config import IntelligenceConfig
     from app.modules.intelligence.graph.models import ResearchGraph
 

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from pydantic import BaseModel, Field
 
 from app.modules.copilot.evidence.models import EvidenceBundle
@@ -23,7 +21,10 @@ class LLMCopilotAnswer(BaseModel):
       - suggested_questions: follow-ups
     """
 
-    answer: str = Field(..., description="The assistant's final answer. Organise as: Evidence, Analysis, Conclusion.")
+    answer: str = Field(
+        ...,
+        description="The assistant's final answer. Organise as: Evidence, Analysis, Conclusion.",
+    )
     evidence: list[str] = Field(
         default_factory=list,
         description="Observed facts extracted directly from the context, one per item.",
@@ -34,7 +35,7 @@ class LLMCopilotAnswer(BaseModel):
     )
     grouped_citations: list[dict] = Field(
         default_factory=list,
-        description="Citations grouped by claim: [{\"claim\": \"...\", \"papers\": [{\"paper_title\": \"...\", \"relevance\": \"...\"}]}]",
+        description='Citations grouped by claim: [{"claim": "...", "papers": [{"paper_title": "...", "relevance": "..."}]}]',
     )
     confidence: float = Field(
         default=0.0,
@@ -158,10 +159,7 @@ class PromptBuilder:
 
     def build_user_prompt(self, history: str, question: str) -> str:
         if history:
-            return (
-                f"Previous conversation:\n{history}\n\n"
-                f"Question: {question}"
-            )
+            return f"Previous conversation:\n{history}\n\nQuestion: {question}"
         return f"Question: {question}"
 
     def get_response_model(self) -> type[BaseModel]:
@@ -174,9 +172,7 @@ class PromptBuilder:
 
         parts: list[str] = []
         for section in retrieved.sections:
-            parts.append(
-                f"[{section.source} / {section.label}]\n{section.content}"
-            )
+            parts.append(f"[{section.source} / {section.label}]\n{section.content}")
         return "\n\n".join(parts)
 
     @staticmethod

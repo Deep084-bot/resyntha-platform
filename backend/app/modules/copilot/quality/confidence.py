@@ -1,10 +1,9 @@
-"""Confidence calibration — combines multiple signals into a final confidence score and explanation."""
+"""Confidence calibration — multi-signal confidence scoring with explanation."""
 
 from __future__ import annotations
 
-from app.modules.copilot.retrieval.models import RetrievalResult
 from app.modules.copilot.quality.validator import CitationValidationResult
-
+from app.modules.copilot.retrieval.models import RetrievalResult
 
 MAX_CHARS_DEFAULT = 25000
 
@@ -46,12 +45,12 @@ class ConfidenceCalibrator:
         model = self._cap_model_confidence(model_confidence)
 
         score = (
-            evidence * self._EVIDENCE_WEIGHT +
-            completeness * self._COMPLETENESS_WEIGHT +
-            citation_val * self._CITATION_VALIDATION_WEIGHT +
-            citation_count * self._CITATION_COUNT_WEIGHT +
-            retrieval * self._RETRIEVAL_SCORE_WEIGHT +
-            model * self._MODEL_WEIGHT
+            evidence * self._EVIDENCE_WEIGHT
+            + completeness * self._COMPLETENESS_WEIGHT
+            + citation_val * self._CITATION_VALIDATION_WEIGHT
+            + citation_count * self._CITATION_COUNT_WEIGHT
+            + retrieval * self._RETRIEVAL_SCORE_WEIGHT
+            + model * self._MODEL_WEIGHT
         )
 
         return round(min(max(score, 0.0), 1.0), 2)
@@ -75,12 +74,12 @@ class ConfidenceCalibrator:
         model = self._cap_model_confidence(model_confidence)
 
         score = (
-            evidence * self._EVIDENCE_WEIGHT +
-            completeness * self._COMPLETENESS_WEIGHT +
-            citation_val * self._CITATION_VALIDATION_WEIGHT +
-            citation_count * self._CITATION_COUNT_WEIGHT +
-            retrieval * self._RETRIEVAL_SCORE_WEIGHT +
-            model * self._MODEL_WEIGHT
+            evidence * self._EVIDENCE_WEIGHT
+            + completeness * self._COMPLETENESS_WEIGHT
+            + citation_val * self._CITATION_VALIDATION_WEIGHT
+            + citation_count * self._CITATION_COUNT_WEIGHT
+            + retrieval * self._RETRIEVAL_SCORE_WEIGHT
+            + model * self._MODEL_WEIGHT
         )
         score = round(min(max(score, 0.0), 1.0), 2)
 

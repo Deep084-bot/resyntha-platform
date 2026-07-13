@@ -18,41 +18,45 @@ from __future__ import annotations
 import mimetypes
 from dataclasses import dataclass
 
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from fastapi import UploadFile as FastAPIUploadFile
 
 from app.config import get_settings
 
 # ── Allowed sets ──────────────────────────────────────────────────────────────
 
-ALLOWED_MIME_TYPES: frozenset[str] = frozenset({
-    "application/pdf",
-    "application/json",
-    "text/plain",
-    "text/csv",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-excel",
-    "image/png",
-    "image/jpeg",
-    "image/gif",
-    "image/webp",
-    "application/zip",
-})
+ALLOWED_MIME_TYPES: frozenset[str] = frozenset(
+    {
+        "application/pdf",
+        "application/json",
+        "text/plain",
+        "text/csv",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+        "image/webp",
+        "application/zip",
+    }
+)
 
-ALLOWED_EXTENSIONS: frozenset[str] = frozenset({
-    ".pdf",
-    ".json",
-    ".txt",
-    ".csv",
-    ".xlsx",
-    ".xls",
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".gif",
-    ".webp",
-    ".zip",
-})
+ALLOWED_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".pdf",
+        ".json",
+        ".txt",
+        ".csv",
+        ".xlsx",
+        ".xls",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+        ".zip",
+    }
+)
 
 
 # ── Exceptions ────────────────────────────────────────────────────────────────
@@ -110,17 +114,13 @@ def validate_upload(file: FastAPIUploadFile) -> ValidatedUpload:
             content_type = guessed
 
     if content_type and content_type not in ALLOWED_MIME_TYPES:
-        raise UploadValidationError(
-            f"MIME type '{content_type}' is not allowed for upload"
-        )
+        raise UploadValidationError(f"MIME type '{content_type}' is not allowed for upload")
 
     # --- Extension ---
     filename = (file.filename or "").lower()
     ext = _extension(filename)
     if ext and ext not in ALLOWED_EXTENSIONS:
-        raise UploadValidationError(
-            f"File extension '{ext}' is not allowed for upload"
-        )
+        raise UploadValidationError(f"File extension '{ext}' is not allowed for upload")
 
     return ValidatedUpload(
         filename=file.filename or "unknown",

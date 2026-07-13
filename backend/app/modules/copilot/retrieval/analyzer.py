@@ -28,23 +28,121 @@ class AnalyzedQuestion:
 
     def has_signals(self) -> bool:
         return bool(
-            self.keywords or self.bigrams or self.phrases or
-            self.methodology_signals or self.dataset_signals or
-            self.technology_signals or self.domain_signals
+            self.keywords
+            or self.bigrams
+            or self.phrases
+            or self.methodology_signals
+            or self.dataset_signals
+            or self.technology_signals
+            or self.domain_signals
         )
 
 
 class KeywordAnalyzer:
     """Extracts search signals from a user question using lightweight heuristics."""
 
-    _METHODOLOGY_TRIGGERS = {"methodology", "method", "approach", "technique", "techniques", "algorithm", "framework", "pipeline", "architecture"}
-    _DATASET_TRIGGERS = {"dataset", "datasets", "data", "benchmark", "benchmarks", "corpus", "collection", "database"}
-    _TECHNOLOGY_TRIGGERS = {"technology", "technologies", "technique", "techniques", "tool", "tools", "library", "libraries", "platform", "platforms", "software", "framework", "implementation"}
-    _DOMAIN_TRIGGERS = {"domain", "domains", "field", "fields", "area", "areas", "discipline", "application", "applications", "task", "tasks"}
-    _AUTHOR_TRIGGERS = {"author", "authors", "who", "researcher", "researchers", "group", "team", "lab"}
-    _PAPER_TRIGGERS = {"paper", "papers", "publication", "publications", "article", "articles", "study", "studies", "work", "research"}
-    _GAP_TRIGGERS = {"gap", "gaps", "limitation", "limitations", "challenge", "challenges", "problem", "problems", "issue", "issues", "open", "missing", "lack", "future direction", "opportunity", "opportunities", "future work"}
-    _COMPARISON_TRIGGERS = {"compare", "comparison", "difference", "differences", "versus", "vs", "similarity", "trade-off", "better", "worse"}
+    _METHODOLOGY_TRIGGERS = {
+        "methodology",
+        "method",
+        "approach",
+        "technique",
+        "techniques",
+        "algorithm",
+        "framework",
+        "pipeline",
+        "architecture",
+    }
+    _DATASET_TRIGGERS = {
+        "dataset",
+        "datasets",
+        "data",
+        "benchmark",
+        "benchmarks",
+        "corpus",
+        "collection",
+        "database",
+    }
+    _TECHNOLOGY_TRIGGERS = {
+        "technology",
+        "technologies",
+        "technique",
+        "techniques",
+        "tool",
+        "tools",
+        "library",
+        "libraries",
+        "platform",
+        "platforms",
+        "software",
+        "framework",
+        "implementation",
+    }
+    _DOMAIN_TRIGGERS = {
+        "domain",
+        "domains",
+        "field",
+        "fields",
+        "area",
+        "areas",
+        "discipline",
+        "application",
+        "applications",
+        "task",
+        "tasks",
+    }
+    _AUTHOR_TRIGGERS = {
+        "author",
+        "authors",
+        "who",
+        "researcher",
+        "researchers",
+        "group",
+        "team",
+        "lab",
+    }
+    _PAPER_TRIGGERS = {
+        "paper",
+        "papers",
+        "publication",
+        "publications",
+        "article",
+        "articles",
+        "study",
+        "studies",
+        "work",
+        "research",
+    }
+    _GAP_TRIGGERS = {
+        "gap",
+        "gaps",
+        "limitation",
+        "limitations",
+        "challenge",
+        "challenges",
+        "problem",
+        "problems",
+        "issue",
+        "issues",
+        "open",
+        "missing",
+        "lack",
+        "future direction",
+        "opportunity",
+        "opportunities",
+        "future work",
+    }
+    _COMPARISON_TRIGGERS = {
+        "compare",
+        "comparison",
+        "difference",
+        "differences",
+        "versus",
+        "vs",
+        "similarity",
+        "trade-off",
+        "better",
+        "worse",
+    }
     _HOW_WHY_TRIGGERS = {"how", "why", "what causes", "what factors", "explain"}
 
     def analyze(self, question: str) -> AnalyzedQuestion:
@@ -71,13 +169,21 @@ class KeywordAnalyzer:
         )
 
         for keyword in keywords | bigrams | set(phrases):
-            if keyword in self._METHODOLOGY_TRIGGERS or any(trigger in keyword for trigger in self._METHODOLOGY_TRIGGERS):
+            if keyword in self._METHODOLOGY_TRIGGERS or any(
+                trigger in keyword for trigger in self._METHODOLOGY_TRIGGERS
+            ):
                 result.methodology_signals.append(keyword)
-            if keyword in self._DATASET_TRIGGERS or any(trigger in keyword for trigger in self._DATASET_TRIGGERS):
+            if keyword in self._DATASET_TRIGGERS or any(
+                trigger in keyword for trigger in self._DATASET_TRIGGERS
+            ):
                 result.dataset_signals.append(keyword)
-            if keyword in self._TECHNOLOGY_TRIGGERS or any(trigger in keyword for trigger in self._TECHNOLOGY_TRIGGERS):
+            if keyword in self._TECHNOLOGY_TRIGGERS or any(
+                trigger in keyword for trigger in self._TECHNOLOGY_TRIGGERS
+            ):
                 result.technology_signals.append(keyword)
-            if keyword in self._DOMAIN_TRIGGERS or any(trigger in keyword for trigger in self._DOMAIN_TRIGGERS):
+            if keyword in self._DOMAIN_TRIGGERS or any(
+                trigger in keyword for trigger in self._DOMAIN_TRIGGERS
+            ):
                 result.domain_signals.append(keyword)
             if keyword in self._AUTHOR_TRIGGERS:
                 result.author_signals.append(keyword)

@@ -125,17 +125,20 @@ async def retrieval_job(
         attempt 4 → permanent FAILED
     """
     from app.metrics import get_metrics_service as _get_metrics
+
     _metrics = _get_metrics()
 
     attempt = ctx.get("job_try", 1)
     exec_id = str(execution_id)
     inv_id = str(investigation_id)
 
-    set_worker_context(WorkerContext(
-        execution_id=exec_id,
-        investigation_id=inv_id,
-        stage="retrieval",
-    ))
+    set_worker_context(
+        WorkerContext(
+            execution_id=exec_id,
+            investigation_id=inv_id,
+            stage="retrieval",
+        )
+    )
 
     _metrics.worker_jobs_started_total.inc()
     logger.info(
@@ -305,7 +308,9 @@ async def retrieval_job(
             "execution_status_before",
             execution_id=exec_id,
             status=execution.status.value if execution else "NOT_FOUND",
-            completed_at=str(execution.completed_at) if execution and execution.completed_at else None,
+            completed_at=str(execution.completed_at)
+            if execution and execution.completed_at
+            else None,
         )
 
         updated = execution_service.update_execution(

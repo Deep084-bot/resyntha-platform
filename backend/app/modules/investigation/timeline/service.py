@@ -50,9 +50,7 @@ class TimelineService:
         )
         self._repository.append_event(event)
 
-    def get_timeline(
-        self, investigation_id: uuid.UUID
-    ) -> Sequence[TimelineEventResponse]:
+    def get_timeline(self, investigation_id: uuid.UUID) -> Sequence[TimelineEventResponse]:
         """Return all timeline events for an investigation."""
         events = self._repository.list_events(investigation_id)
         return [TimelineEventResponse.model_validate(e) for e in events]

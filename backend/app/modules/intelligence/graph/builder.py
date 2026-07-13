@@ -160,22 +160,27 @@ class ResearchGraphBuilder:
             methodology = ""
 
         institutions = self._normalise_entity_list(
-            getattr(record, "institutions", None) or [], "institution",
+            getattr(record, "institutions", None) or [],
+            "institution",
         )
         metrics = self._normalise_entity_list(
-            getattr(record, "evaluation_metrics", None) or [], "metric",
+            getattr(record, "evaluation_metrics", None) or [],
+            "metric",
         )
         datasets = self._normalise_entity_list(
-            getattr(record, "datasets_used", None) or [], "dataset",
+            getattr(record, "datasets_used", None) or [],
+            "dataset",
         )
         technologies = self._normalise_entity_list(
-            getattr(record, "technologies", None) or [], "technology",
+            getattr(record, "technologies", None) or [],
+            "technology",
         )
 
         # ── Technique names: normalise then resolve ──
         techniques = [
             resolve_first(normalise_text(t), "methodology")
-            for t in (record.relevant_techniques or []) if t
+            for t in (record.relevant_techniques or [])
+            if t
         ]
 
         # ── Free-text fields: full normalisation (stemming) ──
@@ -186,7 +191,8 @@ class ResearchGraphBuilder:
         cited_works = [normalise_text(t) for t in (record.cited_works or []) if t]
         research_domains = [
             resolve_first(normalise_text(t), "methodology")
-            for t in (getattr(record, "research_domains", None) or []) if t
+            for t in (getattr(record, "research_domains", None) or [])
+            if t
         ]
 
         return NormalisedRecord(
@@ -221,12 +227,7 @@ class ResearchGraphBuilder:
         result: list[str] = []
         for item in raw:
             if isinstance(item, dict):
-                name = (
-                    item.get("name")
-                    or item.get("metric_name")
-                    or item.get("dataset_name")
-                    or ""
-                )
+                name = item.get("name") or item.get("metric_name") or item.get("dataset_name") or ""
             else:
                 name = str(item)
             canonical = resolve_first(name, entity_type)
@@ -313,24 +314,28 @@ class ResearchGraphBuilder:
         for name, pids in indices.authors.items():
             first_year = self._earliest_year(pids, indices.paper_meta)
             graph.authors[name] = AuthorNode(
-                name=name, paper_ids=sorted(pids),
+                name=name,
+                paper_ids=sorted(pids),
                 first_publication_year=first_year,
             )
         for name, pids in indices.institutions.items():
             graph.institutions[name] = InstitutionNode(
-                name=name, type=self._classify_institution(name),
+                name=name,
+                type=self._classify_institution(name),
                 paper_ids=sorted(pids),
                 author_names=sorted(indices.institution_authors.get(name, [])),
             )
         for name, pids in indices.methodologies.items():
             graph.methodologies[name] = MethodologyNode(
-                name=name, paper_ids=sorted(pids),
+                name=name,
+                paper_ids=sorted(pids),
             )
         for name, pids in indices.datasets.items():
             graph.datasets[name] = DatasetNode(name=name, paper_ids=sorted(pids))
         for name, pids in indices.technologies.items():
             graph.technologies[name] = TechnologyNode(
-                name=name, type=self._classify_technology(name),
+                name=name,
+                type=self._classify_technology(name),
                 paper_ids=sorted(pids),
             )
         for name, pids in indices.metrics.items():
@@ -440,7 +445,8 @@ class ResearchGraphBuilder:
         paper_meta: dict[str, PaperMetadata],
     ) -> int | None:
         years = [
-            paper_meta[pid].year for pid in paper_ids
+            paper_meta[pid].year
+            for pid in paper_ids
             if pid in paper_meta and paper_meta[pid].year is not None
         ]
         return min(years) if years else None
@@ -448,31 +454,61 @@ class ResearchGraphBuilder:
     @staticmethod
     def _classify_institution(name: str) -> InstitutionType:
         lower = name.lower()
-        if any(t in lower for t in ("university", "college", "institute of technology",
-                                     "eth", "mit", "caltech")):
+        if any(
+            t in lower
+            for t in ("university", "college", "institute of technology", "eth", "mit", "caltech")
+        ):
             return InstitutionType.UNIVERSITY
         if any(t in lower for t in ("lab", "laboratory", "research center", "research centre")):
             return InstitutionType.LAB
-        if any(t in lower for t in ("google", "microsoft", "meta", "amazon", "apple",
-                                     "nvidia", "ibm", "openai", "inc", "corp", "ltd",
-                                     "anthropic", "deepmind")):
+        if any(
+            t in lower
+            for t in (
+                "google",
+                "microsoft",
+                "meta",
+                "amazon",
+                "apple",
+                "nvidia",
+                "ibm",
+                "openai",
+                "inc",
+                "corp",
+                "ltd",
+                "anthropic",
+                "deepmind",
+            )
+        ):
             return InstitutionType.COMPANY
-        if any(t in lower for t in ("government", "national", "department of", "ministry",
-                                     "agency")):
+        if any(
+            t in lower for t in ("government", "national", "department of", "ministry", "agency")
+        ):
             return InstitutionType.GOVERNMENT
         return InstitutionType.OTHER
 
     @staticmethod
     def _classify_technology(name: str) -> TechnologyType:
         lower = name.lower()
-        if any(t in lower for t in ("pytorch", "tensorflow", "jax", "keras", "django",
-                                     "flask", "react", "angular", "spring")):
+        if any(
+            t in lower
+            for t in (
+                "pytorch",
+                "tensorflow",
+                "jax",
+                "keras",
+                "django",
+                "flask",
+                "react",
+                "angular",
+                "spring",
+            )
+        ):
             return TechnologyType.FRAMEWORK
-        if any(t in lower for t in ("lib", "library", "numpy", "scipy", "sklearn",
-                                     "opencv", "pandas")):
+        if any(
+            t in lower for t in ("lib", "library", "numpy", "scipy", "sklearn", "opencv", "pandas")
+        ):
             return TechnologyType.LIBRARY
-        if any(t in lower for t in ("cuda", "docker", "kubernetes", "git", "nginx",
-                                     "redis")):
+        if any(t in lower for t in ("cuda", "docker", "kubernetes", "git", "nginx", "redis")):
             return TechnologyType.TOOL
         return TechnologyType.OTHER
 

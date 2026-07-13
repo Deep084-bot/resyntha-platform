@@ -16,11 +16,9 @@ from app.metrics import (
     Gauge,
     Histogram,
     MetricsMiddleware,
-    MetricsService,
     get_metrics_service,
     reset_metrics_service,
 )
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Fixtures
@@ -107,9 +105,9 @@ class TestHistogram:
         h = Histogram("req_dur", "Duration", buckets=(0.1, 0.5, 1.0))
         h.observe(0.05)
         rendered = h.render()
-        assert "req_dur_bucket{le=\"0.1\"} 1" in rendered
-        assert "req_dur_bucket{le=\"0.5\"} 1" in rendered
-        assert "req_dur_bucket{le=\"1.0\"} 1" in rendered
+        assert 'req_dur_bucket{le="0.1"} 1' in rendered
+        assert 'req_dur_bucket{le="0.5"} 1' in rendered
+        assert 'req_dur_bucket{le="1.0"} 1' in rendered
         assert "req_dur_count 1" in rendered
         assert "req_dur_sum 0.05" in rendered
 
@@ -118,8 +116,8 @@ class TestHistogram:
         h.observe(0.5)
         h.observe(2.0)
         rendered = h.render()
-        assert "latency_bucket{le=\"1.0\"} 1" in rendered
-        assert "latency_bucket{le=\"5.0\"} 2" in rendered
+        assert 'latency_bucket{le="1.0"} 1' in rendered
+        assert 'latency_bucket{le="5.0"} 2' in rendered
         assert "latency_count 2" in rendered
         assert "latency_sum 2.5" in rendered
 
@@ -133,7 +131,10 @@ class TestHistogram:
         h = Histogram("labeled_dur", "Labeled", labelnames=("endpoint",), buckets=(0.5, 1.0))
         h.observe(0.3, endpoint="/test")
         rendered = h.render()
-        assert 'labeled_dur_bucket{endpoint="/test",le="0.5"}' in rendered or 'labeled_dur_bucket{le="0.5",endpoint="/test"}' in rendered
+        assert (
+            'labeled_dur_bucket{endpoint="/test",le="0.5"}' in rendered
+            or 'labeled_dur_bucket{le="0.5",endpoint="/test"}' in rendered
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -195,6 +196,7 @@ def app() -> FastAPI:
     @app.get("/slow")
     async def slow_endpoint() -> dict:
         import asyncio
+
         await asyncio.sleep(0.01)
         return {"slow": True}
 
@@ -219,8 +221,12 @@ class TestMetricsMiddleware:
         client.get("/test")
         svc = get_metrics_service()
         rendered = svc.http_requests_total.render()
-        assert 'http_requests_total{endpoint="/test",method="GET",status="200"}' in rendered.replace("\\n", "\n") or \
-               'http_requests_total{method="GET",endpoint="/test",status="200"}' in rendered.replace("\\n", "\n")
+        assert (
+            'http_requests_total{endpoint="/test",method="GET",status="200"}'
+            in rendered.replace("\\n", "\n")
+            or 'http_requests_total{method="GET",endpoint="/test",status="200"}'
+            in rendered.replace("\\n", "\n")
+        )
 
     def test_request_records_duration(self, client: TestClient) -> None:
         reset_metrics_service()
@@ -248,6 +254,7 @@ class TestMetricsMiddleware:
 class TestMetricsEndpoint:
     def test_metrics_endpoint_returns_plaintext(self) -> None:
         from app.main import app
+
         client = TestClient(app, base_url="http://localhost")
         resp = client.get("/api/v1/metrics")
         assert resp.status_code == status.HTTP_200_OK
@@ -255,18 +262,21 @@ class TestMetricsEndpoint:
 
     def test_metrics_endpoint_contains_help(self) -> None:
         from app.main import app
+
         client = TestClient(app, base_url="http://localhost")
         resp = client.get("/api/v1/metrics")
         assert "# HELP" in resp.text
 
     def test_metrics_endpoint_contains_type(self) -> None:
         from app.main import app
+
         client = TestClient(app, base_url="http://localhost")
         resp = client.get("/api/v1/metrics")
         assert "# TYPE" in resp.text
 
     def test_metrics_endpoint_contains_request_metrics(self) -> None:
         from app.main import app
+
         client = TestClient(app, base_url="http://localhost")
         # Make a request first so there is data
         client.get("/api/v1/live")
@@ -279,6 +289,7 @@ class TestMetricsEndpoint:
         with patch("app.health.routes.get_settings") as mock_s:
             mock_s.return_value.METRICS_ENABLED = False
             from app.main import app
+
             client = TestClient(app, base_url="http://localhost")
             resp = client.get("/api/v1/metrics")
             assert resp.status_code == status.HTTP_200_OK
@@ -295,6 +306,7 @@ class TestInvestigationMetricsHook:
     def test_create_investigation_increments_counter(self) -> None:
         reset_metrics_service()
         from app.main import app
+
         client = TestClient(app, base_url="http://localhost")
         # The counter is incremented by the investigation service
         # when create_investigation is called. Make a request to the endpoint.

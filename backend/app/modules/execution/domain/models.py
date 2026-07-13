@@ -7,16 +7,17 @@ run reference the execution that created them.
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
 
 
-class ExecutionStatus(str, Enum):
+class ExecutionStatus(StrEnum):
     """Lifecycle states for an execution."""
 
     PENDING = "pending"
@@ -26,7 +27,7 @@ class ExecutionStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class ExecutionStageStatus(str, Enum):
+class ExecutionStageStatus(StrEnum):
     """Lifecycle states for a single pipeline stage within an execution."""
 
     PENDING = "pending"
@@ -65,13 +66,18 @@ class Execution(Base):
     trigger: Mapped[str] = mapped_column(String(50), nullable=False)
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True,
+        DateTime(timezone=True),
+        nullable=True,
     )
     completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True,
+        DateTime(timezone=True),
+        nullable=True,
     )
     _metadata: Mapped[dict | None] = mapped_column(
-        "metadata", JSONB, default=dict, nullable=True,
+        "metadata",
+        JSONB,
+        default=dict,
+        nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -119,15 +125,20 @@ class ExecutionStage(Base):
     )
     attempt: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     started_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False,
+        DateTime(timezone=True),
+        nullable=False,
     )
     completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True,
+        DateTime(timezone=True),
+        nullable=True,
     )
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     _metadata: Mapped[dict | None] = mapped_column(
-        "metadata", JSONB, default=dict, nullable=True,
+        "metadata",
+        JSONB,
+        default=dict,
+        nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

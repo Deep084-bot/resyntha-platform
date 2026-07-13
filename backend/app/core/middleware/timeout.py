@@ -18,24 +18,30 @@ from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
-GATEWAY_TIMEOUT_BODY = json.dumps({
-    "error": "gateway_timeout",
-    "message": "Request timed out processing",
-}).encode()
+GATEWAY_TIMEOUT_BODY = json.dumps(
+    {
+        "error": "gateway_timeout",
+        "message": "Request timed out processing",
+    }
+).encode()
 
 
 async def _send_504(send: Send) -> None:
-    await send({
-        "type": "http.response.start",
-        "status": 504,
-        "headers": [
-            (b"content-type", b"application/problem+json"),
-        ],
-    })
-    await send({
-        "type": "http.response.body",
-        "body": GATEWAY_TIMEOUT_BODY,
-    })
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 504,
+            "headers": [
+                (b"content-type", b"application/problem+json"),
+            ],
+        }
+    )
+    await send(
+        {
+            "type": "http.response.body",
+            "body": GATEWAY_TIMEOUT_BODY,
+        }
+    )
 
 
 class TimeoutMiddleware:
@@ -57,7 +63,7 @@ class TimeoutMiddleware:
                 self.app(scope, receive, send),
                 timeout=timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(
                 "request_timeout",
                 path=scope.get("path", ""),

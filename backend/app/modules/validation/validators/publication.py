@@ -1,6 +1,6 @@
 """Publication validator — checks for invalid or future publication years."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.modules.retrieval.domain.paper import Paper
 from app.modules.validation.domain.validated_paper import ValidationIssue
@@ -21,7 +21,7 @@ class PublicationValidator(BaseValidator):
         if paper.year is None:
             return issues
 
-        current_year = datetime.now(timezone.utc).year
+        current_year = datetime.now(UTC).year
 
         if paper.year > current_year:
             issues.append(

@@ -31,9 +31,7 @@ class ArtifactRepository:
         """Return an artifact by primary key, or ``None``."""
         return self._session.get(Artifact, artifact_id)
 
-    def list_by_investigation(
-        self, investigation_id: uuid.UUID
-    ) -> Sequence[Artifact]:
+    def list_by_investigation(self, investigation_id: uuid.UUID) -> Sequence[Artifact]:
         """Return all artifacts for an investigation, newest first."""
         stmt = (
             select(Artifact)

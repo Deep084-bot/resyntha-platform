@@ -9,7 +9,6 @@ names across all environments.
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase
 
-
 # Naming convention for constraints — Alembic uses these patterns when
 # autogenerating migration names.
 _convention = {

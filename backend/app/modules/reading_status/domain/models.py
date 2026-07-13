@@ -20,7 +20,9 @@ class PaperReadingStatus(Base):
     __tablename__ = "paper_reading_status"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     investigation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -33,16 +35,21 @@ class PaperReadingStatus(Base):
         nullable=False,
     )
     status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="unread",
+        String(20),
+        nullable=False,
+        default="unread",
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(),
-        onupdate=func.now(), nullable=False,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
     __table_args__ = (
         UniqueConstraint(
-            "investigation_id", "paper_id",
+            "investigation_id",
+            "paper_id",
             name="uq_reading_status_investigation_paper",
         ),
     )

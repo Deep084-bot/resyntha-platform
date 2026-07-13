@@ -17,10 +17,7 @@ class DuplicateURLValidator(BaseValidator):
         if not paper.url:
             return []
         url_lower = paper.url.lower().strip()
-        count = sum(
-            1 for p in all_papers
-            if p.url and p.url.lower().strip() == url_lower
-        )
+        count = sum(1 for p in all_papers if p.url and p.url.lower().strip() == url_lower)
         if count > 1:
             return [
                 ValidationIssue(

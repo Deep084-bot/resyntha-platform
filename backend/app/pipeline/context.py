@@ -86,12 +86,14 @@ class PipelineContext:
         exception: Exception | None = None,
     ) -> None:
         """Record a structured error for the given stage."""
-        self.errors.append({
-            "stage": stage,
-            "message": message,
-            "exception": f"{type(exception).__name__}: {exception}" if exception else None,
-            "timestamp": datetime.utcnow().isoformat(),
-        })
+        self.errors.append(
+            {
+                "stage": stage,
+                "message": message,
+                "exception": f"{type(exception).__name__}: {exception}" if exception else None,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
 
     def record_metric(self, key: str, value: Any) -> None:
         """Record a named metric value."""

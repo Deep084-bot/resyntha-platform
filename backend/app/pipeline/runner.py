@@ -90,7 +90,9 @@ class PipelineRunner:
 
             if self._stage_recorder and context.execution_id is not None:
                 await self._stage_recorder.record_started(
-                    context.execution_id, stage.name(), attempt_number,
+                    context.execution_id,
+                    stage.name(),
+                    attempt_number,
                 )
 
             try:
@@ -102,14 +104,18 @@ class PipelineRunner:
                 context.add_error(stage.name(), str(exc), exc)
                 if self._stage_recorder and context.execution_id is not None:
                     await self._stage_recorder.record_failed(
-                        context.execution_id, stage.name(), str(exc),
+                        context.execution_id,
+                        stage.name(),
+                        str(exc),
                     )
                 continue
 
             if result == PipelineResult.RETRY and attempt < self._retry_policy.max_retries:
                 if self._stage_recorder and context.execution_id is not None:
                     await self._stage_recorder.record_failed(
-                        context.execution_id, stage.name(), "RETRY requested by stage",
+                        context.execution_id,
+                        stage.name(),
+                        "RETRY requested by stage",
                     )
                 continue
 
@@ -124,7 +130,8 @@ class PipelineRunner:
                 )
                 if self._stage_recorder and context.execution_id is not None:
                     await self._stage_recorder.record_failed(
-                        context.execution_id, stage.name(),
+                        context.execution_id,
+                        stage.name(),
                         f"RETRY exhausted after {self._retry_policy.max_retries + 1} attempts",
                     )
                 return PipelineResult.FAILED
@@ -132,16 +139,19 @@ class PipelineRunner:
             if self._stage_recorder and context.execution_id is not None:
                 if result == PipelineResult.SUCCESS:
                     await self._stage_recorder.record_completed(
-                        context.execution_id, stage.name(),
+                        context.execution_id,
+                        stage.name(),
                     )
                 elif result == PipelineResult.PARTIAL_SUCCESS:
                     await self._stage_recorder.record_completed(
-                        context.execution_id, stage.name(),
+                        context.execution_id,
+                        stage.name(),
                         metadata=context.metadata,
                     )
                 elif result == PipelineResult.SKIPPED:
                     await self._stage_recorder.record_completed(
-                        context.execution_id, stage.name(),
+                        context.execution_id,
+                        stage.name(),
                     )
 
             return result
@@ -151,7 +161,8 @@ class PipelineRunner:
         context.record_metric(f"{stage.name()}.attempts", self._retry_policy.max_retries + 1)
         if self._stage_recorder and context.execution_id is not None:
             await self._stage_recorder.record_failed(
-                context.execution_id, stage.name(),
+                context.execution_id,
+                stage.name(),
                 last_exception and str(last_exception) or "All retry attempts exhausted",
             )
         return PipelineResult.FAILED

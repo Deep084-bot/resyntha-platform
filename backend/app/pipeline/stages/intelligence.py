@@ -7,7 +7,6 @@ artifacts.  Failures are isolated — never crash the worker.
 
 from __future__ import annotations
 
-import uuid
 from datetime import UTC, datetime
 
 from app.modules.artifact.domain.models import ArtifactStatus, ArtifactType
@@ -30,7 +29,6 @@ from app.modules.intelligence.api.serializers import landscape_to_response
 from app.modules.intelligence.config import IntelligenceConfig
 from app.modules.intelligence.context import AnalysisContext
 from app.modules.intelligence.graph.builder import PaperMetadata, ResearchGraphBuilder
-from app.modules.intelligence.graph.models import ResearchGraph
 from app.modules.intelligence.presentation import JsonRenderer, MarkdownRenderer
 from app.modules.paper.repository.repository import PaperRepository
 from app.observability.logger import get_logger
@@ -124,7 +122,9 @@ class IntelligenceStage(PipelineStage):
                 )
                 context.record_metric("intelligence_papers", 0)
                 context.record_metric("intelligence_load_duration", load_duration)
-                context.record_metric("total_intelligence_duration", (datetime.now(UTC) - stage_start).total_seconds())
+                context.record_metric(
+                    "total_intelligence_duration", (datetime.now(UTC) - stage_start).total_seconds()
+                )
                 return PipelineResult.SUCCESS
 
             # ── 2. Build paper_map ────────────────────────────────
@@ -145,8 +145,11 @@ class IntelligenceStage(PipelineStage):
             graph_duration = (t3 - t2).total_seconds()
 
             entity_count = (
-                len(graph.papers) + len(graph.authors) + len(graph.institutions)
-                + len(graph.methodologies) + len(graph.datasets)
+                len(graph.papers)
+                + len(graph.authors)
+                + len(graph.institutions)
+                + len(graph.methodologies)
+                + len(graph.datasets)
                 + len(graph.technologies)
             )
 

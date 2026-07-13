@@ -74,25 +74,27 @@ class GraphApiService:
         # Paper nodes
         for pid, paper in graph.papers.items():
             node_id = f"paper:{pid}"
-            nodes.append(GraphNodeDTO(
-                id=node_id,
-                type=NodeType.PAPER,
-                label=paper.title,
-                metadata={
-                    "id": pid,
-                    "title": paper.title,
-                    "year": paper.year,
-                    "citation_count": paper.citation_count,
-                    "venue": paper.venue,
-                    "summary": self._extract_summary(paper.key_findings),
-                    "methodology": paper.techniques[:3] if paper.techniques else [],
-                    "datasets": [d.name for d in paper.datasets],
-                    "technologies": [t.name for t in paper.technologies],
-                    "authors": [a.name for a in paper.authors],
-                    "institutions": [i.name for i in paper.institutions],
-                    "research_domains": paper.research_domains,
-                },
-            ))
+            nodes.append(
+                GraphNodeDTO(
+                    id=node_id,
+                    type=NodeType.PAPER,
+                    label=paper.title,
+                    metadata={
+                        "id": pid,
+                        "title": paper.title,
+                        "year": paper.year,
+                        "citation_count": paper.citation_count,
+                        "venue": paper.venue,
+                        "summary": self._extract_summary(paper.key_findings),
+                        "methodology": paper.techniques[:3] if paper.techniques else [],
+                        "datasets": [d.name for d in paper.datasets],
+                        "technologies": [t.name for t in paper.technologies],
+                        "authors": [a.name for a in paper.authors],
+                        "institutions": [i.name for i in paper.institutions],
+                        "research_domains": paper.research_domains,
+                    },
+                )
+            )
 
             # Author edges
             for author in paper.authors:
@@ -100,10 +102,15 @@ class GraphApiService:
                 edge_id = f"{node_id}->{target_id}"
                 if edge_id not in seen_edges:
                     seen_edges.add(edge_id)
-                    edges.append(GraphEdgeDTO(
-                        id=edge_id, source=node_id, target=target_id,
-                        label="AUTHORED_BY", type="AUTHORED_BY",
-                    ))
+                    edges.append(
+                        GraphEdgeDTO(
+                            id=edge_id,
+                            source=node_id,
+                            target=target_id,
+                            label="AUTHORED_BY",
+                            type="AUTHORED_BY",
+                        )
+                    )
 
             # Institution edges
             for inst in paper.institutions:
@@ -111,10 +118,15 @@ class GraphApiService:
                 edge_id = f"{node_id}->{target_id}"
                 if edge_id not in seen_edges:
                     seen_edges.add(edge_id)
-                    edges.append(GraphEdgeDTO(
-                        id=edge_id, source=node_id, target=target_id,
-                        label="BELONGS_TO", type="BELONGS_TO",
-                    ))
+                    edges.append(
+                        GraphEdgeDTO(
+                            id=edge_id,
+                            source=node_id,
+                            target=target_id,
+                            label="BELONGS_TO",
+                            type="BELONGS_TO",
+                        )
+                    )
 
             # Methodology edges
             for method in paper.methodologies:
@@ -122,10 +134,15 @@ class GraphApiService:
                 edge_id = f"{node_id}->{target_id}"
                 if edge_id not in seen_edges:
                     seen_edges.add(edge_id)
-                    edges.append(GraphEdgeDTO(
-                        id=edge_id, source=node_id, target=target_id,
-                        label="INTRODUCES", type="INTRODUCES",
-                    ))
+                    edges.append(
+                        GraphEdgeDTO(
+                            id=edge_id,
+                            source=node_id,
+                            target=target_id,
+                            label="INTRODUCES",
+                            type="INTRODUCES",
+                        )
+                    )
 
             # Dataset edges
             for ds in paper.datasets:
@@ -133,10 +150,15 @@ class GraphApiService:
                 edge_id = f"{node_id}->{target_id}"
                 if edge_id not in seen_edges:
                     seen_edges.add(edge_id)
-                    edges.append(GraphEdgeDTO(
-                        id=edge_id, source=node_id, target=target_id,
-                        label="EVALUATED_ON", type="EVALUATED_ON",
-                    ))
+                    edges.append(
+                        GraphEdgeDTO(
+                            id=edge_id,
+                            source=node_id,
+                            target=target_id,
+                            label="EVALUATED_ON",
+                            type="EVALUATED_ON",
+                        )
+                    )
 
             # Technology edges
             for tech in paper.technologies:
@@ -144,10 +166,15 @@ class GraphApiService:
                 edge_id = f"{node_id}->{target_id}"
                 if edge_id not in seen_edges:
                     seen_edges.add(edge_id)
-                    edges.append(GraphEdgeDTO(
-                        id=edge_id, source=node_id, target=target_id,
-                        label="USES", type="USES",
-                    ))
+                    edges.append(
+                        GraphEdgeDTO(
+                            id=edge_id,
+                            source=node_id,
+                            target=target_id,
+                            label="USES",
+                            type="USES",
+                        )
+                    )
 
             # Research domain edges (extracted from paper metadata)
             for rd in paper.research_domains:
@@ -155,28 +182,36 @@ class GraphApiService:
                 edge_id = f"{node_id}->{target_id}"
                 if edge_id not in seen_edges:
                     seen_edges.add(edge_id)
-                    edges.append(GraphEdgeDTO(
-                        id=edge_id, source=node_id, target=target_id,
-                        label="RELATED_TO", type="RELATED_TO",
-                    ))
+                    edges.append(
+                        GraphEdgeDTO(
+                            id=edge_id,
+                            source=node_id,
+                            target=target_id,
+                            label="RELATED_TO",
+                            type="RELATED_TO",
+                        )
+                    )
 
         # Author nodes
         for name, author in graph.authors.items():
             node_id = f"author:{name}"
-            nodes.append(GraphNodeDTO(
-                id=node_id,
-                type=NodeType.AUTHOR,
-                label=name,
-                metadata={
-                    "name": name,
-                    "papers": author.paper_ids,
-                    "institution": (
-                        author.affiliated_institutions[0].name
-                        if author.affiliated_institutions else None
-                    ),
-                    "first_publication_year": author.first_publication_year,
-                },
-            ))
+            nodes.append(
+                GraphNodeDTO(
+                    id=node_id,
+                    type=NodeType.AUTHOR,
+                    label=name,
+                    metadata={
+                        "name": name,
+                        "papers": author.paper_ids,
+                        "institution": (
+                            author.affiliated_institutions[0].name
+                            if author.affiliated_institutions
+                            else None
+                        ),
+                        "first_publication_year": author.first_publication_year,
+                    },
+                )
+            )
 
             # Author → Institution edges
             for inst in author.affiliated_institutions:
@@ -184,63 +219,76 @@ class GraphApiService:
                 edge_id = f"{node_id}->{target_id}"
                 if edge_id not in seen_edges:
                     seen_edges.add(edge_id)
-                    edges.append(GraphEdgeDTO(
-                        id=edge_id, source=node_id, target=target_id,
-                        label="AFFILIATED_WITH", type="AFFILIATED_WITH",
-                    ))
+                    edges.append(
+                        GraphEdgeDTO(
+                            id=edge_id,
+                            source=node_id,
+                            target=target_id,
+                            label="AFFILIATED_WITH",
+                            type="AFFILIATED_WITH",
+                        )
+                    )
 
         # Institution nodes
         for name, inst in graph.institutions.items():
-            nodes.append(GraphNodeDTO(
-                id=f"institution:{name}",
-                type=NodeType.INSTITUTION,
-                label=name,
-                metadata={
-                    "name": name,
-                    "type": inst.type.value if inst.type else None,
-                    "country": inst.country,
-                    "paper_count": len(inst.paper_ids),
-                    "author_names": inst.author_names,
-                },
-            ))
+            nodes.append(
+                GraphNodeDTO(
+                    id=f"institution:{name}",
+                    type=NodeType.INSTITUTION,
+                    label=name,
+                    metadata={
+                        "name": name,
+                        "type": inst.type.value if inst.type else None,
+                        "country": inst.country,
+                        "paper_count": len(inst.paper_ids),
+                        "author_names": inst.author_names,
+                    },
+                )
+            )
 
         # Methodology nodes
         for name, method in graph.methodologies.items():
-            nodes.append(GraphNodeDTO(
-                id=f"methodology:{name}",
-                type=NodeType.METHODOLOGY,
-                label=name,
-                metadata={
-                    "name": name,
-                    "related_papers": method.paper_ids,
-                    "techniques": method.techniques,
-                },
-            ))
+            nodes.append(
+                GraphNodeDTO(
+                    id=f"methodology:{name}",
+                    type=NodeType.METHODOLOGY,
+                    label=name,
+                    metadata={
+                        "name": name,
+                        "related_papers": method.paper_ids,
+                        "techniques": method.techniques,
+                    },
+                )
+            )
 
         # Dataset nodes
         for name, ds in graph.datasets.items():
-            nodes.append(GraphNodeDTO(
-                id=f"dataset:{name}",
-                type=NodeType.DATASET,
-                label=name,
-                metadata={
-                    "name": name,
-                    "related_papers": ds.paper_ids,
-                },
-            ))
+            nodes.append(
+                GraphNodeDTO(
+                    id=f"dataset:{name}",
+                    type=NodeType.DATASET,
+                    label=name,
+                    metadata={
+                        "name": name,
+                        "related_papers": ds.paper_ids,
+                    },
+                )
+            )
 
         # Technology nodes
         for name, tech in graph.technologies.items():
-            nodes.append(GraphNodeDTO(
-                id=f"technology:{name}",
-                type=NodeType.TECHNOLOGY,
-                label=name,
-                metadata={
-                    "name": name,
-                    "type": tech.type.value if tech.type else None,
-                    "related_papers": tech.paper_ids,
-                },
-            ))
+            nodes.append(
+                GraphNodeDTO(
+                    id=f"technology:{name}",
+                    type=NodeType.TECHNOLOGY,
+                    label=name,
+                    metadata={
+                        "name": name,
+                        "type": tech.type.value if tech.type else None,
+                        "related_papers": tech.paper_ids,
+                    },
+                )
+            )
 
         # Research Domain nodes (extracted from PaperNode metadata)
         all_domains: dict[str, list[str]] = {}
@@ -249,15 +297,17 @@ class GraphApiService:
                 all_domains.setdefault(rd, []).append(paper.id)
 
         for rd_name, paper_ids in all_domains.items():
-            nodes.append(GraphNodeDTO(
-                id=f"research_domain:{rd_name}",
-                type=NodeType.RESEARCH_DOMAIN,
-                label=rd_name,
-                metadata={
-                    "name": rd_name,
-                    "related_papers": paper_ids,
-                },
-            ))
+            nodes.append(
+                GraphNodeDTO(
+                    id=f"research_domain:{rd_name}",
+                    type=NodeType.RESEARCH_DOMAIN,
+                    label=rd_name,
+                    metadata={
+                        "name": rd_name,
+                        "related_papers": paper_ids,
+                    },
+                )
+            )
 
         # Compute metadata
         node_counts: dict[str, int] = {}

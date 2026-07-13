@@ -25,7 +25,7 @@ import json
 
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.observability.logger import get_logger
 from app.rate_limit.models import RATE_LIMIT_EXCEEDED_RESPONSE, RateLimitResult
 from app.rate_limit.service import RateLimitService
@@ -33,12 +33,14 @@ from app.rate_limit.service import RateLimitService
 logger = get_logger(__name__)
 
 # Paths that bypass rate limiting entirely.
-UNLIMITED_PATHS = frozenset({
-    "/api/v1/live",
-    "/api/v1/health",
-    "/api/v1/ready",
-    "/api/v1/metrics/info",
-})
+UNLIMITED_PATHS = frozenset(
+    {
+        "/api/v1/live",
+        "/api/v1/health",
+        "/api/v1/ready",
+        "/api/v1/metrics/info",
+    }
+)
 
 # Sentinel attribute name for per-endpoint overrides.
 RATE_LIMIT_ATTR = "_rate_limit_config"
@@ -61,7 +63,7 @@ def register_override(
 def _resolve_policy(
     method: str,
     path: str,
-    settings: object,
+    settings: Settings,
 ) -> tuple[int, int]:
     """Return ``(limit, window)`` for the given request.
 
@@ -155,11 +157,13 @@ class RateLimitMiddleware:
         async def send_wrapper(message: dict) -> None:
             if message["type"] == "http.response.start":
                 headers = message.get("headers", [])
-                headers.extend([
-                    (b"X-RateLimit-Limit", str(result.limit).encode()),
-                    (b"X-RateLimit-Remaining", str(result.remaining).encode()),
-                    (b"X-RateLimit-Reset", str(int(result.reset_at)).encode()),
-                ])
+                headers.extend(
+                    [
+                        (b"X-RateLimit-Limit", str(result.limit).encode()),
+                        (b"X-RateLimit-Remaining", str(result.remaining).encode()),
+                        (b"X-RateLimit-Reset", str(int(result.reset_at)).encode()),
+                    ]
+                )
                 message["headers"] = headers
             await send(message)
 
@@ -179,12 +183,16 @@ class RateLimitMiddleware:
             (b"X-RateLimit-Reset", str(int(result.reset_at)).encode()),
             (b"Retry-After", str(result.retry_after).encode()),
         ]
-        await send({
-            "type": "http.response.start",
-            "status": 429,
-            "headers": headers,
-        })
-        await send({
-            "type": "http.response.body",
-            "body": body,
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 429,
+                "headers": headers,
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": body,
+            }
+        )

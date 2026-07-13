@@ -41,11 +41,11 @@ class LimitationGapRule(BaseGapRule):
             method = (rec.methodology or "").strip().lower()
             if method:
                 all_methods_flat.add(method)
-            for finding in (rec.key_findings or []):
+            for finding in rec.key_findings or []:
                 all_findings_flat.add(finding.strip().lower())
-            for tech in (rec.relevant_techniques or []):
+            for tech in rec.relevant_techniques or []:
                 all_techniques_flat.add(tech.strip().lower())
-            for lim in (rec.limitations or []):
+            for lim in rec.limitations or []:
                 key = lim.strip().lower()
                 if key:
                     limitation_counter[key] += 1
@@ -59,9 +59,7 @@ class LimitationGapRule(BaseGapRule):
             if count < self.MIN_MENTIONS:
                 continue
 
-            addressed = any(
-                limitation in solution for solution in solution_space
-            )
+            addressed = any(limitation in solution for solution in solution_space)
 
             if not addressed:
                 supporting = paper_titles.get(limitation, [])
@@ -78,8 +76,7 @@ class LimitationGapRule(BaseGapRule):
                     severity=GapSeverity.HIGH if count >= 5 else GapSeverity.MEDIUM,
                     evidence=Evidence(
                         description=(
-                            f"Mentioned as limitation by {count} papers, "
-                            f"zero solutions found"
+                            f"Mentioned as limitation by {count} papers, zero solutions found"
                         ),
                         supporting_paper_ids=supporting[:5],
                         supporting_facts=[

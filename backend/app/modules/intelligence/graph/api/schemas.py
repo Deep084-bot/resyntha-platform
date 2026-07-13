@@ -7,10 +7,11 @@ Do NOT import domain/graph models here.
 from __future__ import annotations
 
 import enum
+
 from pydantic import BaseModel
 
 
-class NodeType(str, enum.Enum):
+class NodeType(enum.StrEnum):
     PAPER = "paper"
     AUTHOR = "author"
     INSTITUTION = "institution"
@@ -20,7 +21,7 @@ class NodeType(str, enum.Enum):
     RESEARCH_DOMAIN = "research_domain"
 
 
-class EdgeType(str, enum.Enum):
+class EdgeType(enum.StrEnum):
     AUTHORED_BY = "AUTHORED_BY"
     BELONGS_TO = "BELONGS_TO"
     INTRODUCES = "INTRODUCES"

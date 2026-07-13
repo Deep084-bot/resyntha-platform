@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def _detect_git_commit() -> str:
@@ -22,7 +22,7 @@ def _detect_git_commit() -> str:
 
 
 def _detect_build_time() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 BUILD_TIME: str = _detect_build_time()

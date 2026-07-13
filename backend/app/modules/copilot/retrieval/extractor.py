@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import uuid
 from collections.abc import Sequence
 
@@ -10,9 +9,9 @@ from sqlalchemy.orm import Session
 
 from app.modules.artifact.domain.models import Artifact, ArtifactType
 from app.modules.artifact.repository.repository import ArtifactRepository
+from app.modules.copilot.retrieval.models import RetrievedSection
 from app.modules.extraction.repository.repository import ExtractionRepository
 from app.modules.paper.repository.repository import PaperRepository
-from app.modules.copilot.retrieval.models import RetrievedSection
 from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
@@ -121,47 +120,61 @@ class SectionExtractor:
                 all_summaries.append(f"[{title}] {summary.strip()}" if title else summary.strip())
 
         if all_findings:
-            sections.append(RetrievedSection(
-                source="Knowledge Package",
-                label="Key Findings",
-                content="\n".join(all_findings),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Knowledge Package",
+                    label="Key Findings",
+                    content="\n".join(all_findings),
+                )
+            )
         if all_methods:
-            sections.append(RetrievedSection(
-                source="Knowledge Package",
-                label="Methodologies",
-                content="\n".join(all_methods),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Knowledge Package",
+                    label="Methodologies",
+                    content="\n".join(all_methods),
+                )
+            )
         if all_limitations:
-            sections.append(RetrievedSection(
-                source="Knowledge Package",
-                label="Limitations",
-                content="\n".join(all_limitations),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Knowledge Package",
+                    label="Limitations",
+                    content="\n".join(all_limitations),
+                )
+            )
         if all_future:
-            sections.append(RetrievedSection(
-                source="Knowledge Package",
-                label="Future Work",
-                content="\n".join(all_future),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Knowledge Package",
+                    label="Future Work",
+                    content="\n".join(all_future),
+                )
+            )
         if all_techniques:
-            sections.append(RetrievedSection(
-                source="Knowledge Package",
-                label="Technologies",
-                content="\n".join(all_techniques),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Knowledge Package",
+                    label="Technologies",
+                    content="\n".join(all_techniques),
+                )
+            )
         if all_questions:
-            sections.append(RetrievedSection(
-                source="Knowledge Package",
-                label="Research Questions",
-                content="\n".join(all_questions),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Knowledge Package",
+                    label="Research Questions",
+                    content="\n".join(all_questions),
+                )
+            )
         if all_summaries:
-            sections.append(RetrievedSection(
-                source="Knowledge Package",
-                label="Summaries",
-                content="\n".join(all_summaries),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Knowledge Package",
+                    label="Summaries",
+                    content="\n".join(all_summaries),
+                )
+            )
 
         return sections
 
@@ -174,75 +187,93 @@ class SectionExtractor:
 
         domain_names = SectionExtractor._names_from_ranked(payload.get("research_domains", []))
         if domain_names:
-            sections.append(RetrievedSection(
-                source="Landscape",
-                label="Research Domains",
-                content=", ".join(domain_names),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Landscape",
+                    label="Research Domains",
+                    content=", ".join(domain_names),
+                )
+            )
 
         meth_names = SectionExtractor._names_from_ranked(payload.get("methodologies", []))
         if meth_names:
-            sections.append(RetrievedSection(
-                source="Landscape",
-                label="Methodologies",
-                content=", ".join(meth_names),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Landscape",
+                    label="Methodologies",
+                    content=", ".join(meth_names),
+                )
+            )
 
         dataset_names = SectionExtractor._names_from_ranked(payload.get("datasets", []))
         if dataset_names:
-            sections.append(RetrievedSection(
-                source="Landscape",
-                label="Datasets",
-                content=", ".join(dataset_names),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Landscape",
+                    label="Datasets",
+                    content=", ".join(dataset_names),
+                )
+            )
 
         metric_names = SectionExtractor._names_from_ranked(payload.get("evaluation_metrics", []))
         if metric_names:
-            sections.append(RetrievedSection(
-                source="Landscape",
-                label="Evaluation Metrics",
-                content=", ".join(metric_names),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Landscape",
+                    label="Evaluation Metrics",
+                    content=", ".join(metric_names),
+                )
+            )
 
         tech_names = SectionExtractor._names_from_ranked(payload.get("keywords", []))
         if tech_names:
-            sections.append(RetrievedSection(
-                source="Landscape",
-                label="Technologies",
-                content=", ".join(tech_names),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Landscape",
+                    label="Technologies",
+                    content=", ".join(tech_names),
+                )
+            )
 
         author_names = SectionExtractor._names_from_ranked(payload.get("top_authors", []))
         if author_names:
-            sections.append(RetrievedSection(
-                source="Landscape",
-                label="Authors",
-                content=", ".join(author_names),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Landscape",
+                    label="Authors",
+                    content=", ".join(author_names),
+                )
+            )
 
         app_names = SectionExtractor._names_from_ranked(payload.get("applications", []))
         if app_names:
-            sections.append(RetrievedSection(
-                source="Landscape",
-                label="Applications",
-                content=", ".join(app_names),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Landscape",
+                    label="Applications",
+                    content=", ".join(app_names),
+                )
+            )
 
         limitation_names = SectionExtractor._names_from_ranked(payload.get("limitations", []))
         if limitation_names:
-            sections.append(RetrievedSection(
-                source="Landscape",
-                label="Limitations",
-                content=", ".join(limitation_names),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Landscape",
+                    label="Limitations",
+                    content=", ".join(limitation_names),
+                )
+            )
 
         future_names = SectionExtractor._names_from_ranked(payload.get("future_work", []))
         if future_names:
-            sections.append(RetrievedSection(
-                source="Landscape",
-                label="Future Work",
-                content=", ".join(future_names),
-            ))
+            sections.append(
+                RetrievedSection(
+                    source="Landscape",
+                    label="Future Work",
+                    content=", ".join(future_names),
+                )
+            )
 
         return sections
 
@@ -268,30 +299,32 @@ class SectionExtractor:
                 if line.strip():
                     gap_lines.append(line)
             if gap_lines:
-                sections.append(RetrievedSection(
-                    source="Gap Report",
-                    label="Research Gaps",
-                    content="\n".join(gap_lines),
-                ))
+                sections.append(
+                    RetrievedSection(
+                        source="Gap Report",
+                        label="Research Gaps",
+                        content="\n".join(gap_lines),
+                    )
+                )
 
         recommendations = payload.get("recommendations", [])
         if isinstance(recommendations, list) and recommendations:
             rec_lines = [str(r) for r in recommendations[:8] if str(r).strip()]
             if rec_lines:
-                sections.append(RetrievedSection(
-                    source="Gap Report",
-                    label="Recommendations",
-                    content="\n".join(rec_lines),
-                ))
+                sections.append(
+                    RetrievedSection(
+                        source="Gap Report",
+                        label="Recommendations",
+                        content="\n".join(rec_lines),
+                    )
+                )
 
         return sections
 
     # ── Paper Collection sections ───────────────────────────────
 
     @staticmethod
-    def _extract_paper_collection(
-        artifact: Artifact, prefix: str = ""
-    ) -> list[RetrievedSection]:
+    def _extract_paper_collection(artifact: Artifact, prefix: str = "") -> list[RetrievedSection]:
         payload = artifact.payload or {}
         papers_data = payload.get("papers") or payload.get("results") or payload.get("items") or []
         if not isinstance(papers_data, list) or not papers_data:
@@ -307,12 +340,7 @@ class SectionExtractor:
                 authors = ", ".join(str(a) for a in authors[:3])
             abstract = str(p.get("abstract", "") or "")[:300]
             doi = p.get("doi", "N/A")
-            lines.append(
-                f"Title: {title}\n"
-                f"Authors: {authors}\n"
-                f"Abstract: {abstract}\n"
-                f"DOI: {doi}"
-            )
+            lines.append(f"Title: {title}\nAuthors: {authors}\nAbstract: {abstract}\nDOI: {doi}")
 
         if lines:
             sections = [
@@ -339,12 +367,7 @@ class SectionExtractor:
                 authors = str(authors_list)[:100]
             abstract = (getattr(p, "abstract", "") or "")[:300]
             doi = getattr(p, "doi", "N/A")
-            lines.append(
-                f"Title: {title}\n"
-                f"Authors: {authors}\n"
-                f"Abstract: {abstract}\n"
-                f"DOI: {doi}"
-            )
+            lines.append(f"Title: {title}\nAuthors: {authors}\nAbstract: {abstract}\nDOI: {doi}")
         if not lines:
             return []
         return [
@@ -358,11 +381,10 @@ class SectionExtractor:
     # ── Helpers ─────────────────────────────────────────────────
 
     @staticmethod
-    def _latest_ready(
-        artifacts: Sequence[Artifact], atype: ArtifactType
-    ) -> Artifact | None:
+    def _latest_ready(artifacts: Sequence[Artifact], atype: ArtifactType) -> Artifact | None:
         matches = [
-            a for a in artifacts
+            a
+            for a in artifacts
             if a.artifact_type == atype and a.status.value == "ready" and a.payload
         ]
         if not matches:

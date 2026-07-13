@@ -56,7 +56,7 @@ def create_app() -> FastAPI:
     #   TrustedHost → CORS → Security Headers → Request Size →
     #   Timeout → Rate Limiting → Metrics → Request ID → Logging → handler
 
-    app.add_middleware(RequestLoggingMiddleware)      # innermost
+    app.add_middleware(RequestLoggingMiddleware)  # innermost
     app.add_middleware(RequestIDMiddleware)
     app.add_middleware(MetricsMiddleware)
     app.add_middleware(RateLimitMiddleware)
@@ -74,7 +74,7 @@ def create_app() -> FastAPI:
         app.add_middleware(
             TrustedHostMiddleware,
             allowed_hosts=settings.trusted_host_list,
-        )                                       # outermost
+        )  # outermost
 
     app.include_router(v1_router, prefix=settings.API_V1_PREFIX)
 

@@ -80,7 +80,9 @@ class OpenAlexProvider(BaseRetrievalProvider):
         start = time.monotonic()
         try:
             response = await self._client.get(
-                SEARCH_URL, params=params, headers=headers or None,
+                SEARCH_URL,
+                params=params,
+                headers=headers or None,
             )
             response.raise_for_status()
             data = response.json()
@@ -155,9 +157,9 @@ class OpenAlexProvider(BaseRetrievalProvider):
 
         return Paper(
             title=raw.get("title", "").strip(),
-            abstract=raw.get("abstract_inverted_index") and self._reconstruct_abstract(
-                raw["abstract_inverted_index"]
-            ) or None,
+            abstract=raw.get("abstract_inverted_index")
+            and self._reconstruct_abstract(raw["abstract_inverted_index"])
+            or None,
             authors=authors,
             year=raw.get("publication_year"),
             venue=self._extract_venue(raw),
@@ -184,10 +186,7 @@ class OpenAlexProvider(BaseRetrievalProvider):
         if not word_positions:
             return ""
         max_pos = max(word_positions.keys())
-        return " ".join(
-            word_positions.get(i, "")
-            for i in range(max_pos + 1)
-        ).strip()
+        return " ".join(word_positions.get(i, "") for i in range(max_pos + 1)).strip()
 
     @staticmethod
     def _extract_venue(raw: dict) -> str | None:

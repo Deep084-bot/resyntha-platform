@@ -42,7 +42,7 @@ class DatasetGapRule(BaseGapRule):
             methodology_counter[method] += 1
             if method not in method_to_techniques:
                 method_to_techniques[method] = set()
-            for t in (rec.relevant_techniques or []):
+            for t in rec.relevant_techniques or []:
                 method_to_techniques[method].add(t.strip().lower())
 
         for method, freq in methodology_counter.most_common():

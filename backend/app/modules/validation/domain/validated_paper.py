@@ -1,15 +1,12 @@
 """Validated paper domain model."""
 
-from datetime import datetime, timezone
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel
 
-from app.modules.retrieval.domain.paper import Paper
 
-
-class ValidationStatus(str, Enum):
+class ValidationStatus(StrEnum):
     """Outcome of validating a single paper."""
 
     VALID = "valid"

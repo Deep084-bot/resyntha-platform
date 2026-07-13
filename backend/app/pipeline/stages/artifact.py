@@ -10,12 +10,12 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from app.pipeline.context import PipelineContext
-from app.pipeline.result import PipelineResult
-from app.pipeline.stage import PipelineStage
 from app.modules.artifact.domain.models import ArtifactStatus, ArtifactType
 from app.modules.artifact.schemas.request import CreateArtifactRequest
 from app.modules.artifact.service.service import ArtifactService
+from app.pipeline.context import PipelineContext
+from app.pipeline.result import PipelineResult
+from app.pipeline.stage import PipelineStage
 
 
 class ArtifactStage(PipelineStage):
@@ -67,7 +67,8 @@ class ArtifactStage(PipelineStage):
             warning = sum(1 for v in validated_papers if v.get("validation_status") == "warning")
             invalid = sum(1 for v in validated_papers if v.get("validation_status") == "invalid")
             duplicates = sum(
-                1 for v in validated_papers
+                1
+                for v in validated_papers
                 if any("duplicate" in (msg or "") for msg in v.get("validation_messages", []))
             )
             scores = [v.get("validation_score", 0) for v in validated_papers]

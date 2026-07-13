@@ -13,8 +13,12 @@ class Author(BaseModel):
     """Author extracted from a paper."""
 
     name: str = Field(description="Full author name")
-    order: int | None = Field(default=None, description="Author position in the author list (1-based)")
-    is_corresponding: bool | None = Field(default=None, description="Whether this is the corresponding author")
+    order: int | None = Field(
+        default=None, description="Author position in the author list (1-based)"
+    )
+    is_corresponding: bool | None = Field(
+        default=None, description="Whether this is the corresponding author"
+    )
 
 
 class Institution(BaseModel):
@@ -29,15 +33,21 @@ class Dataset(BaseModel):
     """Dataset used or introduced in a paper."""
 
     name: str = Field(description="Dataset name")
-    is_public: bool | None = Field(default=None, description="Whether the dataset is publicly available")
-    is_benchmark: bool | None = Field(default=None, description="Whether this is a benchmark dataset")
+    is_public: bool | None = Field(
+        default=None, description="Whether the dataset is publicly available"
+    )
+    is_benchmark: bool | None = Field(
+        default=None, description="Whether this is a benchmark dataset"
+    )
 
 
 class Technology(BaseModel):
     """Technology (framework, model, algorithm, library) used in a paper."""
 
     name: str = Field(description="Technology name")
-    type: str | None = Field(default=None, description="Category: framework, model, algorithm, library")
+    type: str | None = Field(
+        default=None, description="Category: framework, model, algorithm, library"
+    )
 
 
 class Metric(BaseModel):
@@ -45,7 +55,9 @@ class Metric(BaseModel):
 
     name: str = Field(description="Metric name (e.g. accuracy, F1, BLEU)")
     value: str | None = Field(default=None, description="Reported value")
-    dataset: str | None = Field(default=None, description="Dataset on which the metric was measured")
+    dataset: str | None = Field(
+        default=None, description="Dataset on which the metric was measured"
+    )
 
 
 class ExtractionOutput(BaseModel):

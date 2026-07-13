@@ -7,7 +7,6 @@ Prometheus exposition-format string for that metric.
 from __future__ import annotations
 
 import threading
-import time
 from collections import defaultdict
 
 
@@ -158,7 +157,6 @@ class Histogram:
             labels = dict(zip(self._labelnames, key))
             clean = {k: v for k, v in labels.items() if v}
             for b in self._buckets:
-                le_label = f'le="{b}"'
                 all_labels = {**clean, "le": str(b)}
                 lines.append(f"{self._name}_bucket{_label_str(all_labels)} {self._values[key][b]}")
             lines.append(f"{self._name}_count{_label_str(clean)} {self._counts[key]}")

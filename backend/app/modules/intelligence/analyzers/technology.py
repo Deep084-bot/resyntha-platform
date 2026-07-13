@@ -50,7 +50,10 @@ class TechnologyAnalyzer(BaseAnalyzer):
             pairs: list[tuple[str, int]] = []
             for mname in graph.methodologies:
                 count = co_occurrence.between(
-                    "technology", tname, "methodology", mname,
+                    "technology",
+                    tname,
+                    "methodology",
+                    mname,
                 )
                 if count:
                     pairs.append((mname, count))
@@ -62,7 +65,10 @@ class TechnologyAnalyzer(BaseAnalyzer):
             pairs: list[tuple[str, int]] = []
             for dname in graph.datasets:
                 count = co_occurrence.between(
-                    "technology", tname, "dataset", dname,
+                    "technology",
+                    tname,
+                    "dataset",
+                    dname,
                 )
                 if count:
                     pairs.append((dname, count))
@@ -88,8 +94,7 @@ class TechnologyAnalyzer(BaseAnalyzer):
                     "total_technologies": len(technologies),
                     "papers_with_technology": len(paper_ids_with_tech),
                     "avg_papers_per_technology": round(
-                        sum(len(t.paper_ids) for t in technologies.values())
-                        / tech_count,
+                        sum(len(t.paper_ids) for t in technologies.values()) / tech_count,
                         2,
                     ),
                 },

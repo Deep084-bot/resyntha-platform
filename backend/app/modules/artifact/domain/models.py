@@ -8,16 +8,17 @@ as free-form JSONB.
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Integer, func
+from sqlalchemy import DateTime, ForeignKey, Integer, func
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
 
 
-class ArtifactType(str, Enum):
+class ArtifactType(StrEnum):
     """Known artifact kinds that the platform can produce."""
 
     EXECUTION_PLAN = "execution_plan"
@@ -33,7 +34,7 @@ class ArtifactType(str, Enum):
     FINAL_REPORT = "final_report"
 
 
-class ArtifactStatus(str, Enum):
+class ArtifactStatus(StrEnum):
     """Lifecycle states for an artifact."""
 
     PENDING = "pending"
@@ -74,9 +75,7 @@ class Artifact(Base):
         default=ArtifactStatus.PENDING,
         nullable=False,
     )
-    payload: Mapped[dict | None] = mapped_column(
-        JSONB, default=dict, nullable=True
-    )
+    payload: Mapped[dict | None] = mapped_column(JSONB, default=dict, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

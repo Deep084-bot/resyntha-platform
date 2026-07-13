@@ -35,13 +35,17 @@ class ChunkingPipeline:
             atype = artifact.artifact_type
             aid = artifact.id
             if atype == ArtifactType.KNOWLEDGE_PACKAGE:
-                chunks.extend(self._chunk_knowledge_package(investigation_id, aid, artifact.payload))
+                chunks.extend(
+                    self._chunk_knowledge_package(investigation_id, aid, artifact.payload)
+                )
             elif atype == ArtifactType.RESEARCH_LANDSCAPE:
                 chunks.extend(self._chunk_landscape(investigation_id, aid, artifact.payload))
             elif atype == ArtifactType.RESEARCH_GAP_REPORT:
                 chunks.extend(self._chunk_gap_report(investigation_id, aid, artifact.payload))
             elif atype in (ArtifactType.PAPER_COLLECTION, ArtifactType.VALIDATED_COLLECTION):
-                chunks.extend(self._chunk_paper_collection(investigation_id, aid, artifact.payload, atype))
+                chunks.extend(
+                    self._chunk_paper_collection(investigation_id, aid, artifact.payload, atype)
+                )
         return chunks
 
     # ── Knowledge Package ───────────────────────────────────────
@@ -63,7 +67,9 @@ class ChunkingPipeline:
 
             sections = {
                 "Key Findings": self._fmt_list(p.get("key_findings", []), prefix),
-                "Methodologies": [f"{prefix}{p.get('methodology', '')}"] if p.get("methodology") else [],
+                "Methodologies": [f"{prefix}{p.get('methodology', '')}"]
+                if p.get("methodology")
+                else [],
                 "Limitations": self._fmt_list(p.get("limitations", []), prefix),
                 "Future Work": self._fmt_list(p.get("future_work", []), prefix),
                 "Technologies": self._fmt_list(p.get("relevant_techniques", []), prefix),
@@ -76,9 +82,17 @@ class ChunkingPipeline:
                     continue
                 content = "\n".join(items)
                 metadata = {"paper_title": title} if title else {}
-                chunks.extend(self._split(
-                    investigation_id, artifact_id, paper_id, "Knowledge Package", label, content, metadata,
-                ))
+                chunks.extend(
+                    self._split(
+                        investigation_id,
+                        artifact_id,
+                        paper_id,
+                        "Knowledge Package",
+                        label,
+                        content,
+                        metadata,
+                    )
+                )
 
         return chunks
 
@@ -106,9 +120,16 @@ class ChunkingPipeline:
             names = self._names_from(items)
             if names:
                 content = ", ".join(names)
-                chunks.extend(self._split(
-                    investigation_id, artifact_id, None, "Landscape", label, content,
-                ))
+                chunks.extend(
+                    self._split(
+                        investigation_id,
+                        artifact_id,
+                        None,
+                        "Landscape",
+                        label,
+                        content,
+                    )
+                )
 
         return chunks
 
@@ -134,24 +155,41 @@ class ChunkingPipeline:
                 if line.strip():
                     lines.append(line)
             if lines:
-                chunks.extend(self._split(
-                    investigation_id, artifact_id, None, "Gap Report", "Research Gaps", "\n".join(lines),
-                ))
+                chunks.extend(
+                    self._split(
+                        investigation_id,
+                        artifact_id,
+                        None,
+                        "Gap Report",
+                        "Research Gaps",
+                        "\n".join(lines),
+                    )
+                )
 
         recommendations = payload.get("recommendations", [])
         if isinstance(recommendations, list) and recommendations:
             rec_lines = [str(r) for r in recommendations[:8] if str(r).strip()]
             if rec_lines:
-                chunks.extend(self._split(
-                    investigation_id, artifact_id, None, "Gap Report", "Recommendations", "\n".join(rec_lines),
-                ))
+                chunks.extend(
+                    self._split(
+                        investigation_id,
+                        artifact_id,
+                        None,
+                        "Gap Report",
+                        "Recommendations",
+                        "\n".join(rec_lines),
+                    )
+                )
 
         return chunks
 
     # ── Paper Collection ────────────────────────────────────────
 
     def _chunk_paper_collection(
-        self, investigation_id: uuid.UUID, artifact_id: uuid.UUID, payload: dict,
+        self,
+        investigation_id: uuid.UUID,
+        artifact_id: uuid.UUID,
+        payload: dict,
         atype: ArtifactType,
     ) -> list[Chunk]:
         chunks: list[Chunk] = []
@@ -172,16 +210,18 @@ class ChunkingPipeline:
                 authors = ", ".join(str(a) for a in authors[:3])
             abstract = str(p.get("abstract", "") or "")[:500]
             doi = p.get("doi", "N/A")
-            content = (
-                f"Title: {title}\n"
-                f"Authors: {authors}\n"
-                f"Abstract: {abstract}\n"
-                f"DOI: {doi}"
+            content = f"Title: {title}\nAuthors: {authors}\nAbstract: {abstract}\nDOI: {doi}"
+            chunks.extend(
+                self._split(
+                    investigation_id,
+                    artifact_id,
+                    None,
+                    source,
+                    "Papers",
+                    content,
+                    metadata={"paper_title": title},
+                )
             )
-            chunks.extend(self._split(
-                investigation_id, artifact_id, None, source, "Papers", content,
-                metadata={"paper_title": title},
-            ))
 
         return chunks
 

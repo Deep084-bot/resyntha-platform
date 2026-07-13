@@ -30,16 +30,12 @@ def rank(papers: Sequence[Paper]) -> list[Paper]:
     return [paper for _, paper in scored]
 
 
-def _compute_score(
-    paper: Paper, current_year: int, max_citations: int
-) -> float:
+def _compute_score(paper: Paper, current_year: int, max_citations: int) -> float:
     semantic_score = 0.5  # placeholder; will be replaced by LLM later
     citation_score = _citation_score(paper.citation_count, max_citations)
     recency_score = _recency_score(paper.year, current_year)
 
-    return (
-        semantic_score * 0.50 + citation_score * 0.30 + recency_score * 0.20
-    )
+    return semantic_score * 0.50 + citation_score * 0.30 + recency_score * 0.20
 
 
 def _citation_score(citation_count: int | None, max_citations: int) -> float:

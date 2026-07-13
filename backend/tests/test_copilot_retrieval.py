@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 from app.modules.copilot.retrieval.analyzer import KeywordAnalyzer
 from app.modules.copilot.retrieval.extractor import SectionExtractor
-from app.modules.copilot.retrieval.models import RetrievedSection, RetrievalResult
+from app.modules.copilot.retrieval.models import RetrievedSection
 from app.modules.copilot.retrieval.retriever import InvestigationRetriever
 from app.modules.copilot.retrieval.scorer import SectionScorer
 
-
 # ── Helpers ─────────────────────────────────────────────────────
+
 
 def _make_artifact(atype, payload, status="ready"):
     art = MagicMock(spec=["artifact_type", "status", "payload", "created_at"])
@@ -22,7 +22,7 @@ def _make_artifact(atype, payload, status="ready"):
     s.value = status
     art.status = s
     art.payload = payload
-    art.created_at = datetime(2026, 7, 8, tzinfo=timezone.utc)
+    art.created_at = datetime(2026, 7, 8, tzinfo=UTC)
     return art
 
 
@@ -66,14 +66,23 @@ _landscape_payload = {
 
 _gap_report_payload = {
     "gaps": [
-        {"title": "Missing multimodal benchmark", "description": "No standard benchmark exists.", "category": "dataset"},
-        {"title": "Limited evaluation", "description": "Evaluation is limited to accuracy.", "category": "evaluation"},
+        {
+            "title": "Missing multimodal benchmark",
+            "description": "No standard benchmark exists.",
+            "category": "dataset",
+        },
+        {
+            "title": "Limited evaluation",
+            "description": "Evaluation is limited to accuracy.",
+            "category": "evaluation",
+        },
     ],
     "recommendations": ["Create a new benchmark", "Adopt standard metrics"],
 }
 
 
 # ── KeywordAnalyzer tests ──────────────────────────────────────
+
 
 class TestKeywordAnalyzer:
     def test_analyze_extracts_keywords(self) -> None:
@@ -114,6 +123,7 @@ class TestKeywordAnalyzer:
 
 # ── SectionExtractor tests ─────────────────────────────────────
 
+
 class TestSectionExtractor:
     def _make_extractor(self, artifacts: list | None = None, papers: list | None = None):
         session = MagicMock()
@@ -135,21 +145,25 @@ class TestSectionExtractor:
         ext = self._make_extractor()
         artifact = _make_artifact(
             "knowledge_package",
-            _kp_payload([
-                _paper_entry(
-                    title="Paper A",
-                    findings=["Finding 1", "Finding 2"],
-                    methodology="Deep Learning",
-                    limitations=["Limited data"],
-                    future=["More data needed"],
-                    techniques=["CNN"],
-                    summary="A paper about CNNs.",
-                    questions=["What is CNN?"],
-                ),
-            ]),
+            _kp_payload(
+                [
+                    _paper_entry(
+                        title="Paper A",
+                        findings=["Finding 1", "Finding 2"],
+                        methodology="Deep Learning",
+                        limitations=["Limited data"],
+                        future=["More data needed"],
+                        techniques=["CNN"],
+                        summary="A paper about CNNs.",
+                        questions=["What is CNN?"],
+                    ),
+                ]
+            ),
         )
         sections = ext._extract_knowledge_package(artifact)
-        assert len(sections) >= 6  # findings, methods, limitations, future, techniques, questions, summary
+        assert (
+            len(sections) >= 6
+        )  # findings, methods, limitations, future, techniques, questions, summary
         labels = {s.label for s in sections}
         assert "Key Findings" in labels
         assert "Methodologies" in labels
@@ -193,18 +207,38 @@ class TestSectionExtractor:
 
     def test_extract_paper_collection_with_papers_key(self) -> None:
         ext = self._make_extractor()
-        artifact = _make_artifact("paper_collection", {
-            "papers": [{"title": "Paper A", "authors": ["Author A"], "abstract": "Abstract A", "doi": "10.1234/a"}]
-        })
+        artifact = _make_artifact(
+            "paper_collection",
+            {
+                "papers": [
+                    {
+                        "title": "Paper A",
+                        "authors": ["Author A"],
+                        "abstract": "Abstract A",
+                        "doi": "10.1234/a",
+                    }
+                ]
+            },
+        )
         sections = ext._extract_paper_collection(artifact)
         assert len(sections) == 1
         assert "Paper A" in sections[0].content
 
     def test_extract_paper_collection_with_results_key(self) -> None:
         ext = self._make_extractor()
-        artifact = _make_artifact("paper_collection", {
-            "results": [{"title": "Paper B", "authors": ["Author B"], "abstract": "Abstract B", "doi": "10.1234/b"}]
-        })
+        artifact = _make_artifact(
+            "paper_collection",
+            {
+                "results": [
+                    {
+                        "title": "Paper B",
+                        "authors": ["Author B"],
+                        "abstract": "Abstract B",
+                        "doi": "10.1234/b",
+                    }
+                ]
+            },
+        )
         sections = ext._extract_paper_collection(artifact)
         assert len(sections) == 1
 
@@ -222,33 +256,44 @@ class TestSectionExtractor:
     def test_latest_ready_returns_newest(self) -> None:
         ext = self._make_extractor()
         old = _make_artifact("knowledge_package", {"papers": [{"title": "Old"}]})
-        old.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        old.created_at = datetime(2026, 1, 1, tzinfo=UTC)
         new = _make_artifact("knowledge_package", {"papers": [{"title": "New"}]})
-        new.created_at = datetime(2026, 7, 8, tzinfo=timezone.utc)
+        new.created_at = datetime(2026, 7, 8, tzinfo=UTC)
         result = ext._latest_ready([old, new], "knowledge_package")
         assert result is new
 
 
 # ── SectionScorer tests ────────────────────────────────────────
 
+
 class TestSectionScorer:
     def test_keyword_overlap_scores(self) -> None:
         scorer = SectionScorer()
-        section = RetrievedSection(source="KP", label="Findings", content="The transformer architecture is used for NLP tasks.")
+        section = RetrievedSection(
+            source="KP",
+            label="Findings",
+            content="The transformer architecture is used for NLP tasks.",
+        )
         question = KeywordAnalyzer().analyze("What architectures are used for NLP?")
         score = scorer.score(section, question)
         assert score > 0
 
     def test_section_label_match(self) -> None:
         scorer = SectionScorer()
-        section = RetrievedSection(source="KP", label="Methodologies", content="Deep learning approaches.")
+        section = RetrievedSection(
+            source="KP", label="Methodologies", content="Deep learning approaches."
+        )
         question = KeywordAnalyzer().analyze("What methodologies were used?")
         score = scorer.score(section, question)
         assert score > 0
 
     def test_phrase_match_boost(self) -> None:
         scorer = SectionScorer()
-        section = RetrievedSection(source="KP", label="Findings", content="Transfer learning improves accuracy significantly.")
+        section = RetrievedSection(
+            source="KP",
+            label="Findings",
+            content="Transfer learning improves accuracy significantly.",
+        )
         question = KeywordAnalyzer().analyze('What is "transfer learning"?')
         score = scorer.score(section, question)
         assert score > 0
@@ -262,13 +307,16 @@ class TestSectionScorer:
 
     def test_gap_signal_match(self) -> None:
         scorer = SectionScorer()
-        section = RetrievedSection(source="Gap Report", label="Research Gaps", content="Missing benchmark for evaluation.")
+        section = RetrievedSection(
+            source="Gap Report", label="Research Gaps", content="Missing benchmark for evaluation."
+        )
         question = KeywordAnalyzer().analyze("What gaps exist?")
         score = scorer.score(section, question)
         assert score > 0
 
 
 # ── InvestigationRetriever tests ───────────────────────────────
+
 
 class TestInvestigationRetriever:
     def _make_retriever(self, sections: list[RetrievedSection] | None = None):
@@ -279,10 +327,16 @@ class TestInvestigationRetriever:
         return r
 
     def test_retrieve_returns_scored_sections(self) -> None:
-        retriever = self._make_retriever(sections=[
-            RetrievedSection(source="KP", label="Methodologies", content="Deep Learning and CNNs are used."),
-            RetrievedSection(source="Landscape", label="Datasets", content="ImageNet is commonly used."),
-        ])
+        retriever = self._make_retriever(
+            sections=[
+                RetrievedSection(
+                    source="KP", label="Methodologies", content="Deep Learning and CNNs are used."
+                ),
+                RetrievedSection(
+                    source="Landscape", label="Datasets", content="ImageNet is commonly used."
+                ),
+            ]
+        )
         result = retriever.retrieve(uuid.uuid4(), "What methodologies are used?")
         assert len(result.sections) > 0
         assert result.metadata
@@ -293,19 +347,31 @@ class TestInvestigationRetriever:
         assert result.sections == []
 
     def test_retrieve_fallback_when_no_match(self) -> None:
-        retriever = self._make_retriever(sections=[
-            RetrievedSection(source="KP", label="Authors", content="John Smith"),
-            RetrievedSection(source="Landscape", label="Authors", content="Jane Doe"),
-        ])
+        retriever = self._make_retriever(
+            sections=[
+                RetrievedSection(source="KP", label="Authors", content="John Smith"),
+                RetrievedSection(source="Landscape", label="Authors", content="Jane Doe"),
+            ]
+        )
         result = retriever.retrieve(uuid.uuid4(), "What datasets were used for evaluation?")
         assert len(result.sections) > 0  # fallback kicks in
         assert any("Investigation Summary" in m for m in result.metadata) or result.sections
 
     def test_deduplicate_removes_overlap(self) -> None:
         sections = [
-            RetrievedSection(source="KP", label="Methodologies", content="Deep Learning is the main approach used across all papers."),
-            RetrievedSection(source="Landscape", label="Methodologies", content="Deep Learning is the main approach used across all papers reviewed."),
-            RetrievedSection(source="Gap Report", label="Research Gaps", content="Missing benchmarks."),
+            RetrievedSection(
+                source="KP",
+                label="Methodologies",
+                content="Deep Learning is the main approach used across all papers.",
+            ),
+            RetrievedSection(
+                source="Landscape",
+                label="Methodologies",
+                content="Deep Learning is the main approach used across all papers reviewed.",
+            ),
+            RetrievedSection(
+                source="Gap Report", label="Research Gaps", content="Missing benchmarks."
+            ),
         ]
         deduped, removed = InvestigationRetriever._deduplicate(sections)
         assert len(deduped) < len(sections)
@@ -315,34 +381,52 @@ class TestInvestigationRetriever:
         sections = [
             RetrievedSection(source="KP", label="Methodologies", content="Deep Learning."),
             RetrievedSection(source="Landscape", label="Datasets", content="ImageNet."),
-            RetrievedSection(source="Gap Report", label="Research Gaps", content="Missing benchmarks."),
+            RetrievedSection(
+                source="Gap Report", label="Research Gaps", content="Missing benchmarks."
+            ),
         ]
         deduped, removed = InvestigationRetriever._deduplicate(sections)
         assert len(deduped) == 3
         assert removed == 0
 
     def test_retrieve_within_budget_drops_low_scores(self) -> None:
-        retriever = self._make_retriever(sections=[
-            RetrievedSection(source="KP", label="Methodologies", content="Deep Learning is used." * 100),
-            RetrievedSection(source="Landscape", label="Authors", content="John Smith."),
-            RetrievedSection(source="Gap Report", label="Gaps", content="Missing X."),
-        ])
+        retriever = self._make_retriever(
+            sections=[
+                RetrievedSection(
+                    source="KP", label="Methodologies", content="Deep Learning is used." * 100
+                ),
+                RetrievedSection(source="Landscape", label="Authors", content="John Smith."),
+                RetrievedSection(source="Gap Report", label="Gaps", content="Missing X."),
+            ]
+        )
         result = retriever.retrieve(uuid.uuid4(), "What methodologies?")
         assert result.total_char_count <= 25000 or result.truncated is not None
 
     def test_retrieve_metadata_format(self) -> None:
-        retriever = self._make_retriever(sections=[
-            RetrievedSection(source="Knowledge Package", label="Key Findings", content="The key findings show that transformer models outperform all baselines on the benchmark."),
-        ])
+        retriever = self._make_retriever(
+            sections=[
+                RetrievedSection(
+                    source="Knowledge Package",
+                    label="Key Findings",
+                    content="The key findings show that transformer models outperform all baselines on the benchmark.",
+                ),
+            ]
+        )
         result = retriever.retrieve(uuid.uuid4(), "What findings?")
         assert result.metadata
         assert "Knowledge Package" in result.metadata[0]
 
     def test_retrieve_scores_positive_for_relevant_question(self) -> None:
-        retriever = self._make_retriever(sections=[
-            RetrievedSection(source="KP", label="Technologies", content="PyTorch, TensorFlow, and JAX are used."),
-            RetrievedSection(source="Landscape", label="Authors", content="John Smith."),
-        ])
+        retriever = self._make_retriever(
+            sections=[
+                RetrievedSection(
+                    source="KP",
+                    label="Technologies",
+                    content="PyTorch, TensorFlow, and JAX are used.",
+                ),
+                RetrievedSection(source="Landscape", label="Authors", content="John Smith."),
+            ]
+        )
         result = retriever.retrieve(uuid.uuid4(), "What technologies are used in this research?")
         kp_sections = [s for s in result.sections if s.source == "KP"]
         assert kp_sections
@@ -354,12 +438,18 @@ class TestInvestigationRetriever:
         assert result.sections == []
 
     def test_content_overlap(self) -> None:
-        assert InvestigationRetriever._content_overlap(
-            "deep learning is used", "deep learning is the main approach"
-        ) > 0.5
-        assert InvestigationRetriever._content_overlap(
-            "computer vision", "natural language processing"
-        ) == 0.0
+        assert (
+            InvestigationRetriever._content_overlap(
+                "deep learning is used", "deep learning is the main approach"
+            )
+            > 0.5
+        )
+        assert (
+            InvestigationRetriever._content_overlap(
+                "computer vision", "natural language processing"
+            )
+            == 0.0
+        )
         assert InvestigationRetriever._content_overlap("", "anything") == 0.0
 
     def test_build_fallback(self) -> None:

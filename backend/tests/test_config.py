@@ -8,6 +8,8 @@ singleton.
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from app.config import (
@@ -27,9 +29,22 @@ def _settings(**kwargs: object) -> Settings:
         "SECRET_KEY": "test-key-not-empty-1234567890123456",
         "DATABASE_URL": "sqlite:///./test.db",
         "REDIS_URL": "redis://localhost:6379/0",
+        "LOG_LEVEL": "INFO",
+        "LOG_FORMAT": "console",
+        "CACHE_ENABLED": True,
+        "RATE_LIMIT_BACKEND": "redis",
     }
     defaults.update(kwargs)
-    return Settings(**defaults)  # type: ignore[arg-type]
+    removed = {
+        k: os.environ.pop(k, None)
+        for k in ("LOG_LEVEL", "LOG_FORMAT", "CACHE_ENABLED", "RATE_LIMIT_BACKEND")
+    }
+    try:
+        return Settings(**defaults)  # type: ignore[arg-type]
+    finally:
+        for k, v in removed.items():
+            if v is not None:
+                os.environ[k] = v
 
 
 class TestEnvironment:

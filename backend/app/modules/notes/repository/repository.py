@@ -28,7 +28,8 @@ class NoteRepository:
         return self._session.scalar(stmt)
 
     def list_by_investigation(
-        self, investigation_id: uuid.UUID,
+        self,
+        investigation_id: uuid.UUID,
         source_type: str | None = None,
     ) -> Sequence[Note]:
         stmt = (
@@ -58,12 +59,7 @@ class NoteRepository:
         return self._session.scalars(stmt).all()
 
     def update(self, note_id: uuid.UUID, **kwargs: object) -> Note | None:
-        stmt = (
-            update(Note)
-            .where(Note.id == note_id)
-            .values(**kwargs)
-            .returning(Note)
-        )
+        stmt = update(Note).where(Note.id == note_id).values(**kwargs).returning(Note)
         result = self._session.execute(stmt)
         self._session.flush()
         return result.scalar_one_or_none()
@@ -83,11 +79,7 @@ class NoteRepository:
         return link
 
     def list_links(self, note_id: uuid.UUID) -> Sequence[NoteLink]:
-        stmt = (
-            select(NoteLink)
-            .where(NoteLink.note_id == note_id)
-            .order_by(NoteLink.created_at)
-        )
+        stmt = select(NoteLink).where(NoteLink.note_id == note_id).order_by(NoteLink.created_at)
         return self._session.scalars(stmt).all()
 
     def delete_link(self, link_id: uuid.UUID) -> bool:

@@ -5,17 +5,18 @@ Revises: d4bc8ca984b8
 Create Date: 2026-06-28 16:30:00.000000
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
 revision: str = "5f1b6d843b21"
-down_revision: Union[str, None] = "d4bc8ca984b8"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "d4bc8ca984b8"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -31,7 +32,9 @@ def upgrade() -> None:
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("execution_id", sa.UUID(), nullable=False),
         sa.Column(
-            "stage_name", sa.String(length=100), nullable=False,
+            "stage_name",
+            sa.String(length=100),
+            nullable=False,
         ),
         sa.Column(
             "status",
@@ -48,15 +51,21 @@ def upgrade() -> None:
         ),
         sa.Column("attempt", sa.Integer(), nullable=False),
         sa.Column(
-            "started_at", sa.DateTime(timezone=True), nullable=False,
+            "started_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
         ),
         sa.Column(
-            "completed_at", sa.DateTime(timezone=True), nullable=True,
+            "completed_at",
+            sa.DateTime(timezone=True),
+            nullable=True,
         ),
         sa.Column("duration_ms", sa.Integer(), nullable=True),
         sa.Column("error_message", sa.Text(), nullable=True),
         sa.Column(
-            "metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True,
+            "metadata",
+            postgresql.JSONB(astext_type=sa.Text()),
+            nullable=True,
         ),
         sa.Column(
             "created_at",

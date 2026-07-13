@@ -50,12 +50,16 @@ _METHODOLOGY = AnalyzerResult(
         "total_methodologies": 2,
         "methodologies": [
             {
-                "name": "CNN", "paper_count": 15,
-                "technique_count": 2, "techniques": ["convolution", "pooling"],
+                "name": "CNN",
+                "paper_count": 15,
+                "technique_count": 2,
+                "techniques": ["convolution", "pooling"],
             },
             {
-                "name": "RNN", "paper_count": 8,
-                "technique_count": 1, "techniques": ["backpropagation"],
+                "name": "RNN",
+                "paper_count": 8,
+                "technique_count": 1,
+                "techniques": ["backpropagation"],
             },
         ],
     },
@@ -442,18 +446,24 @@ class TestObservations:
 
     def test_observation_category_labels(self) -> None:
         agg = LandscapeAggregator()
-        landscape = agg.aggregate(_results(
-            institution=_INSTITUTION,
-            methodology=_METHODOLOGY,
-            temporal=_TEMPORAL,
-            technology=_TECHNOLOGY,
-            dataset=_DATASET,
-            collaboration=_COLLABORATION,
-        ))
+        landscape = agg.aggregate(
+            _results(
+                institution=_INSTITUTION,
+                methodology=_METHODOLOGY,
+                temporal=_TEMPORAL,
+                technology=_TECHNOLOGY,
+                dataset=_DATASET,
+                collaboration=_COLLABORATION,
+            )
+        )
         categories = {o.category for o in landscape.observations}
         assert categories == {
-            "institution", "methodology", "technology",
-            "dataset", "temporal", "collaboration",
+            "institution",
+            "methodology",
+            "technology",
+            "dataset",
+            "temporal",
+            "collaboration",
         }
 
     def test_institution_only_observations(self) -> None:

@@ -127,19 +127,23 @@ class TestResearchGraph:
         assert g.year_index(2024) == []
 
     def test_paper_count(self) -> None:
-        g = ResearchGraph(papers={
-            "p1": PaperNode(id="p1", title="A"),
-            "p2": PaperNode(id="p2", title="B"),
-        })
+        g = ResearchGraph(
+            papers={
+                "p1": PaperNode(id="p1", title="A"),
+                "p2": PaperNode(id="p2", title="B"),
+            }
+        )
         assert g.paper_count == 2
 
     def test_years_property(self) -> None:
-        g = ResearchGraph(papers={
-            "p1": PaperNode(id="p1", title="A", year=2022),
-            "p2": PaperNode(id="p2", title="B", year=2024),
-            "p3": PaperNode(id="p3", title="C", year=2023),
-            "p4": PaperNode(id="p4", title="D"),  # no year
-        })
+        g = ResearchGraph(
+            papers={
+                "p1": PaperNode(id="p1", title="A", year=2022),
+                "p2": PaperNode(id="p2", title="B", year=2024),
+                "p3": PaperNode(id="p3", title="C", year=2023),
+                "p4": PaperNode(id="p4", title="D"),  # no year
+            }
+        )
         assert g.years == [2022, 2023, 2024]
 
     def test_year_index(self) -> None:
@@ -169,8 +173,13 @@ class TestPaperNode:
         meth = MethodologyNode(name="Transformer")
         auth = AuthorNode(name="Alice")
         p = PaperNode(
-            id="p1", title="Test", year=2024, citation_count=42,
-            venue="NeurIPS", authors=[auth], methodologies=[meth],
+            id="p1",
+            title="Test",
+            year=2024,
+            citation_count=42,
+            venue="NeurIPS",
+            authors=[auth],
+            methodologies=[meth],
             techniques=["attention", "pre-training"],
         )
         assert p.year == 2024
@@ -258,11 +267,13 @@ class TestResearchGraphBuilder:
 
     def test_build_single_record_with_techniques(self) -> None:
         builder = ResearchGraphBuilder()
-        records = [_fake_record(
-            paper_id=P1_UUID,
-            methodology="CNN",
-            techniques=["transfer learning", "data augmentation"],
-        )]
+        records = [
+            _fake_record(
+                paper_id=P1_UUID,
+                methodology="CNN",
+                techniques=["transfer learning", "data augmentation"],
+            )
+        ]
         graph = builder.build(records)
         # Techniques are indexed as methodologies (stemmed: "transfer learn", "data augmenta")
         assert "cnn" in graph.methodologies
@@ -276,7 +287,9 @@ class TestResearchGraphBuilder:
         records = [_fake_record(paper_id=P1_UUID)]
         paper_map = {
             P1_STR: PaperMetadata(
-                year=2024, citation_count=42, venue="NeurIPS",
+                year=2024,
+                citation_count=42,
+                venue="NeurIPS",
                 authors=["Alice Smith", "Bob Jones"],
             ),
         }
@@ -311,10 +324,12 @@ class TestResearchGraphBuilder:
 
     def test_deduplicates_techniques(self) -> None:
         builder = ResearchGraphBuilder()
-        records = [_fake_record(
-            paper_id=P1_UUID,
-            techniques=["cnn", "CNN", "  cnn  "],
-        )]
+        records = [
+            _fake_record(
+                paper_id=P1_UUID,
+                techniques=["cnn", "CNN", "  cnn  "],
+            )
+        ]
         graph = builder.build(records)
         # All three variants → normalize("cnn") → "cnn" → resolve("cnn", "methodology") → "CNN"
         assert "CNN" in graph.methodologies
@@ -324,9 +339,12 @@ class TestResearchGraphBuilder:
         builder = ResearchGraphBuilder()
         assert builder._classify_institution("MIT") == InstitutionType.UNIVERSITY
         assert builder._classify_institution("Google") == InstitutionType.COMPANY
-        assert builder._classify_institution(
-            "National Institutes of Health",
-        ) == InstitutionType.GOVERNMENT
+        assert (
+            builder._classify_institution(
+                "National Institutes of Health",
+            )
+            == InstitutionType.GOVERNMENT
+        )
         assert builder._classify_institution("Some Research Lab") == InstitutionType.LAB
         assert builder._classify_institution("Unknown Organization") == InstitutionType.OTHER
 
@@ -350,10 +368,12 @@ class TestResearchGraphBuilder:
 
     def test_normalisation_uses_resolver(self) -> None:
         builder = ResearchGraphBuilder()
-        records = [_fake_record(
-            paper_id=P1_UUID,
-            methodology="reinforcement learning",
-        )]
+        records = [
+            _fake_record(
+                paper_id=P1_UUID,
+                methodology="reinforcement learning",
+            )
+        ]
         graph = builder.build(records)
         # resolve("reinforcement learning", "methodology") → "Reinforcement Learning"
         # stem("Reinforcement Learning") → "reinforcement learn"
@@ -397,11 +417,13 @@ class TestResearchGraphBuilder:
 
     def test_paper_has_techniques_and_limitations(self) -> None:
         builder = ResearchGraphBuilder()
-        records = [_fake_record(
-            paper_id=P1_UUID,
-            techniques=["attention"],
-            limitations=["computational cost"],
-        )]
+        records = [
+            _fake_record(
+                paper_id=P1_UUID,
+                techniques=["attention"],
+                limitations=["computational cost"],
+            )
+        ]
         graph = builder.build(records)
         paper = graph.papers[P1_STR]
         # "attention" → normalize → "atten" (light stem strips "tion")

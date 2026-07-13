@@ -1,4 +1,4 @@
-"""Follow-up quality — generates contextual follow-up questions from retrieved sections or evidence bundles."""
+"""Follow-up quality — generates contextual follow-up questions from evidence."""
 
 from __future__ import annotations
 
@@ -7,11 +7,18 @@ import re
 from app.modules.copilot.evidence.models import EvidenceBundle
 from app.modules.copilot.retrieval.models import RetrievalResult
 
-
 _INTERESTING_LABELS = {
-    "methodologies", "technologies", "datasets", "evaluation metrics",
-    "research gaps", "limitations", "future work", "research questions",
-    "recommendations", "applications", "key findings",
+    "methodologies",
+    "technologies",
+    "datasets",
+    "evaluation metrics",
+    "research gaps",
+    "limitations",
+    "future work",
+    "research questions",
+    "recommendations",
+    "applications",
+    "key findings",
 }
 
 
@@ -75,12 +82,13 @@ class FollowUpGenerator:
             topics = self._extract_bundle_topics(bundle)
             for topic in topics:
                 prefix = self._EVIDENCE_PREFIXES.get(topic)
-                if prefix:
-                    q = f"{prefix} in these studies?"
-                    normalized = self._normalize(q)
-                    if normalized not in seen:
-                        questions.append(q)
-                        seen.add(normalized)
+                if prefix is None:
+                    continue
+                q = f"{prefix} in these studies?"
+                normalized = self._normalize(q)
+                if normalized not in seen:
+                    questions.append(q)
+                    seen.add(normalized)
                 if len(questions) >= self._MAX_FOLLOW_UPS:
                     break
 
@@ -93,19 +101,13 @@ class FollowUpGenerator:
                 if len(questions) >= self._MAX_FOLLOW_UPS:
                     break
 
-        return questions[:self._MAX_FOLLOW_UPS]
+        return questions[: self._MAX_FOLLOW_UPS]
 
-    def _build_label_questions(
-        self, section, prefix: str
-    ) -> list[str]:
+    def _build_label_questions(self, section, prefix: str) -> list[str]:
         topics = self._extract_topics(section.content, max_topics=3)
         if topics:
-            return [
-                f"{prefix} are most relevant to {', '.join(topics[:2])}?"
-            ]
-        return [
-            f"{prefix} are used in this research area?"
-        ]
+            return [f"{prefix} are most relevant to {', '.join(topics[:2])}?"]
+        return [f"{prefix} are used in this research area?"]
 
     @staticmethod
     def _extract_topics(content: str, max_topics: int = 3) -> list[str]:

@@ -7,5 +7,7 @@ IDs, tenant context) in the future.
 """
 
 import structlog
+
+
 def get_logger(name: str):
     return structlog.get_logger(name)

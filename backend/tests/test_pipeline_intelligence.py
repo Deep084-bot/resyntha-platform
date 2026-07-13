@@ -9,19 +9,12 @@ from __future__ import annotations
 import asyncio
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-import pytest
-
-from app.modules.artifact.domain.models import Artifact, ArtifactStatus, ArtifactType
+from app.modules.artifact.domain.models import ArtifactStatus, ArtifactType
 from app.modules.artifact.schemas.request import CreateArtifactRequest
 from app.modules.artifact.schemas.response import ArtifactResponse
 from app.modules.extraction.domain.models import ExtractedKnowledge
-from app.modules.intelligence.aggregation.models import (
-    LandscapeResult,
-    Observation,
-    OverviewSection,
-)
 from app.modules.intelligence.api.models import LandscapeResponse
 from app.modules.intelligence.graph.builder import PaperMetadata
 from app.modules.intelligence.graph.models import ResearchGraph
@@ -29,7 +22,6 @@ from app.modules.paper.domain.models import Paper
 from app.pipeline.context import PipelineContext
 from app.pipeline.result import PipelineResult
 from app.pipeline.stages.intelligence import IntelligenceStage
-
 
 # =============================================================================
 # Helpers
@@ -108,8 +100,8 @@ class MockArtifactService:
             version=request.version,
             status=status,
             payload=request.payload,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
 

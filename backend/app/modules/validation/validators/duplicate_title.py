@@ -17,10 +17,7 @@ class DuplicateTitleValidator(BaseValidator):
         if not paper.title:
             return []
         title_lower = paper.title.lower().strip()
-        count = sum(
-            1 for p in all_papers
-            if p.title and p.title.lower().strip() == title_lower
-        )
+        count = sum(1 for p in all_papers if p.title and p.title.lower().strip() == title_lower)
         if count > 1:
             return [
                 ValidationIssue(

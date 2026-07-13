@@ -27,7 +27,6 @@ from app.modules.intelligence.presentation import (
 from app.modules.intelligence.presentation.json import JsonRenderer as JR
 from app.modules.intelligence.presentation.markdown import MarkdownRenderer as MR
 
-
 # =============================================================================
 # Helpers
 # =============================================================================
@@ -107,22 +106,31 @@ class TestMarkdownRendererStructure:
             ),
             methodologies=MethodologySection(
                 top_methodologies=[
-                    MethodologyEntry(name="CNN", paper_count=5, technique_count=2, techniques=["conv"])
+                    MethodologyEntry(
+                        name="CNN", paper_count=5, technique_count=2, techniques=["conv"]
+                    )
                 ]
             ),
             technologies=TechnologySection(
                 top_technologies=[("PyTorch", 5)],
                 first_appearance_by_year={"PyTorch": 2022},
-                diversity=DiversityMetrics(total=1, papers_with_entity=5, avg_papers_per_entity=5.0),
+                diversity=DiversityMetrics(
+                    total=1, papers_with_entity=5, avg_papers_per_entity=5.0
+                ),
             ),
             datasets=DatasetSection(
                 top_datasets=[("ImageNet", 3)],
-                diversity=DiversityMetrics(total=1, papers_with_entity=3, avg_papers_per_entity=3.0),
+                diversity=DiversityMetrics(
+                    total=1, papers_with_entity=3, avg_papers_per_entity=3.0
+                ),
             ),
             temporal=TemporalSection(papers_per_year={2022: 4, 2023: 6}),
             collaborations=CollaborationSection(
                 institution_network=NetworkSection(
-                    total_nodes=3, total_edges=2, degree_centrality={}, top_by_centrality=[("MIT", 0.8)]
+                    total_nodes=3,
+                    total_edges=2,
+                    degree_centrality={},
+                    top_by_centrality=[("MIT", 0.8)],
                 ),
                 top_institution_collaborations=[("MIT", "Stanford", 2)],
             ),
@@ -131,7 +139,16 @@ class TestMarkdownRendererStructure:
             ],
         )
         result = MR().render(landscape)
-        sections = ["Overview", "Institutions", "Methodologies", "Technologies", "Datasets", "Temporal Trends", "Collaborations", "Key Observations"]
+        sections = [
+            "Overview",
+            "Institutions",
+            "Methodologies",
+            "Technologies",
+            "Datasets",
+            "Temporal Trends",
+            "Collaborations",
+            "Key Observations",
+        ]
         prev = -1
         for sec in sections:
             idx = result.find(f"## {sec}")
@@ -153,7 +170,9 @@ class TestMarkdownRendererSections:
                 type_distribution={"university": 2},
                 top_institutions=[
                     InstitutionEntry(name="MIT", type="university", paper_count=10, author_count=5),
-                    InstitutionEntry(name="Stanford", type="university", paper_count=7, author_count=4),
+                    InstitutionEntry(
+                        name="Stanford", type="university", paper_count=7, author_count=4
+                    ),
                 ],
             )
         )
@@ -173,7 +192,9 @@ class TestMarkdownRendererSections:
             methodologies=MethodologySection(
                 total=1,
                 top_methodologies=[
-                    MethodologyEntry(name="CNN", paper_count=8, technique_count=2, techniques=["conv", "pool"])
+                    MethodologyEntry(
+                        name="CNN", paper_count=8, technique_count=2, techniques=["conv", "pool"]
+                    )
                 ],
             )
         )
@@ -191,7 +212,9 @@ class TestMarkdownRendererSections:
                 total=2,
                 top_technologies=[("PyTorch", 5), ("JAX", 3)],
                 first_appearance_by_year={"PyTorch": 2022, "JAX": 2024},
-                diversity=DiversityMetrics(total=2, papers_with_entity=8, avg_papers_per_entity=4.0),
+                diversity=DiversityMetrics(
+                    total=2, papers_with_entity=8, avg_papers_per_entity=4.0
+                ),
             )
         )
         result = MR().render(landscape)
@@ -210,7 +233,9 @@ class TestMarkdownRendererSections:
             datasets=DatasetSection(
                 total=2,
                 top_datasets=[("ImageNet", 4), ("COCO", 3)],
-                diversity=DiversityMetrics(total=2, papers_with_entity=7, avg_papers_per_entity=3.5),
+                diversity=DiversityMetrics(
+                    total=2, papers_with_entity=7, avg_papers_per_entity=3.5
+                ),
             )
         )
         result = MR().render(landscape)
@@ -225,9 +250,7 @@ class TestMarkdownRendererSections:
         assert "## Datasets" not in result
 
     def test_temporal_table(self) -> None:
-        landscape = _landscape(
-            temporal=TemporalSection(papers_per_year={2022: 4, 2023: 6})
-        )
+        landscape = _landscape(temporal=TemporalSection(papers_per_year={2022: 4, 2023: 6}))
         result = MR().render(landscape)
         assert "| Year | Papers |" in result
         assert "| 2022 | 4 |" in result
@@ -278,7 +301,9 @@ class TestMarkdownRendererSections:
     def test_observations_list(self) -> None:
         landscape = _landscape(
             observations=[
-                Observation(category="institution", label="Top Institution", value="MIT (5 papers)"),
+                Observation(
+                    category="institution", label="Top Institution", value="MIT (5 papers)"
+                ),
                 Observation(category="methodology", label="Common Methodology", value="CNN"),
             ]
         )
@@ -329,7 +354,9 @@ class TestMarkdownRendererEdgeCases:
             technologies=TechnologySection(
                 top_technologies=[("Custom", 1)],
                 first_appearance_by_year={},
-                diversity=DiversityMetrics(total=0, papers_with_entity=0, avg_papers_per_entity=0.0),
+                diversity=DiversityMetrics(
+                    total=0, papers_with_entity=0, avg_papers_per_entity=0.0
+                ),
             )
         )
         result = MR().render(landscape)
@@ -389,7 +416,15 @@ class TestJsonRendererBasic:
 
     def test_skips_empty_sections(self) -> None:
         result = JR().render(_landscape())
-        for key in ("institutions", "methodologies", "technologies", "datasets", "temporal", "collaborations", "observations"):
+        for key in (
+            "institutions",
+            "methodologies",
+            "technologies",
+            "datasets",
+            "temporal",
+            "collaborations",
+            "observations",
+        ):
             assert key not in result, f"Empty section '{key}' should not be in result"
 
 
@@ -409,8 +444,18 @@ class TestJsonRendererInstitutions:
         sec = result["institutions"]
         assert sec["total"] == 2
         assert sec["type_distribution"] == {"university": 1, "company": 1}
-        assert sec["top_institutions"][0] == {"name": "MIT", "type": "university", "paper_count": 10, "author_count": 5}
-        assert sec["top_institutions"][1] == {"name": "Google", "type": "company", "paper_count": 3, "author_count": 2}
+        assert sec["top_institutions"][0] == {
+            "name": "MIT",
+            "type": "university",
+            "paper_count": 10,
+            "author_count": 5,
+        }
+        assert sec["top_institutions"][1] == {
+            "name": "Google",
+            "type": "company",
+            "paper_count": 3,
+            "author_count": 2,
+        }
 
 
 class TestJsonRendererMethodologies:
@@ -419,8 +464,12 @@ class TestJsonRendererMethodologies:
             methodologies=MethodologySection(
                 total=2,
                 top_methodologies=[
-                    MethodologyEntry(name="CNN", paper_count=8, technique_count=2, techniques=["conv", "pool"]),
-                    MethodologyEntry(name="RNN", paper_count=3, technique_count=1, techniques=["backprop"]),
+                    MethodologyEntry(
+                        name="CNN", paper_count=8, technique_count=2, techniques=["conv", "pool"]
+                    ),
+                    MethodologyEntry(
+                        name="RNN", paper_count=3, technique_count=1, techniques=["backprop"]
+                    ),
                 ],
             )
         )
@@ -443,7 +492,9 @@ class TestJsonRendererTechnologies:
                 total=2,
                 top_technologies=[("PyTorch", 5), ("JAX", 3)],
                 first_appearance_by_year={"PyTorch": 2022},
-                diversity=DiversityMetrics(total=2, papers_with_entity=8, avg_papers_per_entity=4.0),
+                diversity=DiversityMetrics(
+                    total=2, papers_with_entity=8, avg_papers_per_entity=4.0
+                ),
             )
         )
         result = JR().render(landscape)
@@ -461,7 +512,9 @@ class TestJsonRendererDatasets:
             datasets=DatasetSection(
                 total=2,
                 top_datasets=[("ImageNet", 4), ("COCO", 3)],
-                diversity=DiversityMetrics(total=2, papers_with_entity=7, avg_papers_per_entity=3.5),
+                diversity=DiversityMetrics(
+                    total=2, papers_with_entity=7, avg_papers_per_entity=3.5
+                ),
             )
         )
         result = JR().render(landscape)
@@ -492,12 +545,16 @@ class TestJsonRendererCollaborations:
         landscape = _landscape(
             collaborations=CollaborationSection(
                 institution_network=NetworkSection(
-                    total_nodes=3, total_edges=2, degree_centrality={"MIT": 0.8},
+                    total_nodes=3,
+                    total_edges=2,
+                    degree_centrality={"MIT": 0.8},
                     top_by_centrality=[("MIT", 0.8)],
                 ),
                 top_institution_collaborations=[("MIT", "Stanford", 2)],
                 author_network=NetworkSection(
-                    total_nodes=4, total_edges=3, degree_centrality={"Alice": 0.9},
+                    total_nodes=4,
+                    total_edges=3,
+                    degree_centrality={"Alice": 0.9},
                     top_by_centrality=[("Alice", 0.9)],
                 ),
                 top_author_collaborations=[("Alice", "Bob", 3)],
@@ -510,14 +567,20 @@ class TestJsonRendererCollaborations:
         assert sec["institution_network"]["total_nodes"] == 3
         assert sec["author_network"]["total_nodes"] == 4
         assert len(sec["institution_collaborations"]) == 1
-        assert sec["institution_collaborations"][0] == {"source": "MIT", "target": "Stanford", "weight": 2}
+        assert sec["institution_collaborations"][0] == {
+            "source": "MIT",
+            "target": "Stanford",
+            "weight": 2,
+        }
         assert sec["author_collaborations"][0] == {"source": "Alice", "target": "Bob", "weight": 3}
 
     def test_centrality_rounded(self) -> None:
         landscape = _landscape(
             collaborations=CollaborationSection(
                 institution_network=NetworkSection(
-                    total_nodes=2, total_edges=1, degree_centrality={"MIT": 0.87654},
+                    total_nodes=2,
+                    total_edges=1,
+                    degree_centrality={"MIT": 0.87654},
                     top_by_centrality=[("MIT", 0.87654)],
                 ),
             )
@@ -544,7 +607,9 @@ class TestJsonRendererObservations:
     def test_observations_list(self) -> None:
         landscape = _landscape(
             observations=[
-                Observation(category="institution", label="Top Institution", value="MIT (5 papers)"),
+                Observation(
+                    category="institution", label="Top Institution", value="MIT (5 papers)"
+                ),
             ]
         )
         result = JR().render(landscape)
@@ -570,7 +635,9 @@ class TestJsonRendererEdgeCases:
     def test_deterministic_output(self) -> None:
         landscape = _landscape(
             institutions=InstitutionSection(
-                top_institutions=[InstitutionEntry(name="MIT", type="university", paper_count=5, author_count=2)],
+                top_institutions=[
+                    InstitutionEntry(name="MIT", type="university", paper_count=5, author_count=2)
+                ],
                 type_distribution={"university": 1},
             ),
             observations=[Observation(category="inst", label="X", value="1")],
@@ -582,7 +649,9 @@ class TestJsonRendererEdgeCases:
     def test_non_empty_result(self) -> None:
         landscape = _landscape(
             institutions=InstitutionSection(
-                top_institutions=[InstitutionEntry(name="MIT", type="university", paper_count=5, author_count=2)],
+                top_institutions=[
+                    InstitutionEntry(name="MIT", type="university", paper_count=5, author_count=2)
+                ],
                 type_distribution={"university": 1},
             ),
         )
@@ -608,29 +677,41 @@ class TestRenderSmoke:
             ),
             methodologies=MethodologySection(
                 top_methodologies=[
-                    MethodologyEntry(name="CNN", paper_count=8, technique_count=2, techniques=["conv", "pool"]),
+                    MethodologyEntry(
+                        name="CNN", paper_count=8, technique_count=2, techniques=["conv", "pool"]
+                    ),
                 ]
             ),
             technologies=TechnologySection(
                 top_technologies=[("PyTorch", 5)],
                 first_appearance_by_year={"PyTorch": 2022},
-                diversity=DiversityMetrics(total=1, papers_with_entity=5, avg_papers_per_entity=5.0),
+                diversity=DiversityMetrics(
+                    total=1, papers_with_entity=5, avg_papers_per_entity=5.0
+                ),
             ),
             datasets=DatasetSection(
                 top_datasets=[("ImageNet", 3)],
-                diversity=DiversityMetrics(total=1, papers_with_entity=3, avg_papers_per_entity=3.0),
+                diversity=DiversityMetrics(
+                    total=1, papers_with_entity=3, avg_papers_per_entity=3.0
+                ),
             ),
             temporal=TemporalSection(papers_per_year={2022: 4, 2023: 6}),
             collaborations=CollaborationSection(
                 institution_network=NetworkSection(
-                    total_nodes=3, total_edges=2, degree_centrality={"MIT": 0.8},
+                    total_nodes=3,
+                    total_edges=2,
+                    degree_centrality={"MIT": 0.8},
                     top_by_centrality=[("MIT", 0.8)],
                 ),
                 top_institution_collaborations=[("MIT", "Stanford", 2)],
             ),
             observations=[
-                Observation(category="institution", label="Top Institution", value="MIT (10 papers)"),
-                Observation(category="methodology", label="Common Methodology", value="CNN (8 papers)"),
+                Observation(
+                    category="institution", label="Top Institution", value="MIT (10 papers)"
+                ),
+                Observation(
+                    category="methodology", label="Common Methodology", value="CNN (8 papers)"
+                ),
             ],
         )
 

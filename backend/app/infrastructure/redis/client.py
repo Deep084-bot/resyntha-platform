@@ -5,8 +5,6 @@ application.  The client is created lazily or can be initialised
 eagerly via ``initialize_redis()`` during the lifespan startup hook.
 """
 
-from collections.abc import AsyncIterator
-
 import redis.asyncio as aioredis
 
 from app.config import get_settings

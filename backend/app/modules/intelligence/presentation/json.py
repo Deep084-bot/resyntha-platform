@@ -24,7 +24,9 @@ class JsonRenderer(BaseRenderer):
         self._add_if_nonempty(result, "technologies", self._technologies(landscape.technologies))
         self._add_if_nonempty(result, "datasets", self._datasets(landscape.datasets))
         self._add_if_nonempty(result, "temporal", self._temporal(landscape.temporal))
-        self._add_if_nonempty(result, "collaborations", self._collaborations(landscape.collaborations))
+        self._add_if_nonempty(
+            result, "collaborations", self._collaborations(landscape.collaborations)
+        )
         self._add_if_nonempty(result, "observations", self._observations(landscape.observations))
         return result
 
@@ -105,12 +107,10 @@ class JsonRenderer(BaseRenderer):
         return {
             "total": sec.total,
             "top_technologies": [
-                {"name": name, "paper_count": count}
-                for name, count in sec.top_technologies
+                {"name": name, "paper_count": count} for name, count in sec.top_technologies
             ],
             "first_appearance_by_year": {
-                k: v for k, v in sec.first_appearance_by_year.items()
-                if v is not None
+                k: v for k, v in sec.first_appearance_by_year.items() if v is not None
             },
             "diversity": {
                 "total_technologies": sec.diversity.total,
@@ -129,8 +129,7 @@ class JsonRenderer(BaseRenderer):
         return {
             "total": sec.total,
             "top_datasets": [
-                {"name": name, "paper_count": count}
-                for name, count in sec.top_datasets
+                {"name": name, "paper_count": count} for name, count in sec.top_datasets
             ],
             "diversity": {
                 "total_datasets": sec.diversity.total,
@@ -182,8 +181,7 @@ class JsonRenderer(BaseRenderer):
         if auth.total_nodes:
             result["author_network"] = JsonRenderer._network(auth)
             result["author_collaborations"] = [
-                {"source": a, "target": b, "weight": w}
-                for a, b, w in sec.top_author_collaborations
+                {"source": a, "target": b, "weight": w} for a, b, w in sec.top_author_collaborations
             ]
         return result if result else None
 

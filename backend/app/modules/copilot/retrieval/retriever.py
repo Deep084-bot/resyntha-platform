@@ -57,13 +57,20 @@ class InvestigationRetriever:
             budget_limit=max_chars,
             retriever_type="heuristic",
             num_keywords=len(analyzed.keywords),
-            num_signals=sum([
-                1 for s in [
-                    analyzed.methodology_signals, analyzed.dataset_signals,
-                    analyzed.technology_signals, analyzed.domain_signals,
-                    analyzed.author_signals, analyzed.gap_signals,
-                ] if s
-            ]),
+            num_signals=sum(
+                [
+                    1
+                    for s in [
+                        analyzed.methodology_signals,
+                        analyzed.dataset_signals,
+                        analyzed.technology_signals,
+                        analyzed.domain_signals,
+                        analyzed.author_signals,
+                        analyzed.gap_signals,
+                    ]
+                    if s
+                ]
+            ),
         )
 
         if not all_sections:
@@ -195,8 +202,7 @@ class InvestigationRetriever:
                     selected.append(truncated)
                     stats["truncated_count"] = int(stats["truncated_count"]) + 1
                     meta.append(
-                        f"{section.source} → {section.label} "
-                        f"(score={section.score:.1f}, TRUNCATED)"
+                        f"{section.source} → {section.label} (score={section.score:.1f}, TRUNCATED)"
                     )
                 else:
                     stats["dropped_budget"] = int(stats["dropped_budget"]) + 1

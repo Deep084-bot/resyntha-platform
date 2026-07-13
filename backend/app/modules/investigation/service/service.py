@@ -23,15 +23,15 @@ from app.modules.investigation.schemas.request import (
 from app.modules.investigation.schemas.response import (
     InvestigationResponse,
 )
+from app.modules.investigation.timeline.models import (
+    TimelineStage,
+    TimelineStatus,
+)
 from app.modules.investigation.timeline.schemas import (
     TimelineEventResponse,
 )
 from app.modules.investigation.timeline.service import (
     TimelineService,
-)
-from app.modules.investigation.timeline.models import (
-    TimelineStage,
-    TimelineStatus,
 )
 
 
@@ -43,11 +43,10 @@ class InvestigationService:
         self._timeline = TimelineService(session)
         self._session = session
 
-    def create_investigation(
-        self, request: CreateInvestigationRequest
-    ) -> InvestigationResponse:
+    def create_investigation(self, request: CreateInvestigationRequest) -> InvestigationResponse:
         """Create a new investigation and return its response representation."""
         from app.metrics import get_metrics_service
+
         get_metrics_service().investigation_created_total.inc()
         investigation = Investigation(
             title=request.title,
@@ -67,9 +66,7 @@ class InvestigationService:
         self._session.commit()
         return InvestigationResponse.model_validate(saved)
 
-    def get_investigation(
-        self, investigation_id: uuid.UUID
-    ) -> InvestigationResponse | None:
+    def get_investigation(self, investigation_id: uuid.UUID) -> InvestigationResponse | None:
         """Return an investigation by id, or ``None`` if not found."""
         investigation = self._repository.get_by_id(investigation_id)
         if investigation is None:
@@ -92,8 +89,6 @@ class InvestigationService:
         self._session.commit()
         return True
 
-    def get_timeline(
-        self, investigation_id: uuid.UUID
-    ) -> Sequence[TimelineEventResponse]:
+    def get_timeline(self, investigation_id: uuid.UUID) -> Sequence[TimelineEventResponse]:
         """Return the timeline for an investigation."""
         return self._timeline.get_timeline(investigation_id)

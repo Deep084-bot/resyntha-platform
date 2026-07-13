@@ -159,20 +159,24 @@ class TestCacheService:
 
     def test_get_or_compute_hit(self, cache_service: CacheService, mock_redis: AsyncMock) -> None:
         mock_redis.get.return_value = json.dumps("cached_value")
-        value, from_cache = _run(cache_service.get_or_compute(
-            "key",
-            fallback=AsyncMock(return_value="fresh_value"),
-            ttl=60,
-        ))
+        value, from_cache = _run(
+            cache_service.get_or_compute(
+                "key",
+                fallback=AsyncMock(return_value="fresh_value"),
+                ttl=60,
+            )
+        )
         assert value == "cached_value"
         assert from_cache is True
 
     def test_get_or_compute_miss(self, cache_service: CacheService) -> None:
-        value, from_cache = _run(cache_service.get_or_compute(
-            "key",
-            fallback=AsyncMock(return_value="fresh_value"),
-            ttl=60,
-        ))
+        value, from_cache = _run(
+            cache_service.get_or_compute(
+                "key",
+                fallback=AsyncMock(return_value="fresh_value"),
+                ttl=60,
+            )
+        )
         assert value == "fresh_value"
         assert from_cache is False
 
@@ -229,6 +233,7 @@ class TestCachedDecorator:
         svc = CacheService(redis=mock_redis)
 
         with patch("app.cache.decorators._cache", return_value=svc):
+
             @cached("test_key", ttl=60)
             async def my_func() -> dict:
                 return {"cached": "fresh"}
@@ -241,6 +246,7 @@ class TestCachedDecorator:
         call_count = 0
 
         with patch("app.cache.decorators._cache", return_value=svc):
+
             @cached("compute_key", ttl=60)
             async def compute() -> str:
                 nonlocal call_count
@@ -262,6 +268,7 @@ class TestCachedDecorator:
         svc = CacheService(redis=mock_redis)
 
         with patch("app.cache.decorators._cache", return_value=svc):
+
             @cached("{prefix}:{suffix}", ttl=60)
             async def lookup(*, prefix: str, suffix: str) -> str:
                 return "fresh"
@@ -276,6 +283,7 @@ class TestCachedDecorator:
         with (
             patch("app.cache.decorators._cache", return_value=CacheService(redis=None)),
         ):
+
             @cached("any_key", ttl=60)
             async def my_func() -> str:
                 nonlocal call_count
@@ -299,6 +307,7 @@ class TestInvalidateDecorator:
         svc = CacheService(redis=mock_redis)
 
         with patch("app.cache.decorators._cache", return_value=svc):
+
             @invalidate("my_key")
             async def update() -> str:
                 return "done"
@@ -311,6 +320,7 @@ class TestInvalidateDecorator:
         svc = CacheService(redis=mock_redis)
 
         with patch("app.cache.decorators._cache", return_value=svc):
+
             @invalidate("key_a", "key_b")
             async def update() -> str:
                 return "done"
@@ -324,6 +334,7 @@ class TestInvalidateDecorator:
         svc = CacheService(redis=mock_redis)
 
         with patch("app.cache.decorators._cache", return_value=svc):
+
             @invalidate("graph:{inv_id}", "landscape:{inv_id}")
             async def rerun(*, inv_id: str) -> str:
                 return "done"
@@ -345,6 +356,7 @@ class TestInvalidateInvestigationDecorator:
         svc = CacheService(redis=mock_redis)
 
         with patch("app.cache.decorators._cache", return_value=svc):
+
             @invalidate_investigation()
             async def rerun(*, investigation_id: str) -> str:
                 return "done"
@@ -357,6 +369,7 @@ class TestInvalidateInvestigationDecorator:
         svc = CacheService(redis=mock_redis)
 
         with patch("app.cache.decorators._cache", return_value=svc):
+
             @invalidate_investigation()
             async def rerun() -> str:
                 return "done"

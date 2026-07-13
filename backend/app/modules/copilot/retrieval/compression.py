@@ -18,7 +18,8 @@ class ContextCompressor:
     """
 
     def compress(
-        self, sections: list[RetrievedSection],
+        self,
+        sections: list[RetrievedSection],
     ) -> list[RetrievedSection]:
         if not sections:
             return sections

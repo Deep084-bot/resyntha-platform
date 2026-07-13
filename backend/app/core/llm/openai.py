@@ -11,13 +11,18 @@ before leaving the provider.
 
 import asyncio
 import json
-
 from collections.abc import AsyncIterator
 
 from openai import (
     APIError as OpenAIAPIError,
+)
+from openai import (
     APITimeoutError as OpenAITimeoutError,
+)
+from openai import (
     AsyncOpenAI,
+)
+from openai import (
     RateLimitError as OpenAIRateLimitError,
 )
 from pydantic import BaseModel, ValidationError
@@ -139,7 +144,7 @@ class OpenAIProvider(BaseLLMProvider):
             raise LLMAPIError(msg) from last_error
         raise RuntimeError(msg) from last_error
 
-    async def generate_stream(
+    async def generate_stream(  # type: ignore[override]
         self,
         system_prompt: str,
         user_prompt: str,

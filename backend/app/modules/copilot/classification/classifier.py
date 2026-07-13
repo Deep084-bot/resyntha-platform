@@ -25,17 +25,119 @@ class QuestionClassifier:
       7. Fallback → GENERAL_RESEARCH_QUESTION
     """
 
-    _COMPARE_WORDS = {"compare", "comparison", "differences", "versus", "vs", "similarities", "better", "worse", "best", "advantages", "disadvantages"}
-    _PAPER_WORDS = {"paper", "papers", "publication", "publications", "article", "articles", "study", "studies"}
-    _METHODOLOGY_WORDS = {"methodology", "methodologies", "method", "methods", "approach", "approaches", "technique", "techniques", "algorithm", "algorithms", "framework", "frameworks", "pipeline", "pipelines", "architecture", "architectures"}
-    _DATASET_WORDS = {"dataset", "datasets", "benchmark", "benchmarks", "corpus", "corpora", "database", "databases"}
-    _TECHNOLOGY_WORDS = {"technology", "technologies", "tool", "tools", "library", "libraries", "platform", "platforms", "software", "implementation", "implementations", "model", "models", "framework", "frameworks"}
-    _GAP_WORDS = {"gap", "gaps", "limitation", "limitations", "drawback", "drawbacks", "weakness", "weaknesses", "challenge", "challenges", "problem", "problems", "issue", "issues", "unexplored", "missing", "lack", "opportunity", "opportunities"}
-    _GAP_FUTURE_PHRASES = ["future work", "future direction", "future research", "what future", "open problem", "open question", "unexplored"]
-    _TREND_PHRASES = ["trends", "trending", "state of the art", "emerging", "recent advances", "latest", "research directions", "evolution of"]
+    _COMPARE_WORDS = {
+        "compare",
+        "comparison",
+        "differences",
+        "versus",
+        "vs",
+        "similarities",
+        "better",
+        "worse",
+        "best",
+        "advantages",
+        "disadvantages",
+    }
+    _PAPER_WORDS = {
+        "paper",
+        "papers",
+        "publication",
+        "publications",
+        "article",
+        "articles",
+        "study",
+        "studies",
+    }
+    _METHODOLOGY_WORDS = {
+        "methodology",
+        "methodologies",
+        "method",
+        "methods",
+        "approach",
+        "approaches",
+        "technique",
+        "techniques",
+        "algorithm",
+        "algorithms",
+        "framework",
+        "frameworks",
+        "pipeline",
+        "pipelines",
+        "architecture",
+        "architectures",
+    }
+    _DATASET_WORDS = {
+        "dataset",
+        "datasets",
+        "benchmark",
+        "benchmarks",
+        "corpus",
+        "corpora",
+        "database",
+        "databases",
+    }
+    _TECHNOLOGY_WORDS = {
+        "technology",
+        "technologies",
+        "tool",
+        "tools",
+        "library",
+        "libraries",
+        "platform",
+        "platforms",
+        "software",
+        "implementation",
+        "implementations",
+        "model",
+        "models",
+        "framework",
+        "frameworks",
+    }
+    _GAP_WORDS = {
+        "gap",
+        "gaps",
+        "limitation",
+        "limitations",
+        "drawback",
+        "drawbacks",
+        "weakness",
+        "weaknesses",
+        "challenge",
+        "challenges",
+        "problem",
+        "problems",
+        "issue",
+        "issues",
+        "unexplored",
+        "missing",
+        "lack",
+        "opportunity",
+        "opportunities",
+    }
+    _GAP_FUTURE_PHRASES = [
+        "future work",
+        "future direction",
+        "future research",
+        "what future",
+        "open problem",
+        "open question",
+        "unexplored",
+    ]
+    _TREND_PHRASES = [
+        "trends",
+        "trending",
+        "state of the art",
+        "emerging",
+        "recent advances",
+        "latest",
+        "research directions",
+        "evolution of",
+    ]
 
     _PAPER_MENTION_PATTERN = re.compile(r'"([^"]+)"')
-    _COMPARISON_TARGET_PATTERN = re.compile(r'(?:compare|between)\s+(.+?)\s+and\s+(.+?)(?:\?|$|\.)', re.IGNORECASE)
+    _COMPARISON_TARGET_PATTERN = re.compile(
+        r"(?:compare|between)\s+(.+?)\s+and\s+(.+?)(?:\?|$|\.)", re.IGNORECASE
+    )
 
     @staticmethod
     def _has_any(phrases: list[str], raw: str) -> bool:
@@ -55,46 +157,77 @@ class QuestionClassifier:
 
         # -- Comparison intents --
         if is_compare:
-            if paper_mentions or (len(comparison_targets) >= 2 and self._has_set(self._PAPER_WORDS, tokens)):
+            if paper_mentions or (
+                len(comparison_targets) >= 2 and self._has_set(self._PAPER_WORDS, tokens)
+            ):
                 return QuestionAnalysis(
-                    intent=QuestionIntent.PAPER_COMPARISON, raw=raw,
-                    paper_mentions=paper_mentions, comparison_targets=comparison_targets,
+                    intent=QuestionIntent.PAPER_COMPARISON,
+                    raw=raw,
+                    paper_mentions=paper_mentions,
+                    comparison_targets=comparison_targets,
                     is_comparison=True,
                 )
             if self._has_set(self._TECHNOLOGY_WORDS, tokens):
                 return QuestionAnalysis(
-                    intent=QuestionIntent.TECHNOLOGY_COMPARISON, raw=raw,
-                    comparison_targets=comparison_targets, is_comparison=True,
+                    intent=QuestionIntent.TECHNOLOGY_COMPARISON,
+                    raw=raw,
+                    comparison_targets=comparison_targets,
+                    is_comparison=True,
                 )
             if self._has_set(self._METHODOLOGY_WORDS, tokens):
                 return QuestionAnalysis(
-                    intent=QuestionIntent.METHODOLOGY_COMPARISON, raw=raw,
-                    comparison_targets=comparison_targets, is_comparison=True,
+                    intent=QuestionIntent.METHODOLOGY_COMPARISON,
+                    raw=raw,
+                    comparison_targets=comparison_targets,
+                    is_comparison=True,
                 )
             if self._has_set(self._DATASET_WORDS, tokens):
                 return QuestionAnalysis(
-                    intent=QuestionIntent.DATASET_COMPARISON, raw=raw,
-                    comparison_targets=comparison_targets, is_comparison=True,
+                    intent=QuestionIntent.DATASET_COMPARISON,
+                    raw=raw,
+                    comparison_targets=comparison_targets,
+                    is_comparison=True,
                 )
 
         # Also handle "which X is most" implicit comparisons
-        _implicit_compare_pattern = re.compile(r'\bwhich\s+(.+?)\s+(?:is|are)\s+most', re.IGNORECASE)
+        _implicit_compare_pattern = re.compile(
+            r"\bwhich\s+(.+?)\s+(?:is|are)\s+most", re.IGNORECASE
+        )
         implicit_match = _implicit_compare_pattern.search(raw)
         if implicit_match:
             target = implicit_match.group(1).strip().lower()
-            if target in self._METHODOLOGY_WORDS or any(w in target for w in self._METHODOLOGY_WORDS if len(w) > 4):
-                return QuestionAnalysis(intent=QuestionIntent.METHODOLOGY_COMPARISON, raw=raw, is_comparison=True)
-            if target in self._DATASET_WORDS or any(w in target for w in self._DATASET_WORDS if len(w) > 4):
-                return QuestionAnalysis(intent=QuestionIntent.DATASET_COMPARISON, raw=raw, is_comparison=True)
-            if target in self._TECHNOLOGY_WORDS or any(w in target for w in self._TECHNOLOGY_WORDS if len(w) > 4):
-                return QuestionAnalysis(intent=QuestionIntent.TECHNOLOGY_COMPARISON, raw=raw, is_comparison=True)
+            if target in self._METHODOLOGY_WORDS or any(
+                w in target for w in self._METHODOLOGY_WORDS if len(w) > 4
+            ):
+                return QuestionAnalysis(
+                    intent=QuestionIntent.METHODOLOGY_COMPARISON, raw=raw, is_comparison=True
+                )
+            if target in self._DATASET_WORDS or any(
+                w in target for w in self._DATASET_WORDS if len(w) > 4
+            ):
+                return QuestionAnalysis(
+                    intent=QuestionIntent.DATASET_COMPARISON, raw=raw, is_comparison=True
+                )
+            if target in self._TECHNOLOGY_WORDS or any(
+                w in target for w in self._TECHNOLOGY_WORDS if len(w) > 4
+            ):
+                return QuestionAnalysis(
+                    intent=QuestionIntent.TECHNOLOGY_COMPARISON, raw=raw, is_comparison=True
+                )
 
         # -- Paper summary --
         if paper_mentions:
             summary_words = ("summarize", "summarise", "summary", "what does", "tell me about")
-            if any(w in raw for w in summary_words) or not self._has_set(self._METHODOLOGY_WORDS | self._DATASET_WORDS | self._TECHNOLOGY_WORDS | self._GAP_WORDS, tokens):
+            if any(w in raw for w in summary_words) or not self._has_set(
+                self._METHODOLOGY_WORDS
+                | self._DATASET_WORDS
+                | self._TECHNOLOGY_WORDS
+                | self._GAP_WORDS,
+                tokens,
+            ):
                 return QuestionAnalysis(
-                    intent=QuestionIntent.PAPER_SUMMARY, raw=raw,
+                    intent=QuestionIntent.PAPER_SUMMARY,
+                    raw=raw,
                     paper_mentions=paper_mentions,
                 )
 
@@ -111,7 +244,18 @@ class QuestionClassifier:
             return QuestionAnalysis(intent=QuestionIntent.TREND_ANALYSIS, raw=raw)
 
         # -- Evidence lookup --
-        evidence_phrases = ("what is ", "what are ", "define ", "explain ", "find evidence", "show me", "tell me about", "describe ", "give me", "list ")
+        evidence_phrases = (
+            "what is ",
+            "what are ",
+            "define ",
+            "explain ",
+            "find evidence",
+            "show me",
+            "tell me about",
+            "describe ",
+            "give me",
+            "list ",
+        )
         if any(w in raw for w in evidence_phrases):
             return QuestionAnalysis(intent=QuestionIntent.EVIDENCE_LOOKUP, raw=raw)
 
@@ -119,7 +263,9 @@ class QuestionClassifier:
 
     @staticmethod
     def _extract_paper_mentions(question: str) -> list[str]:
-        return [m.group(1).strip() for m in QuestionClassifier._PAPER_MENTION_PATTERN.finditer(question)]
+        return [
+            m.group(1).strip() for m in QuestionClassifier._PAPER_MENTION_PATTERN.finditer(question)
+        ]
 
     @staticmethod
     def _extract_comparison_targets(question: str) -> list[str]:

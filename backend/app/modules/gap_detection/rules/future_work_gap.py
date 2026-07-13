@@ -38,25 +38,23 @@ class FutureWorkGapRule(BaseGapRule):
         paper_titles: dict[str, list[str]] = {}
 
         for rec in ctx.records:
-            for fw in (rec.future_work or []):
+            for fw in rec.future_work or []:
                 key = fw.strip().lower()
                 if key:
                     fw_counter[key] += 1
                     if key not in paper_titles:
                         paper_titles[key] = []
                     paper_titles[key].append(rec.paper_title)
-            for finding in (rec.key_findings or []):
+            for finding in rec.key_findings or []:
                 all_findings.add(finding.strip().lower())
-            for contrib in (rec.key_contributions or []):
+            for contrib in rec.key_contributions or []:
                 all_contributions.add(contrib.strip().lower())
 
         for fw_direction, count in fw_counter.most_common():
             if count < self.MIN_MENTIONS:
                 continue
 
-            implemented_in_findings = any(
-                fw_direction in finding for finding in all_findings
-            )
+            implemented_in_findings = any(fw_direction in finding for finding in all_findings)
             implemented_in_contributions = any(
                 fw_direction in contrib for contrib in all_contributions
             )

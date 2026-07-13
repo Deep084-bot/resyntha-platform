@@ -8,26 +8,15 @@ from typing import Any
 import pytest
 
 from app.modules.intelligence.aggregation import (
-    CollaborationSection,
-    DatasetSection,
-    DiversityMetrics,
-    InstitutionEntry,
-    InstitutionSection,
     LandscapeAggregator,
     LandscapeResult,
-    MethodologyEntry,
-    MethodologySection,
-    NetworkSection,
     Observation,
     OverviewSection,
-    TechnologySection,
-    TemporalSection,
 )
 from app.modules.intelligence.analyzers.models import AnalysisResults, AnalyzerResult
 from app.modules.intelligence.api import IntelligenceService, LandscapeResponse
 from app.modules.intelligence.api.serializers import landscape_to_response
 from app.modules.intelligence.presentation import JsonRenderer, MarkdownRenderer
-
 
 # =============================================================================
 # Helpers — build AnalysisResults without running real analyzers
@@ -57,7 +46,12 @@ def _full_analysis_results() -> AnalysisResults:
         methodology={
             "total_methodologies": 2,
             "methodologies": [
-                {"name": "CNN", "paper_count": 8, "technique_count": 2, "techniques": ["conv", "pool"]},
+                {
+                    "name": "CNN",
+                    "paper_count": 8,
+                    "technique_count": 2,
+                    "techniques": ["conv", "pool"],
+                },
                 {"name": "RNN", "paper_count": 3, "technique_count": 1, "techniques": ["backprop"]},
             ],
         },
@@ -70,12 +64,20 @@ def _full_analysis_results() -> AnalysisResults:
             "total_technologies": 2,
             "top_technologies": [("PyTorch", 5), ("JAX", 3)],
             "first_appearance_by_year": {"PyTorch": 2022, "JAX": 2024},
-            "diversity": {"total_technologies": 2, "papers_with_technology": 8, "avg_papers_per_technology": 4.0},
+            "diversity": {
+                "total_technologies": 2,
+                "papers_with_technology": 8,
+                "avg_papers_per_technology": 4.0,
+            },
         },
         dataset={
             "total_datasets": 2,
             "top_datasets": [("ImageNet", 4), ("COCO", 3)],
-            "diversity": {"total_datasets": 2, "papers_with_dataset": 7, "avg_papers_per_dataset": 3.5},
+            "diversity": {
+                "total_datasets": 2,
+                "papers_with_dataset": 7,
+                "avg_papers_per_dataset": 3.5,
+            },
         },
         collaboration={
             "institution_network": {
@@ -148,15 +150,17 @@ class TestServiceGetLandscape:
 
     def test_partial_institution_only(self) -> None:
         svc = IntelligenceService()
-        result = svc.get_landscape(_results(
-            institution={
-                "total_institutions": 1,
-                "top_institutions": [
-                    {"name": "MIT", "type": "university", "paper_count": 5, "author_count": 3},
-                ],
-                "institution_type_distribution": {"university": 1},
-            },
-        ))
+        result = svc.get_landscape(
+            _results(
+                institution={
+                    "total_institutions": 1,
+                    "top_institutions": [
+                        {"name": "MIT", "type": "university", "paper_count": 5, "author_count": 3},
+                    ],
+                    "institution_type_distribution": {"university": 1},
+                },
+            )
+        )
         assert isinstance(result, LandscapeResponse)
         assert result.institutions.total == 1
         assert len(result.institutions.top_institutions) == 1
@@ -373,6 +377,7 @@ class TestLandscapeResponseModel:
 
     def test_is_dataclass(self) -> None:
         import dataclasses
+
         assert dataclasses.is_dataclass(LandscapeResponse)
 
     def test_has_no_statistics_field(self) -> None:

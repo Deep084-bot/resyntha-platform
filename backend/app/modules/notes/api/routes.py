@@ -107,7 +107,7 @@ def list_links(
     note_service: NoteService = Depends(get_note_service),
 ) -> list[NoteLinkResponse]:
     links = note_service.list_links(note_id)
-    return [NoteLinkResponse.model_validate(l) for l in links]
+    return [NoteLinkResponse.model_validate(link) for link in links]
 
 
 @router.post("/notes/{note_id}/links", status_code=201)

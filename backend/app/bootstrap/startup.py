@@ -7,9 +7,7 @@ corresponding configuration is present.
 
 from __future__ import annotations
 
-import sys
-
-from app.config import Environment, Settings, get_settings, validate_settings
+from app.config import Settings, get_settings, validate_settings
 from app.config.constants import BUILD_TIME, GIT_COMMIT, PYTHON_VERSION
 from app.infrastructure.redis import initialize_redis
 from app.observability.logger import get_logger

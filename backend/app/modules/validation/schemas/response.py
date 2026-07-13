@@ -1,7 +1,5 @@
 """Response schemas for the Validation API."""
 
-from datetime import datetime
-
 from pydantic import BaseModel
 
 

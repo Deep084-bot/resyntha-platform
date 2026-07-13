@@ -23,10 +23,14 @@ class CollaborationAnalyzer(BaseAnalyzer):
         inst_centrality = centrality.degree_centrality("institution")
 
         top_authors = sorted(
-            author_centrality.items(), key=lambda x: x[1], reverse=True,
+            author_centrality.items(),
+            key=lambda x: x[1],
+            reverse=True,
         )[:max_results]
         top_institutions = sorted(
-            inst_centrality.items(), key=lambda x: x[1], reverse=True,
+            inst_centrality.items(),
+            key=lambda x: x[1],
+            reverse=True,
         )[:max_results]
 
         return AnalyzerResult(

@@ -8,8 +8,9 @@ Create Date: 2026-07-08 20:50:00.000000
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects.postgresql import JSONB
+
+from alembic import op
 
 revision: str = "5f1b6d843b26"
 down_revision: str | None = "5f1b6d843b25"
@@ -18,13 +19,68 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column("extracted_knowledge", sa.Column("authors", JSONB, default=list, nullable=False, server_default=sa.text("'[]'::jsonb")))
-    op.add_column("extracted_knowledge", sa.Column("institutions", JSONB, default=list, nullable=False, server_default=sa.text("'[]'::jsonb")))
-    op.add_column("extracted_knowledge", sa.Column("datasets_used", JSONB, default=list, nullable=False, server_default=sa.text("'[]'::jsonb")))
-    op.add_column("extracted_knowledge", sa.Column("technologies", JSONB, default=list, nullable=False, server_default=sa.text("'[]'::jsonb")))
-    op.add_column("extracted_knowledge", sa.Column("evaluation_metrics", JSONB, default=list, nullable=False, server_default=sa.text("'[]'::jsonb")))
-    op.add_column("extracted_knowledge", sa.Column("research_domains", JSONB, default=list, nullable=False, server_default=sa.text("'[]'::jsonb")))
-    op.add_column("extracted_knowledge", sa.Column("keywords", JSONB, default=list, nullable=False, server_default=sa.text("'[]'::jsonb")))
+    op.add_column(
+        "extracted_knowledge",
+        sa.Column(
+            "authors", JSONB, default=list, nullable=False, server_default=sa.text("'[]'::jsonb")
+        ),
+    )
+    op.add_column(
+        "extracted_knowledge",
+        sa.Column(
+            "institutions",
+            JSONB,
+            default=list,
+            nullable=False,
+            server_default=sa.text("'[]'::jsonb"),
+        ),
+    )
+    op.add_column(
+        "extracted_knowledge",
+        sa.Column(
+            "datasets_used",
+            JSONB,
+            default=list,
+            nullable=False,
+            server_default=sa.text("'[]'::jsonb"),
+        ),
+    )
+    op.add_column(
+        "extracted_knowledge",
+        sa.Column(
+            "technologies",
+            JSONB,
+            default=list,
+            nullable=False,
+            server_default=sa.text("'[]'::jsonb"),
+        ),
+    )
+    op.add_column(
+        "extracted_knowledge",
+        sa.Column(
+            "evaluation_metrics",
+            JSONB,
+            default=list,
+            nullable=False,
+            server_default=sa.text("'[]'::jsonb"),
+        ),
+    )
+    op.add_column(
+        "extracted_knowledge",
+        sa.Column(
+            "research_domains",
+            JSONB,
+            default=list,
+            nullable=False,
+            server_default=sa.text("'[]'::jsonb"),
+        ),
+    )
+    op.add_column(
+        "extracted_knowledge",
+        sa.Column(
+            "keywords", JSONB, default=list, nullable=False, server_default=sa.text("'[]'::jsonb")
+        ),
+    )
     op.add_column("extracted_knowledge", sa.Column("paper_type", sa.String(100), nullable=True))
     op.add_column("extracted_knowledge", sa.Column("funding", sa.Text, nullable=True))
 

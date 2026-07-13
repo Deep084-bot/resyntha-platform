@@ -17,5 +17,4 @@ class BaseAnalyzer(ABC):
         self.config: IntelligenceConfig = context.config
 
     @abstractmethod
-    def analyze(self) -> AnalyzerResult:
-        ...
+    def analyze(self) -> AnalyzerResult: ...

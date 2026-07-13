@@ -27,7 +27,8 @@ class ExecutionRepository:
         return self._session.get(Execution, execution_id)
 
     def list_by_investigation(
-        self, investigation_id: uuid.UUID,
+        self,
+        investigation_id: uuid.UUID,
     ) -> Sequence[Execution]:
         """Return all executions for an investigation, newest first."""
         stmt = (
@@ -62,7 +63,9 @@ class ExecutionStageRepository:
         return self._session.get(ExecutionStage, stage_id)
 
     def get_active_stage(
-        self, execution_id: uuid.UUID, stage_name: str,
+        self,
+        execution_id: uuid.UUID,
+        stage_name: str,
     ) -> ExecutionStage | None:
         """Return the most recent non-terminal stage for the given execution
         and stage name, or ``None``."""
@@ -79,7 +82,8 @@ class ExecutionStageRepository:
         return self._session.scalar(stmt)
 
     def list_by_execution(
-        self, execution_id: uuid.UUID,
+        self,
+        execution_id: uuid.UUID,
     ) -> Sequence[ExecutionStage]:
         """Return all stages for an execution, ordered by creation time."""
         stmt = (

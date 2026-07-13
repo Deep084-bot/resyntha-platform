@@ -8,5 +8,4 @@ from app.modules.intelligence.aggregation.models import LandscapeResult
 
 class BaseRenderer(ABC):
     @abstractmethod
-    def render(self, landscape: LandscapeResult) -> Any:
-        ...
+    def render(self, landscape: LandscapeResult) -> Any: ...

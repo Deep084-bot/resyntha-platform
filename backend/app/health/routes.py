@@ -85,9 +85,11 @@ async def readiness(response: Response) -> ReadinessResponse:
 
     response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     for name, comp in components.items():
-        if comp.status != "healthy" and not (
-            comp.status == "configured" and name == "llm"
-        ) and not (comp.status == "disabled" and name == "worker"):
+        if (
+            comp.status != "healthy"
+            and not (comp.status == "configured" and name == "llm")
+            and not (comp.status == "disabled" and name == "worker")
+        ):
             logger.warning(
                 "readiness_failure",
                 component=name,

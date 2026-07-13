@@ -46,13 +46,14 @@ class ReadingStatusRepository:
         return record
 
     def list_by_investigation(self, investigation_id: uuid.UUID) -> Sequence[PaperReadingStatus]:
-        stmt = (
-            select(PaperReadingStatus)
-            .where(PaperReadingStatus.investigation_id == investigation_id)
+        stmt = select(PaperReadingStatus).where(
+            PaperReadingStatus.investigation_id == investigation_id
         )
         return self._session.scalars(stmt).all()
 
-    def list_by_status(self, investigation_id: uuid.UUID, status: str) -> Sequence[PaperReadingStatus]:
+    def list_by_status(
+        self, investigation_id: uuid.UUID, status: str
+    ) -> Sequence[PaperReadingStatus]:
         stmt = (
             select(PaperReadingStatus)
             .where(PaperReadingStatus.investigation_id == investigation_id)

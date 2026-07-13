@@ -7,11 +7,9 @@ provider exception details.
 
 from __future__ import annotations
 
-import json
-
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.observability.logger import get_logger

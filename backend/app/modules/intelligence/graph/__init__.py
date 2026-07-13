@@ -1,5 +1,15 @@
 """ResearchGraph — in-memory entity graph for the Intelligence Engine."""
 
+# API DTOs
+from app.modules.intelligence.graph.api.schemas import (
+    EdgeType,
+    GraphDTO,
+    GraphEdgeDTO,
+    GraphMetadataDTO,
+    GraphNodeDTO,
+    NodeType,
+)
+from app.modules.intelligence.graph.api.service import GraphApiService
 from app.modules.intelligence.graph.builder import PaperMetadata, ResearchGraphBuilder
 from app.modules.intelligence.graph.models import (
     AuthorNode,
@@ -15,17 +25,6 @@ from app.modules.intelligence.graph.models import (
     TechnologyType,
 )
 from app.modules.intelligence.graph.resolver import EntityResolver
-
-# API DTOs
-from app.modules.intelligence.graph.api.schemas import (
-    EdgeType,
-    GraphDTO,
-    GraphEdgeDTO,
-    GraphMetadataDTO,
-    GraphNodeDTO,
-    NodeType,
-)
-from app.modules.intelligence.graph.api.service import GraphApiService
 
 __all__ = [
     "AuthorNode",

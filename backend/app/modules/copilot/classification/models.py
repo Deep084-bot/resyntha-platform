@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 
-class QuestionIntent(str, Enum):
+class QuestionIntent(StrEnum):
     PAPER_SUMMARY = "paper_summary"
     PAPER_COMPARISON = "paper_comparison"
     METHODOLOGY_COMPARISON = "methodology_comparison"

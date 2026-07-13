@@ -10,9 +10,16 @@ import json
 import uuid
 from collections import Counter
 
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from app.core.llm import (
+    BaseLLMProvider,
+    LLMAPIError,
+    LLMParsingError,
+    LLMRateLimitError,
+    LLMTimeoutError,
+)
 from app.modules.extraction.domain.knowledge import ExtractionOutput
 from app.modules.extraction.domain.models import ExtractedKnowledge
 from app.modules.extraction.domain.results import (
@@ -20,13 +27,6 @@ from app.modules.extraction.domain.results import (
     ExtractionFailure,
     ExtractionStats,
     FailureReason,
-)
-from app.core.llm import (
-    BaseLLMProvider,
-    LLMAPIError,
-    LLMParsingError,
-    LLMRateLimitError,
-    LLMTimeoutError,
 )
 from app.modules.extraction.prompts.extraction import (
     EXTRACTION_SYSTEM_PROMPT,
@@ -36,6 +36,7 @@ from app.modules.extraction.repository.repository import ExtractionRepository
 from app.modules.extraction.service.artifact import ExtractionArtifactBuilder
 from app.modules.extraction.utils.normalization import ExtractionNormalizer
 from app.modules.extraction.utils.validation import ExtractionValidator
+from app.modules.paper.domain.models import Paper
 from app.modules.paper.repository.repository import PaperRepository
 from app.observability.logger import get_logger
 
@@ -104,7 +105,9 @@ class ExtractionService:
         for paper in papers:
             try:
                 result = await self._extract_single(
-                    paper, investigation_id, execution_id,
+                    paper,
+                    investigation_id,
+                    execution_id,
                 )
                 if isinstance(result, ExtractionFailure):
                     failures.append(result)
@@ -135,7 +138,9 @@ class ExtractionService:
         )
 
         self._create_knowledge_package_artifact(
-            investigation_id, knowledge, execution_id,
+            investigation_id,
+            knowledge,
+            execution_id,
         )
 
         self._session.commit()
@@ -152,7 +157,7 @@ class ExtractionService:
 
     async def _extract_single(
         self,
-        paper: BaseModel,
+        paper: Paper,
         investigation_id: uuid.UUID,
         execution_id: uuid.UUID | None,
     ) -> ExtractedKnowledge | ExtractionFailure:
@@ -178,6 +183,7 @@ class ExtractionService:
         )
 
         try:
+            output: ExtractionOutput  # type: ignore[assignment]
             output, usage = await self._llm.generate_structured(
                 system_prompt=EXTRACTION_SYSTEM_PROMPT,
                 user_prompt=user_prompt,
@@ -249,19 +255,29 @@ class ExtractionService:
         metrics_dicts = self._normalize_metric_list(output.evaluation_metrics)
 
         valid_authors = ExtractionValidator.filter_valid_entities(
-            authors_dicts, "author", min_confidence=0.3,
+            authors_dicts,
+            "author",
+            min_confidence=0.3,
         )
         valid_institutions = ExtractionValidator.filter_valid_entities(
-            institutions_dicts, "institution", min_confidence=0.3,
+            institutions_dicts,
+            "institution",
+            min_confidence=0.3,
         )
         valid_datasets = ExtractionValidator.filter_valid_entities(
-            datasets_dicts, "dataset", min_confidence=0.3,
+            datasets_dicts,
+            "dataset",
+            min_confidence=0.3,
         )
         valid_technologies = ExtractionValidator.filter_valid_entities(
-            technologies_dicts, "technology", min_confidence=0.3,
+            technologies_dicts,
+            "technology",
+            min_confidence=0.3,
         )
         valid_metrics = ExtractionValidator.filter_valid_entities(
-            metrics_dicts, "metric", min_confidence=0.3,
+            metrics_dicts,
+            "metric",
+            min_confidence=0.3,
         )
 
         author_names = [a["name"] for a in valid_authors if "name" in a]

@@ -67,12 +67,7 @@ paper text.
 """
 
 _USER_PROMPT_TEMPLATE = PromptTemplate(
-    "Title: $title\n"
-    "Authors: $authors\n"
-    "Venue: $venue\n"
-    "Year: $year\n"
-    "DOI: $doi\n"
-    "Abstract: $abstract\n"
+    "Title: $title\nAuthors: $authors\nVenue: $venue\nYear: $year\nDOI: $doi\nAbstract: $abstract\n"
 )
 
 

@@ -14,11 +14,11 @@ Covers every scenario described in the LLM output format specification:
 """
 
 import json
+
 import pytest
-from app.core.llm.parser import parse_llm_json
 
 from app.core.llm.exceptions import LLMParsingError
-
+from app.core.llm.parser import parse_llm_json
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
@@ -29,6 +29,7 @@ SAMPLE_ARRAY_STR = json.dumps(SAMPLE_ARRAY)
 
 
 # ── Case 1: bare JSON object ─────────────────────────────────────────
+
 
 class TestBareJson:
     def test_bare_object(self) -> None:
@@ -44,6 +45,7 @@ class TestBareJson:
 
 
 # ── Case 2: leading / trailing whitespace ────────────────────────────
+
 
 class TestWhitespace:
     def test_leading_newline(self) -> None:
@@ -64,6 +66,7 @@ class TestWhitespace:
 
 
 # ── Case 3: markdown code fences ─────────────────────────────────────
+
 
 class TestCodeFences:
     def test_fenced_json(self) -> None:
@@ -92,6 +95,7 @@ class TestCodeFences:
 
 
 # ── Case 4 & 5: explanatory text around JSON ─────────────────────────
+
 
 class TestExplanatoryText:
     def test_text_before_json(self) -> None:
@@ -122,6 +126,7 @@ class TestExplanatoryText:
 
 # ── Deeply nested JSON with tricky strings ───────────────────────────
 
+
 class TestNestedAndStrings:
     NESTED = {
         "level1": {
@@ -148,6 +153,7 @@ class TestNestedAndStrings:
 
 
 # ── Error cases ──────────────────────────────────────────────────────
+
 
 class TestErrorCases:
     def test_empty_string(self) -> None:
@@ -176,6 +182,7 @@ class TestErrorCases:
 
 
 # ── Return type ──────────────────────────────────────────────────────
+
 
 class TestReturnType:
     def test_returns_dict(self) -> None:

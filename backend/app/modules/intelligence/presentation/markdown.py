@@ -192,10 +192,7 @@ class MarkdownRenderer(BaseRenderer):
             parts.append(f"- **Edges:** {inst_net.total_edges}")
             if inst_net.top_by_centrality:
                 top = inst_net.top_by_centrality[0]
-                parts.append(
-                    f"- **Most Central:** {top[0]} "
-                    f"(centrality {top[1]:.2f})"
-                )
+                parts.append(f"- **Most Central:** {top[0]} (centrality {top[1]:.2f})")
             parts.append("")
 
             if sec.top_institution_collaborations:
@@ -212,10 +209,7 @@ class MarkdownRenderer(BaseRenderer):
             parts.append(f"- **Edges:** {auth_net.total_edges}")
             if auth_net.top_by_centrality:
                 top = auth_net.top_by_centrality[0]
-                parts.append(
-                    f"- **Most Central:** {top[0]} "
-                    f"(centrality {top[1]:.2f})"
-                )
+                parts.append(f"- **Most Central:** {top[0]} (centrality {top[1]:.2f})")
             parts.append("")
 
             if sec.top_author_collaborations:

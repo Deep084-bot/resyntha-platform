@@ -135,9 +135,7 @@ class ArxivProvider(BaseRetrievalProvider):
             published: datetime | None = None
             if published_str:
                 try:
-                    published = datetime.fromisoformat(
-                        published_str.replace("Z", "+00:00")
-                    )
+                    published = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
                 except (ValueError, TypeError):
                     published = None
 
@@ -154,25 +152,24 @@ class ArxivProvider(BaseRetrievalProvider):
                 if name:
                     authors.append(name)
 
-            papers.append(Paper(
-                title=_text(entry, f"{{{ARXIV_NS}}}title", "").replace(
-                    "\n", " "
-                ).strip(),
-                abstract=_text(entry, f"{{{ARXIV_NS}}}summary", "").replace(
-                    "\n", " "
-                ).strip() or None,
-                authors=authors,
-                year=published.year if published else None,
-                doi=doi,
-                url=url,
-                source=self.name,
-                metadata={
-                    "external_ids": {
-                        "arxiv": arxiv_id,
-                        "doi": doi,
+            papers.append(
+                Paper(
+                    title=_text(entry, f"{{{ARXIV_NS}}}title", "").replace("\n", " ").strip(),
+                    abstract=_text(entry, f"{{{ARXIV_NS}}}summary", "").replace("\n", " ").strip()
+                    or None,
+                    authors=authors,
+                    year=published.year if published else None,
+                    doi=doi,
+                    url=url,
+                    source=self.name,
+                    metadata={
+                        "external_ids": {
+                            "arxiv": arxiv_id,
+                            "doi": doi,
+                        },
                     },
-                },
-            ))
+                )
+            )
 
         return papers
 
@@ -182,8 +179,6 @@ def _text(element: ET.Element, path: str, default: str | None = None) -> str | N
     return child.text if child is not None else default
 
 
-def _attr(
-    element: ET.Element, path: str, attr: str, default: str | None = None
-) -> str | None:
+def _attr(element: ET.Element, path: str, attr: str, default: str | None = None) -> str | None:
     child = element.find(path)
     return child.get(attr) if child is not None else default
