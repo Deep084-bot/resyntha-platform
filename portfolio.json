@@ -27,7 +27,7 @@
     "Groq"
   ],
   "overview": {
-    "problem": "Researchers face information overload \u2014 manually reviewing hundreds of papers, extracting key findings, and identifying research gaps is slow and inconsistent.",
+    "problem": "Researchers face information overload \u2026 manually reviewing hundreds of papers, extracting key findings, and identifying research gaps is slow and inconsistent.",
     "solution": "Resyntha orchestrates multiple AI agents across a stage-based asynchronous pipeline to automate literature reviews: it searches academic sources via multi-provider retrieval, extracts structured knowledge, generates research landscapes, detects gaps, and provides an AI copilot for interactive exploration."
   },
   "details": {
