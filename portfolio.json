@@ -1,17 +1,19 @@
 {
   "title": "Resyntha",
   "slug": "resyntha",
-  "shortDescription": "Multi-Agent Research Intelligence Platform for automated literature review, multi-provider retrieval, structured knowledge extraction, research landscape generation, and research gap detection.",
+  "shortDescription": "AI-powered research intelligence platform that automates literature review, knowledge extraction, cross-paper analysis, and interactive exploration via a multi-agent pipeline.",
   "featured": true,
   "priority": 1,
   "status": "In Development",
+
   "tags": [
-    "Backend",
-    "AI",
-    "Research",
-    "Pipeline",
-    "FastAPI"
+    "research",
+    "artificial-intelligence",
+    "literature-review",
+    "knowledge-extraction",
+    "pipeline-orchestration"
   ],
+
   "tech": [
     "FastAPI",
     "PostgreSQL",
@@ -26,31 +28,37 @@
     "arXiv",
     "Groq"
   ],
+
   "images": {
     "thumbnail": "/images/projects/resyntha.png",
     "hero": null
   },
+
   "links": {
     "github": "https://github.com/Deep084-bot/resyntha-platform",
     "demo": null,
     "blog": null
   },
+
   "overview": {
-    "problem": "Researchers face information overload \u2014 manually reviewing hundreds of papers, extracting key findings, and identifying research gaps is slow and inconsistent.",
-    "solution": "Resyntha orchestrates multiple AI agents across a stage-based asynchronous pipeline to automate literature reviews: it searches academic sources via multi-provider retrieval, extracts structured knowledge, generates research landscapes, detects gaps, and provides an AI copilot for interactive exploration."
+    "problem": "Researchers face information overload — manually reviewing hundreds of papers, extracting key findings, and identifying research gaps is slow, inconsistent, and does not scale.",
+    "solution": "Resyntha orchestrates multiple AI agents across a stage-based asynchronous pipeline to automate literature reviews. It searches academic sources via multi-provider retrieval, deduplicates and validates papers, extracts structured knowledge, builds research landscapes, detects gaps, and provides an AI copilot for interactive exploration over generated artifacts."
   },
+
   "details": {
-    "architecture": "Production-oriented FastAPI backend with a stage-based pipeline engine driving asynchronous execution via ARQ and Redis. SQLAlchemy manages PostgreSQL persistence for versioned artifacts. React + TypeScript frontend with TanStack Query orchestrates real-time pipeline state. Multi-provider retrieval supports Semantic Scholar, OpenAlex, and arXiv. Groq accelerates LLM inference for extraction and analysis stages.",
+    "architecture": "Production-oriented FastAPI backend with a stage-based pipeline engine driving asynchronous execution via ARQ and Redis. SQLAlchemy manages PostgreSQL persistence for versioned artifacts. A React + TypeScript frontend with TanStack Query orchestrates real-time pipeline state. Multi-provider retrieval supports Semantic Scholar, OpenAlex, and arXiv. Groq accelerates LLM inference for extraction and analysis stages. The copilot retrieves exclusively over investigation artifacts using hybrid semantic + keyword search with pgvector.",
     "technicalChallenges": [
       "Designing a stage-based pipeline engine with deterministic validation between stages",
       "Managing asynchronous task execution with Redis queue and result backpressure",
-      "Building versioned artifact storage with rollback and diff capabilities",
+      "Building versioned artifact storage supporting rollback and diff",
       "Orchestrating multi-agent coordination without deadlock or duplicated work",
       "Implementing caching strategies across API sources to respect rate limits",
-      "Supporting multi-provider retrieval with normalized result formats"
+      "Supporting multi-provider retrieval with normalized result formats",
+      "Building an investigation-aware copilot that never uses external knowledge"
     ],
-    "learnings": "Deepened understanding of pipeline architecture design, asynchronous task orchestration, multi-agent coordination patterns, building observability into distributed data workflows, and production-oriented backend architecture."
+    "learnings": "Deepened understanding of pipeline architecture design, asynchronous task orchestration, multi-agent coordination patterns, building observability into distributed data workflows, production-oriented backend architecture, and the complexities of grounding AI responses exclusively in retrieved artifacts."
   },
+
   "futureImprovements": [
     "Interactive research landscape visualization with graph exploration",
     "Custom agent creation interface for domain-specific extraction",
