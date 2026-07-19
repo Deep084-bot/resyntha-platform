@@ -1,52 +1,61 @@
 {
   "title": "Resyntha",
-  "subtitle": "Research intelligence platform — automated literature review, knowledge extraction, cross-paper analysis, and interactive AI copilot",
-  "featured": false,
-  "status": "Active",
-  "year": 2026,
-  "category": "Research Intelligence",
-  "difficulty": "",
-  "github": "https://github.com/anomalyco/resyntha",
-  "live": "",
-  "cover": "assets/cover.png",
-  "architecture": "assets/architecture.png",
-  "writeupsFolder": "writeups",
-  "docsFolder": "docs",
+  "slug": "resyntha",
+  "featured": true,
+  "priority": 1,
+  "status": "In Development",
+  "shortDescription": "Multi-Agent Research Intelligence Platform for automated literature review, multi-provider retrieval, structured knowledge extraction, research landscape generation, and research gap detection.",
+  "tags": [
+    "Backend",
+    "AI",
+    "Research",
+    "Pipeline",
+    "FastAPI"
+  ],
   "tech": [
-    "Python",
     "FastAPI",
-    "SQLAlchemy",
     "PostgreSQL",
-    "Alembic",
     "Redis",
-    "ARQ",
-    "Groq",
-    "OpenAI",
-    "sentence-transformers",
-    "Pydantic",
-    "structlog",
     "React",
     "TypeScript",
-    "Vite",
-    "Tailwind CSS",
     "TanStack Query",
-    "Zustand",
-    "React Router",
-    "React Flow",
-    "GitHub Actions",
-    "Ruff",
-    "oxlint"
+    "SQLAlchemy",
+    "ARQ",
+    "Semantic Scholar",
+    "OpenAlex",
+    "arXiv",
+    "Groq"
   ],
-  "summary": "Resyntha turns a research topic into a structured investigation. It retrieves papers from multiple academic APIs, validates and deduplicates them, extracts structured knowledge using LLMs, computes cross-paper research landscapes, detects research gaps, and provides an interactive AI copilot grounded in the investigation's complete state. Every step runs through a configurable pipeline engine with per-stage retry, partial failure handling, and full execution history.",
-  "highlights": [
-    "Multi-provider retrieval from Semantic Scholar, arXiv, and OpenAlex with concurrent fetching and deduplication",
-    "8-rule deterministic paper validation with composite scoring",
-    "LLM-powered knowledge extraction across 11 fields per paper",
-    "Cross-paper analysis with methodology clustering, keyword co-occurrence, and distribution analysis",
-    "6-rule research gap detection with severity levels and recommendations",
-    "Interactive RAG-style AI copilot with citation validation and confidence calibration",
-    "Stage-based pipeline engine with retry, partial success handling, and full execution observability",
-    "Versioned JSONB artifact system for all pipeline outputs"
+  "overview": {
+    "problem": "Researchers face information overload \u2014 manually reviewing hundreds of papers, extracting key findings, and identifying research gaps is slow and inconsistent.",
+    "solution": "Resyntha orchestrates multiple AI agents across a stage-based asynchronous pipeline to automate literature reviews: it searches academic sources via multi-provider retrieval, extracts structured knowledge, generates research landscapes, detects gaps, and provides an AI copilot for interactive exploration."
+  },
+  "details": {
+    "architecture": "Production-oriented FastAPI backend with a stage-based pipeline engine driving asynchronous execution via ARQ and Redis. SQLAlchemy manages PostgreSQL persistence for versioned artifacts. React + TypeScript frontend with TanStack Query orchestrates real-time pipeline state. Multi-provider retrieval supports Semantic Scholar, OpenAlex, and arXiv. Groq accelerates LLM inference for extraction and analysis stages.",
+    "technicalChallenges": [
+      "Designing a stage-based pipeline engine with deterministic validation between stages",
+      "Managing asynchronous task execution with Redis queue and result backpressure",
+      "Building versioned artifact storage with rollback and diff capabilities",
+      "Orchestrating multi-agent coordination without deadlock or duplicated work",
+      "Implementing caching strategies across API sources to respect rate limits",
+      "Supporting multi-provider retrieval with normalized result formats"
+    ],
+    "learnings": "Deepened understanding of pipeline architecture design, asynchronous task orchestration, multi-agent coordination patterns, building observability into distributed data workflows, and production-oriented backend architecture."
+  },
+  "futureImprovements": [
+    "Interactive research landscape visualization with graph exploration",
+    "Custom agent creation interface for domain-specific extraction",
+    "Collaborative review sessions with shared workspaces",
+    "Automated literature alerting and monitoring for new publications",
+    "Integration with reference managers (Zotero, Mendeley)",
+    "Expanded source adapters for PubMed, IEEE, and Scopus"
   ],
-  "learning": []
+  "images": {
+    "thumbnail": null,
+    "hero": null
+  },
+  "links": {
+    "github": "https://github.com/Deep084-bot/resyntha-platform",
+    "demo": null
+  }
 }
