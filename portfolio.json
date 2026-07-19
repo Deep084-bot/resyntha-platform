@@ -1,17 +1,17 @@
 {
   "title": "Resyntha",
-  "subtitle": "Research intelligence platform — automated literature review, knowledge extraction, cross-paper analysis, and interactive AI copilot",
-  "featured": false,
-  "status": "Active",
-  "year": 2026,
-  "category": "Research Intelligence",
-  "difficulty": "",
-  "github": "https://github.com/anomalyco/resyntha-platform",
-  "live": "",
-  "cover": "assets/cover.png",
-  "architecture": "assets/architecture.png",
-  "writeupsFolder": "writeups",
-  "docsFolder": "docs",
+  "slug": "resyntha",
+  "shortDescription": "Multi-Agent Research Intelligence Platform for automated literature review, multi-provider retrieval, structured knowledge extraction, research landscape generation, and research gap detection.",
+  "featured": true,
+  "priority": 1,
+  "status": "In Development",
+  "tags": [
+    "Backend",
+    "AI",
+    "Research",
+    "Pipeline",
+    "FastAPI"
+  ],
   "tech": [
     "FastAPI",
     "PostgreSQL",
@@ -26,8 +26,17 @@
     "arXiv",
     "Groq"
   ],
+  "images": {
+    "thumbnail": "/images/projects/resyntha.png",
+    "hero": null
+  },
+  "links": {
+    "github": "https://github.com/Deep084-bot/resyntha-platform",
+    "demo": null,
+    "blog": null
+  },
   "overview": {
-    "problem": "Researchers face information overload \u2026 manually reviewing hundreds of papers, extracting key findings, and identifying research gaps is slow and inconsistent.",
+    "problem": "Researchers face information overload \u2014 manually reviewing hundreds of papers, extracting key findings, and identifying research gaps is slow and inconsistent.",
     "solution": "Resyntha orchestrates multiple AI agents across a stage-based asynchronous pipeline to automate literature reviews: it searches academic sources via multi-provider retrieval, extracts structured knowledge, generates research landscapes, detects gaps, and provides an AI copilot for interactive exploration."
   },
   "details": {
@@ -49,13 +58,5 @@
     "Automated literature alerting and monitoring for new publications",
     "Integration with reference managers (Zotero, Mendeley)",
     "Expanded source adapters for PubMed, IEEE, and Scopus"
-  ],
-  "images": {
-    "thumbnail": null,
-    "hero": null
-  },
-  "links": {
-    "github": "https://github.com/Deep084-bot/resyntha-platform",
-    "demo": null
-  }
+  ]
 }
