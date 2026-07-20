@@ -247,9 +247,13 @@ export function WorkspaceOverviewPage() {
   const latestRunning = (executions ?? []).find(
     (e) => !isExecutionTerminal(e.status),
   );
-  if (!latestRunning && alreadyRunningMessage) {
-    setAlreadyRunningMessage(null);
-  }
+
+  // Clear "already running" message when the running execution finishes.
+  useEffect(() => {
+    if (!latestRunning && alreadyRunningMessage) {
+      setAlreadyRunningMessage(null);
+    }
+  }, [latestRunning, alreadyRunningMessage]);
 
   // Invalidate downstream queries when the latest execution transitions to
   // a terminal status so that the papers/artifacts/timeline tabs show

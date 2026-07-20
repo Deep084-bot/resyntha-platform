@@ -3,6 +3,9 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 from app.config.settings import Settings
+from app.observability.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class ConfigurationError(RuntimeError):
@@ -67,13 +70,15 @@ def validate_settings(settings: Settings) -> None:
         errors.append("REDIS_URL must not be empty in production")
 
     # --- Secret key ---
-    if settings.ENVIRONMENT.is_production:
-        if not settings.SECRET_KEY.strip():
+    if not settings.SECRET_KEY.strip():
+        if settings.ENVIRONMENT.is_production:
             errors.append("SECRET_KEY must not be empty in production")
-        elif settings.SECRET_KEY in ("change-me", "CHANGE-ME", "change-me-to-a-random-secret-key"):
-            errors.append("SECRET_KEY must be changed from the default value in production")
-        elif len(settings.SECRET_KEY) < 32:
-            errors.append("SECRET_KEY must be at least 32 characters in production")
+        else:
+            logger.warning("SECRET_KEY is empty — this is unsafe for any non-ephemeral environment")
+    elif settings.SECRET_KEY in ("change-me", "CHANGE-ME", "change-me-to-a-random-secret-key"):
+        errors.append("SECRET_KEY must be changed from the default value")
+    elif len(settings.SECRET_KEY) < 32 and settings.ENVIRONMENT.is_production:
+        errors.append("SECRET_KEY must be at least 32 characters in production")
 
     # --- LLM provider ---
     if settings.ENVIRONMENT.is_production:

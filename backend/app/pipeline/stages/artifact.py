@@ -7,7 +7,7 @@ with the validation summary and per-paper results.
 """
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from app.modules.artifact.domain.models import ArtifactStatus, ArtifactType
@@ -34,7 +34,7 @@ class ArtifactStage(PipelineStage):
         return "artifact"
 
     def _make_payload(self, **kwargs: Any) -> dict[str, Any]:
-        return {**kwargs, "generated_at": datetime.utcnow().isoformat()}
+        return {**kwargs, "generated_at": datetime.now(UTC).isoformat()}
 
     async def execute(self, context: PipelineContext) -> PipelineResult:
         paper_ids: list[uuid.UUID] | None = context.get_artifact("paper_ids")

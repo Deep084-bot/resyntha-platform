@@ -67,7 +67,7 @@ class UploadValidationError(HTTPException):
 
     def __init__(self, detail: str) -> None:
         super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"error": "invalid_upload", "message": detail},
         )
 
@@ -113,7 +113,9 @@ def validate_upload(file: FastAPIUploadFile) -> ValidatedUpload:
         if guessed:
             content_type = guessed
 
-    if content_type and content_type not in ALLOWED_MIME_TYPES:
+    if not content_type:
+        raise UploadValidationError("Could not determine MIME type for uploaded file")
+    if content_type not in ALLOWED_MIME_TYPES:
         raise UploadValidationError(f"MIME type '{content_type}' is not allowed for upload")
 
     # --- Extension ---
@@ -131,5 +133,7 @@ def validate_upload(file: FastAPIUploadFile) -> ValidatedUpload:
 
 
 def _extension(filename: str) -> str:
+    if "." not in filename:
+        return ""
     _, dot_ext = filename.rsplit(".", 1)
     return f".{dot_ext}" if dot_ext else ""

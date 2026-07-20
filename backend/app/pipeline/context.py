@@ -10,7 +10,7 @@ parameters) makes stage signatures stable as the pipeline grows.
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -91,7 +91,7 @@ class PipelineContext:
                 "stage": stage,
                 "message": message,
                 "exception": f"{type(exception).__name__}: {exception}" if exception else None,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 

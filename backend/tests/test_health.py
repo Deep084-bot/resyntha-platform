@@ -104,6 +104,10 @@ class TestReadiness:
         with (
             patch("app.health.service._check_db", return_value=True),
             patch("app.health.service._check_redis", AsyncMock(return_value=True)),
+            patch(
+                "app.health.service.check_llm",
+                AsyncMock(return_value=ComponentHealth(status="configured")),
+            ),
         ):
             resp = client.get("/api/v1/ready")
         assert resp.status_code == status.HTTP_200_OK
@@ -162,6 +166,10 @@ class TestReadiness:
         with (
             patch("app.health.service._check_db", return_value=True),
             patch("app.health.service._check_redis", AsyncMock(return_value=True)),
+            patch(
+                "app.health.service.check_llm",
+                AsyncMock(return_value=ComponentHealth(status="configured")),
+            ),
         ):
             resp = client.get("/api/v1/ready")
         assert resp.status_code == status.HTTP_200_OK

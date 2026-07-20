@@ -7,6 +7,7 @@ initialization.
 from __future__ import annotations
 
 from app.config import get_settings
+from app.database.session import engine
 from app.infrastructure.redis import close_redis
 from app.observability.logger import get_logger
 
@@ -20,6 +21,9 @@ async def shutdown_services() -> None:
     if settings.REDIS_URL:
         await close_redis()
         logger.info("redis_disconnected")
+
+    engine.dispose()
+    logger.info("database_pool_disposed")
 
     logger.info(
         "application_shutdown",

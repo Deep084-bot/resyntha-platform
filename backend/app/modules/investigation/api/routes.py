@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.cache import cached
+from app.cache import cached, invalidate_investigation
 from app.database.dependencies import get_db
 from app.modules.investigation.schemas.request import (
     CreateInvestigationRequest,
@@ -76,6 +76,7 @@ async def get_investigation(
     "/{investigation_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
+@invalidate_investigation()
 async def delete_investigation(
     investigation_id: uuid.UUID,
     service: InvestigationService = Depends(_get_service),

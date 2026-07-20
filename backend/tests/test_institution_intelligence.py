@@ -678,7 +678,7 @@ class TestSearchRoutes:
     ) -> None:
         _override_search(test_app, mock_search_service)
         resp = client.get(f"/investigations/{inv_id}/institutions/search")
-        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     def test_topic_success(
         self,

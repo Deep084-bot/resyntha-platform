@@ -131,7 +131,7 @@ class TestRequestSizeLimitMiddleware:
             "/hello",
             json={"data": "x" * 2_000_000},  # ~2 MB
         )
-        assert resp.status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+        assert resp.status_code == status.HTTP_413_CONTENT_TOO_LARGE
 
     def test_large_request_returns_structured_error(self) -> None:
         app = _make_test_app()

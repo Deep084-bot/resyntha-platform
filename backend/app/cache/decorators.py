@@ -11,7 +11,6 @@ the caller is responsible for running in an appropriate event loop.
 
 from __future__ import annotations
 
-import asyncio
 import functools
 import inspect
 import time
@@ -91,17 +90,9 @@ def cached(
             )
             return result
 
-        @functools.wraps(func)
-        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-            loop = asyncio.new_event_loop()
-            try:
-                return loop.run_until_complete(async_wrapper(*args, **kwargs))
-            finally:
-                loop.close()
-
         if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
-        return sync_wrapper  # type: ignore[return-value]
+        return async_wrapper  # type: ignore[return-value]
 
     return decorator
 
@@ -136,26 +127,9 @@ def invalidate(
                 )
             return result
 
-        @functools.wraps(func)
-        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-            result = func(*args, **kwargs)
-            loop = asyncio.new_event_loop()
-            try:
-                cache = _cache()
-                for raw_key in keys:
-                    resolved = raw_key.format(**kwargs) if "{" in raw_key else raw_key
-                    loop.run_until_complete(cache.delete(resolved))
-                    logger.info(
-                        "cache_invalidated",
-                        cache_key=resolved,
-                    )
-            finally:
-                loop.close()
-            return result
-
         if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
-        return sync_wrapper  # type: ignore[return-value]
+        return async_wrapper  # type: ignore[return-value]
 
     return decorator
 
@@ -193,27 +167,8 @@ def invalidate_investigation(
                 )
             return result
 
-        @functools.wraps(func)
-        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-            inv_id = kwargs.get(investigation_id_key)
-            result = func(*args, **kwargs)
-            if inv_id is not None:
-                loop = asyncio.new_event_loop()
-                try:
-                    cache = _cache()
-                    pattern = all_investigation_pattern(str(inv_id))
-                    count = loop.run_until_complete(cache.delete_pattern(pattern))
-                    logger.info(
-                        "cache_bulk_invalidated",
-                        pattern=pattern,
-                        deleted_count=count,
-                    )
-                finally:
-                    loop.close()
-            return result
-
         if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
-        return sync_wrapper  # type: ignore[return-value]
+        return async_wrapper  # type: ignore[return-value]
 
     return decorator

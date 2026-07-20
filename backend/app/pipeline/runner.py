@@ -9,7 +9,7 @@ All domain logic lives in the stages themselves.
 
 import asyncio
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.pipeline.context import PipelineContext
 from app.pipeline.exceptions import PipelineException
@@ -46,7 +46,7 @@ class PipelineRunner:
         retries for a stage are exhausted.  The returned context contains
         any errors and metrics accumulated during execution.
         """
-        context.set_state("started_at", datetime.utcnow().isoformat())
+        context.set_state("started_at", datetime.now(UTC).isoformat())
         context.set_state("stage_count", len(self._stages))
 
         for stage in self._stages:
@@ -61,7 +61,7 @@ class PipelineRunner:
 
             context.set_state("last_completed", stage.name())
 
-        context.set_state("finished_at", datetime.utcnow().isoformat())
+        context.set_state("finished_at", datetime.now(UTC).isoformat())
         context.set_state("error_count", len(context.errors))
         return context
 
@@ -77,7 +77,7 @@ class PipelineRunner:
         Returns ``FAILED`` when retries are exhausted.
         """
         last_exception: Exception | None = None
-        start = datetime.utcnow()
+        start = datetime.now(UTC)
 
         for attempt in range(self._retry_policy.max_retries + 1):
             attempt_number = attempt + 1
@@ -119,7 +119,7 @@ class PipelineRunner:
                     )
                 continue
 
-            duration = (datetime.utcnow() - start).total_seconds()
+            duration = (datetime.now(UTC) - start).total_seconds()
             context.record_metric(f"{stage.name()}.duration_seconds", duration)
             context.record_metric(f"{stage.name()}.attempts", attempt_number)
 
@@ -156,7 +156,7 @@ class PipelineRunner:
 
             return result
 
-        duration = (datetime.utcnow() - start).total_seconds()
+        duration = (datetime.now(UTC) - start).total_seconds()
         context.record_metric(f"{stage.name()}.duration_seconds", duration)
         context.record_metric(f"{stage.name()}.attempts", self._retry_policy.max_retries + 1)
         if self._stage_recorder and context.execution_id is not None:

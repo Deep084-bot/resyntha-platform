@@ -15,7 +15,7 @@ exception propagates.
 """
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
@@ -91,7 +91,7 @@ class RetrievalWorkflow:
                     payload={
                         "paper_count": len(papers),
                         "paper_ids": [str(pid) for pid in paper_ids],
-                        "generated_at": datetime.utcnow().isoformat(),
+                        "generated_at": datetime.now(UTC).isoformat(),
                     },
                 ),
             )

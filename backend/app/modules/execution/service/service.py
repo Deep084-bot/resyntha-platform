@@ -4,6 +4,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.modules.execution.domain.models import (
@@ -38,10 +39,16 @@ class ExecutionService:
 
     def has_active_execution(self, investigation_id: uuid.UUID) -> bool:
         """Return ``True`` if the investigation has a PENDING or RUNNING execution."""
-        executions = self._repository.list_by_investigation(investigation_id)
-        return any(
-            e.status in (ExecutionStatus.PENDING, ExecutionStatus.RUNNING) for e in executions
+        stmt = (
+            select(Execution)
+            .where(
+                Execution.investigation_id == investigation_id,
+                Execution.status.in_([ExecutionStatus.PENDING, ExecutionStatus.RUNNING]),
+            )
+            .limit(1)
+            .with_for_update()
         )
+        return self._session.scalar(stmt) is not None
 
     def create_execution(
         self,
