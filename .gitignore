@@ -1,0 +1,44 @@
+# Environment
+.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+.venv/
+
+# Test & coverage
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+test.db
+
+# Node
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+*.log
+
+# Personal
+portfolio.json
+writeups/
+what-i-learned.md
+package-lock.json

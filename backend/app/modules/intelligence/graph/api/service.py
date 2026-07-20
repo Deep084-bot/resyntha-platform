@@ -42,6 +42,15 @@ class GraphApiService:
 
     def get_graph(self, investigation_id: uuid.UUID) -> GraphDTO:
         """Build and return the knowledge graph DTO for an investigation."""
+        graph = self._build_graph(investigation_id)
+        return self._to_dto(graph)
+
+    def get_raw_graph(self, investigation_id: uuid.UUID) -> ResearchGraph:
+        """Build and return the raw ResearchGraph for programmatic consumption."""
+        return self._build_graph(investigation_id)
+
+    def _build_graph(self, investigation_id: uuid.UUID) -> ResearchGraph:
+        """Build a ResearchGraph from extraction and paper data."""
         inv = self._inv_service.get_investigation(investigation_id)
         if inv is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -60,9 +69,7 @@ class GraphApiService:
             )
 
         builder = ResearchGraphBuilder()
-        graph = builder.build(records, paper_map=paper_map)
-
-        return self._to_dto(graph)
+        return builder.build(records, paper_map=paper_map)
 
     # ── DTO conversion ────────────────────────────────────────
 

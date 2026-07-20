@@ -1,0 +1,25 @@
+# Docker Compose development overrides.
+# Automatically loaded by `docker compose up` when present.
+# Provides hot-reload for both backend and frontend in development.
+
+services:
+  backend:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --proxy-headers --forwarded-allow-ips "*"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+    env_file:
+      - ./backend/.env.development
+    environment:
+      - GIT_COMMIT
+      - BUILD_TIME
+
+  worker:
+    command: arq app.workers.WorkerSettings --watch app
+    volumes:
+      - ./backend/app:/app/app
+
+  frontend:
+    build:
+      args:
+        VITE_API_URL: http://localhost:8000/api/v1

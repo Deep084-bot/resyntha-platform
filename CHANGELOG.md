@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.2.0 — Production Engineering & Open Source Excellence (Sprint P2–P3)
+
+### Sprint P2 — Production Engineering (Docker)
+- Multi-stage Dockerfiles for backend (Python 3.12-slim) and frontend (Node 22 → nginx:alpine)
+- `docker-compose.yml` with PostgreSQL 16, Redis 7, backend, ARQ worker, and frontend services
+- `docker-compose.override.yml` for development hot-reload
+- `backend/.env.docker` with Docker-optimized defaults
+- Custom `nginx.conf` for SPA routing + `/api/` proxy
+- Health checks and dependency ordering for all services
+- Comprehensive deployment docs at `docs/deployment/docker.md`
+
+### Sprint P3 — Open Source Excellence
+- Complete README redesign with hero, badges, architecture, roadmap, showcase
+- Community files: CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, SUPPORT.md
+- GitHub issue templates (bug report, feature request, question)
+- Pull request template
+- Filled documentation placeholders (setup.md, roadmap.md, design-decisions.md)
+- Root `.gitignore` with project cleanup
+- Updated CHANGELOG with all sprint entries
+- Project organization audit and naming consistency check
+
 ## v0.1.0 — Initial Release (Sprint F1.10)
 
 ### Sprint D0–D6 — Foundation

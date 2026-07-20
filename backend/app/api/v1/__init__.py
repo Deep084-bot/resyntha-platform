@@ -12,6 +12,10 @@ from app.modules.bookmark.api.routes import router as bookmark_router
 from app.modules.collection.api.routes import router as collection_router
 from app.modules.copilot.api.routes import router as copilot_router
 from app.modules.execution.api.routes import router as execution_router
+from app.modules.institution.api.intelligence_routes import (
+    router as institution_intelligence_router,
+)
+from app.modules.institution.api.routes import router as institution_router
 from app.modules.intelligence.api.routes import router as intelligence_router
 from app.modules.investigation.api.routes import router as investigation_router
 from app.modules.notes.api.routes import router as notes_router
@@ -25,6 +29,8 @@ v1_router.include_router(bookmark_router)
 v1_router.include_router(collection_router)
 v1_router.include_router(execution_router)
 v1_router.include_router(investigation_router)
+v1_router.include_router(institution_router)
+v1_router.include_router(institution_intelligence_router)
 v1_router.include_router(intelligence_router)
 v1_router.include_router(notes_router)
 v1_router.include_router(reading_status_router)
