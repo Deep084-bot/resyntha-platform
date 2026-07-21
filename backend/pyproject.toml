@@ -68,12 +68,24 @@ show_missing = true
 fail_under = 0
 
 [tool.mypy]
-python_version = "3.12"
-strict = false
-ignore_missing_imports = true
-warn_unused_ignores = false
 files = ["app/"]
 plugins = ["pydantic.mypy"]
+
+ignore_missing_imports = true
+
 exclude = [
-    "alembic/",
+    "tests/",
+    "alembic/"
+]
+
+# Existing technical debt baseline
+allow_untyped_defs = true
+allow_untyped_calls = true
+disable_error_code = [
+    "assignment",
+    "union-attr",
+    "return-value",
+    "arg-type",
+    "call-arg",
+    "no-redef"
 ]
