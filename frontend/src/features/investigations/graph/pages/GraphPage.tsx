@@ -49,6 +49,19 @@ export function GraphPage() {
     setSelectedNodeId(null);
   }, []);
 
+  const filteredData = useMemo(() => {
+    if (!data) return data;
+    return {
+      ...data,
+      nodes: filteredNodes,
+      edges: data.edges.filter(
+        (e) =>
+          filteredNodes.some((n) => n.id === e.source) &&
+          filteredNodes.some((n) => n.id === e.target),
+      ),
+    };
+  }, [data, filteredNodes]);
+
   if (isLoading) {
     return <GraphSkeleton />;
   }
@@ -65,7 +78,7 @@ export function GraphPage() {
     );
   }
 
-  if (isEmpty || !data) {
+  if (isEmpty || !data || !filteredData) {
     if (running) {
       return (
         <div className="space-y-4">
@@ -76,16 +89,6 @@ export function GraphPage() {
     }
     return <GraphEmptyState />;
   }
-
-  const filteredData = useMemo(() => ({
-    ...data,
-    nodes: filteredNodes,
-    edges: data.edges.filter(
-      (e) =>
-        filteredNodes.some((n) => n.id === e.source) &&
-        filteredNodes.some((n) => n.id === e.target),
-    ),
-  }), [data, filteredNodes]);
 
   return (
     <div className="flex h-full flex-col gap-4">

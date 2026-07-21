@@ -153,10 +153,8 @@ class AnalysisService:
 
         paper_ids = [r.paper_id for r in records]
         papers = (
-            self._session.query(Paper)
-            .filter(Paper.id.in_(paper_ids))
-            .all()
-        ) if paper_ids else []
+            (self._session.query(Paper).filter(Paper.id.in_(paper_ids)).all()) if paper_ids else []
+        )
 
         years = [str(p.year) for p in papers if p.year is not None]
         year_dist = PublicationYearDistribution(

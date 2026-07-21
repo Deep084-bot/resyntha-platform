@@ -107,6 +107,4 @@ async def _with_timeout(agen):
             except StopAsyncIteration:
                 return
     except TimeoutError:
-        yield (
-            f"data: {StreamError(error='Stream timed out').model_dump_json()}\n\n"
-        )
+        yield (f"data: {StreamError(error='Stream timed out').model_dump_json()}\n\n")

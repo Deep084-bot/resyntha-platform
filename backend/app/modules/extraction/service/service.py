@@ -345,11 +345,7 @@ class ExtractionService:
     def _is_low_quality(output: ExtractionOutput) -> bool:
         if not output.summary or len(output.summary.strip()) < 20:
             return True
-        if (
-            not output.research_questions
-            and not output.key_findings
-            and not output.methodology
-        ):
+        if not output.research_questions and not output.key_findings and not output.methodology:
             return True
         return False
 
