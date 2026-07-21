@@ -8,8 +8,11 @@ control.
 import uuid
 from collections.abc import Sequence
 
+from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.modules.execution.domain.models import Execution, ExecutionStatus
 from app.modules.investigation.domain.models import (
     Investigation,
     InvestigationStatus,
@@ -85,6 +88,21 @@ class InvestigationService:
         investigation = self._repository.get_by_id(investigation_id)
         if investigation is None:
             return False
+
+        active = self._session.scalar(
+            select(Execution)
+            .where(
+                Execution.investigation_id == investigation_id,
+                Execution.status.in_([ExecutionStatus.PENDING, ExecutionStatus.RUNNING]),
+            )
+            .limit(1)
+        )
+        if active is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot delete investigation with a running execution",
+            )
+
         self._repository.delete(investigation)
         self._session.commit()
         return True

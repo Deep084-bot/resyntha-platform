@@ -32,6 +32,7 @@ class Bookmark(Base):
         UUID(as_uuid=True),
         ForeignKey("papers.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

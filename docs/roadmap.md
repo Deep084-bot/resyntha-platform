@@ -1,6 +1,6 @@
 # Roadmap
 
-## Current Release: v0.1.0
+## Current Release: v1.0.0
 
 Resyntha is in active development. The core pipeline is complete and functional.
 
@@ -62,4 +62,4 @@ Resyntha is in active development. The core pipeline is complete and functional.
 
 | Version | Date | Highlights |
 |---------|------|------------|
-| 0.1.0   | 2026 | Initial release: pipeline engine, copilot, investigation workspace, 923 tests |
+| 1.0.0   | 2026 | Initial release: pipeline engine, copilot, investigation workspace, 923 tests |

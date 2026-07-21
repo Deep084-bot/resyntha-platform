@@ -72,8 +72,8 @@ export async function streamChatMessage(
   );
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(body || `Stream request failed (${response.status})`);
+    await response.body?.cancel();
+    throw new Error(`Stream request failed (${response.status})`);
   }
 
   const reader = response.body?.getReader();

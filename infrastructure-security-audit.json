@@ -1,0 +1,114 @@
+[
+  {
+    "severity": "High",
+    "file_path": "docker-compose.yml",
+    "line_number": 11,
+    "description": "PostgreSQL port 5432 exposed to host on 0.0.0.0",
+    "impact": "The database is accessible from outside the Docker network, exposing it to the LAN (and potentially the internet if deployed on a cloud host with a public IP). An attacker who finds an open port can attempt brute-force or exploit database vulnerabilities.",
+    "recommendation": "Remove the `ports` mapping from the postgres service, or limit it to `127.0.0.1:5432:5432` if host access is absolutely needed. Backend services can reach postgres via the internal Docker network without a host port binding."
+  },
+  {
+    "severity": "High",
+    "file_path": "docker-compose.yml",
+    "line_number": 28,
+    "description": "Redis port 6379 exposed to host on 0.0.0.0",
+    "impact": "Redis is exposed to the LAN without authentication (no `requirepass` configured). If an attacker gains network access, they can read/write cached data, session keys, and rate-limit counters, potentially leading to data theft or denial of service.",
+    "recommendation": "Remove the `ports` mapping from the redis service, or bind to `127.0.0.1:6379:6379` only. In production, always enable Redis authentication with `--requirepass` and use TLS."
+  },
+  {
+    "severity": "High",
+    "file_path": "backend/Dockerfile",
+    "line_number": 34,
+    "description": "`COPY . .` copies all files including .env*, venv, and cache into the production runtime image",
+    "impact": "The image includes environment files (.env.development, .env.docker, .env.testing) that contain secrets, database URLs, and API keys. If the image is pushed to a registry, anyone pulling it can inspect layers to extract credentials. The image is also larger than necessary, increasing attack surface.",
+    "recommendation": "Use a `.dockerignore` file to exclude `.env*`, `.venv*`, `__pycache__`, `.git`, and other non-essential files. Restructure to copy only the application code: `COPY app/ /app/app/`, `COPY alembic/ /app/alembic/`, and any required migration/config files explicitly."
+  },
+  {
+    "severity": "High",
+    "file_path": "docker-compose.yml",
+    "line_number": 7,
+    "description": "PostgreSQL uses hardcoded default credentials (postgres/postgres)",
+    "impact": "Default database credentials are widely known. In any environment accessible beyond a local dev machine, an attacker can connect directly to the database if the port is exposed or if a web vulnerability (e.g. SQL injection) is exploited.",
+    "recommendation": "Use environment variables for `POSTGRES_USER` and `POSTGRES_PASSWORD` sourced from a secrets manager or a non-committed `.env` file. Generate a strong random password for each deployment."
+  },
+  {
+    "severity": "Medium",
+    "file_path": "docker-compose.yml",
+    "line_number": 1,
+    "description": "No `security_opt` or `no-new-privileges` set on any service",
+    "impact": "Containers can escalate privileges via setuid binaries or kernel exploits. Without `no-new-privileges: true`, a compromised process inside the container can use `suid` binaries to gain root, even when running as a non-root user.",
+    "recommendation": "Add `security_opt: [\"no-new-privileges:true\"]` to all service definitions. This prevents privilege escalation through setuid/setgid binaries."
+  },
+  {
+    "severity": "Medium",
+    "file_path": "docker-compose.yml",
+    "line_number": 1,
+    "description": "No `cap_drop` defined on any service — containers run with default Linux capabilities",
+    "impact": "Default Docker capabilities (e.g. CAP_NET_RAW, CAP_SYS_PTRACE, CAP_DAC_OVERRIDE) are unnecessary for web/worker processes. If an attacker gains code execution inside the container, these capabilities can be abused for container escape, network sniffing, or kernel attacks.",
+    "recommendation": "Add `cap_drop: [ALL]` and then `cap_add: []` (or specific capabilities needed) to each service. For web/worker services, no capabilities are typically required."
+  },
+  {
+    "severity": "Medium",
+    "file_path": "frontend/nginx.conf",
+    "line_number": 22,
+    "description": "Missing Content-Security-Policy, Permissions-Policy, Cross-Origin-Opener-Policy, and Cross-Origin-Resource-Policy headers for static frontend assets",
+    "impact": "The nginx server serves frontend static files (JS, CSS, HTML) without critical security headers. While the backend API adds these headers via SecurityHeadersMiddleware, all static assets served directly by nginx lack CSP, Permissions-Policy, and cross-origin isolation headers, leaving users vulnerable to XSS, data theft, and side-channel attacks.",
+    "recommendation": "Add the missing security headers to the nginx.conf `server` block: `add_header Content-Security-Policy \"...\" always;`, `add_header Permissions-Policy \"camera=(), microphone=(), ...\" always;`, `add_header Cross-Origin-Opener-Policy \"same-origin\" always;`, `add_header Cross-Origin-Resource-Policy \"same-origin\" always;`"
+  },
+  {
+    "severity": "Medium",
+    "file_path": "docker-compose.yml",
+    "line_number": 1,
+    "description": "No container has `read_only: true` root filesystem",
+    "impact": "If an attacker gains code execution, they can write malicious files to the container filesystem (e.g. cron jobs, web shells, modified binaries). A read-only rootfs limits the blast radius significantly.",
+    "recommendation": "Add `read_only: true` to the backend, worker, and frontend service definitions. Mount `tmpfs` for writable runtime directories (e.g. `/tmp`) where needed."
+  },
+  {
+    "severity": "Medium",
+    "file_path": "docker-compose.override.yml",
+    "line_number": 7,
+    "description": "Development override uses `--forwarded-allow-ips \"*\"` in uvicorn command",
+    "impact": "The `*` wildcard allows any client IP to inject `X-Forwarded-For` and `X-Forwarded-Proto` headers, enabling IP spoofing. While this file is for local development only, it may unintentionally be used in staging or by developers running compose without the override aware of the security implications.",
+    "recommendation": "Scope forwarded-allow-ips to `127.0.0.1,::1` or the Docker network gateway IP to prevent spoofing even in development."
+  },
+  {
+    "severity": "Medium",
+    "file_path": "backend/Dockerfile",
+    "line_number": 36,
+    "description": "PYTHONDONTWRITEBYTECODE set but Python bytecode cache may still leak into image layers from intermediate stages",
+    "impact": "Although the env var prevents bytecode generation at runtime, the build stage (builder) may still create .pyc files in the venv. These are harmless individually, but the broader COPY . . pattern means any artifacts from the build environment get carried over, unnecessarily increasing image size and potential attack surface.",
+    "recommendation": "Add a `.dockerignore` file and ensure `__pycache__/` and `*.pyc` patterns are excluded from the COPY context."
+  },
+  {
+    "severity": "Low",
+    "file_path": "backend/app/config/settings.py",
+    "line_number": 42,
+    "description": "SECRET_KEY defaults to empty string with no minimum-length validation at the model level",
+    "impact": "If SECRET_KEY is not configured in production, the application will use an empty key. JWT tokens, session signing, and any HMAC-based cryptography will be trivially forgeable. The current default of empty string means a misconfigured deployment would silently accept a weak key.",
+    "recommendation": "Add a Pydantic `field_validator` for SECRET_KEY that raises a `ValueError` if the key is empty or shorter than 32 characters in non-development/test environments. Force a hard fail at startup rather than trusting runtime behavior."
+  },
+  {
+    "severity": "Low",
+    "file_path": "backend/Dockerfile",
+    "line_number": 5,
+    "description": "Build stage installs `build-essential` and `libpq-dev` but does not clean up apt cache within the builder stage; runtime stage keeps `ca-certificates`",
+    "impact": "Minor concern — the builder stage already runs `rm -rf /var/lib/apt/lists/*` to clean the apt cache. However, the `ca-certificates` package in the runtime stage is needed for TLS connections (to LLM APIs, external APIs), so this is acceptable.",
+    "recommendation": "No action needed — the `--no-install-recommends` flag and `rm -rf /var/lib/apt/lists/*` already minimize the footprint. The `ca-certificates` package is required for HTTPS. Acceptable as-is."
+  },
+  {
+    "severity": "Low",
+    "file_path": "frontend/nginx.conf",
+    "line_number": 22,
+    "description": "nginx does not validate TLS configuration (HTTPS not configured)",
+    "impact": "The frontend nginx only listens on port 80 (HTTP). In production, this means traffic between the user and the frontend is unencrypted. However, in a typical deployment, a reverse proxy (e.g. Cloudflare, AWS ALB) would terminate TLS upstream of nginx.",
+    "recommendation": "If nginx is the TLS termination point, add an HTTPS server block with TLS certificates. If TLS is terminated upstream, this is acceptable — document the assumed topology in the Dockerfile or README."
+  },
+  {
+    "severity": "Low",
+    "file_path": "docker-compose.yml",
+    "line_number": 121,
+    "description": "Docker network uses `bridge` driver with no network policy isolation between services",
+    "impact": "All services share a single flat network. A compromise in any container (e.g. the frontend or worker) could allow lateral movement to the database or Redis. No network segmentation exists between internal services and external-facing ones.",
+    "recommendation": "For higher-risk deployments, consider splitting services into multiple networks (e.g. `frontend_net`, `backend_net`, `data_net`). Frontend should only reach backend; backend should only reach postgres/redis. The current single-network design is acceptable for low-risk or single-host deployments."
+  }
+]

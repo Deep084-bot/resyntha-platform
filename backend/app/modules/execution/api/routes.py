@@ -43,6 +43,16 @@ async def create_execution(
     service: ExecutionService = Depends(_get_service),
 ) -> ExecutionResponse:
     """Create a new execution for an investigation."""
+    if service.has_active_execution(str(investigation_id)):
+        logger.warning(
+            "execution_conflict",
+            investigation_id=str(investigation_id),
+            message="An active execution already exists",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An execution is already in progress for this investigation",
+        )
     logger.info(
         "execution_created",
         investigation_id=str(investigation_id),

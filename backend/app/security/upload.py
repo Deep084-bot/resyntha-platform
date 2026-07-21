@@ -16,6 +16,7 @@ Usage::
 from __future__ import annotations
 
 import mimetypes
+import os
 from dataclasses import dataclass
 
 from fastapi import HTTPException, status
@@ -124,8 +125,11 @@ def validate_upload(file: FastAPIUploadFile) -> ValidatedUpload:
     if ext and ext not in ALLOWED_EXTENSIONS:
         raise UploadValidationError(f"File extension '{ext}' is not allowed for upload")
 
+    safe_filename = os.path.basename(file.filename or "unknown")
+    if not safe_filename or safe_filename.startswith("."):
+        raise UploadValidationError("Invalid filename")
     return ValidatedUpload(
-        filename=file.filename or "unknown",
+        filename=safe_filename,
         content_type=content_type or "application/octet-stream",
         size=file.size or 0,
         file=file,

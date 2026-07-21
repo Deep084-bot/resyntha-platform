@@ -40,6 +40,7 @@ class CopilotMessage(Base):
         UUID(as_uuid=True),
         ForeignKey("copilot_conversations.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     role: Mapped[str] = mapped_column(String(16), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)

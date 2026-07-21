@@ -5,7 +5,7 @@ import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Investigation } from "@/types";
-import type { CopilotMessageDisplay, StreamChunk } from "@/types";
+import type { StreamChunk } from "@/types";
 
 vi.mock("@/services/copilot", () => {
   const streamChatMessage = vi.fn(
@@ -196,7 +196,7 @@ describe("CopilotPage", () => {
     await waitForReady();
 
     const user = userEvent.setup();
-    await user.type(screen.getAllByRole("textbox")[0], "Test question.");
+    await user.type(screen.getAllByRole("textbox")[0]!, "Test question.");
     await user.keyboard("{Enter}");
 
     await waitFor(() => {
@@ -210,12 +210,12 @@ describe("CopilotPage", () => {
     await waitForReady();
 
     const user = userEvent.setup();
-    await user.type(screen.getAllByRole("textbox")[0], "Summarize the research.");
+    await user.type(screen.getAllByRole("textbox")[0]!, "Summarize the research.");
     await user.keyboard("{Enter}");
     await waitFor(() => expect(streamChatMessage).toHaveBeenCalledTimes(1));
 
-    const onToken = streamChatMessage.mock.calls[0][3];
-    const onDone = streamChatMessage.mock.calls[0][4];
+    const onToken = streamChatMessage.mock.calls[0]![3]!;
+    const onDone = streamChatMessage.mock.calls[0]![4]!;
 
     onToken("Here ");
     onToken("is ");
@@ -241,11 +241,11 @@ describe("CopilotPage", () => {
     await waitForReady();
 
     const user = userEvent.setup();
-    await user.type(screen.getAllByRole("textbox")[0], "Summarize the research.");
+    await user.type(screen.getAllByRole("textbox")[0]!, "Summarize the research.");
     await user.keyboard("{Enter}");
     await waitFor(() => expect(streamChatMessage).toHaveBeenCalledTimes(1));
 
-    const onError = streamChatMessage.mock.calls[0][5];
+    const onError = streamChatMessage.mock.calls[0]![5]!;
     onError("backend error");
 
     await waitFor(() => {
@@ -260,11 +260,11 @@ describe("CopilotPage", () => {
     await waitForReady();
 
     const user = userEvent.setup();
-    await user.type(screen.getAllByRole("textbox")[0], "Summarize the research.");
+    await user.type(screen.getAllByRole("textbox")[0]!, "Summarize the research.");
     await user.keyboard("{Enter}");
     await waitFor(() => expect(streamChatMessage).toHaveBeenCalledTimes(1));
 
-    const onError = streamChatMessage.mock.calls[0][5];
+    const onError = streamChatMessage.mock.calls[0]![5]!;
     onError("backend error");
 
     await waitFor(() => {
@@ -279,8 +279,8 @@ describe("CopilotPage", () => {
       expect(streamChatMessage).toHaveBeenCalledTimes(1);
     });
 
-    const onToken2 = streamChatMessage.mock.calls[0][3];
-    const onDone2 = streamChatMessage.mock.calls[0][4];
+    const onToken2 = streamChatMessage.mock.calls[0]![3]!;
+    const onDone2 = streamChatMessage.mock.calls[0]![4]!;
     onToken2("Retried ");
     onToken2("response.");
 
@@ -303,7 +303,7 @@ describe("CopilotPage", () => {
     await waitForReady();
 
     const user = userEvent.setup();
-    await user.type(screen.getAllByRole("textbox")[0], "Summarize the research.");
+    await user.type(screen.getAllByRole("textbox")[0]!, "Summarize the research.");
     await user.keyboard("{Enter}");
     await waitFor(() => expect(streamChatMessage).toHaveBeenCalledTimes(1));
 
@@ -321,15 +321,15 @@ describe("CopilotPage", () => {
     await waitForReady();
 
     const user = userEvent.setup();
-    await user.type(screen.getAllByRole("textbox")[0], "Summarize the research.");
+    await user.type(screen.getAllByRole("textbox")[0]!, "Summarize the research.");
     await user.keyboard("{Enter}");
     await waitFor(() => expect(streamChatMessage).toHaveBeenCalledTimes(1));
 
-    const onToken = streamChatMessage.mock.calls[0][3];
+    const onToken = streamChatMessage.mock.calls[0]![3]!;
     onToken("Hello ");
 
     await waitFor(() => {
-      expect(screen.getAllByText((_content, element) => element.textContent === "Hello").length).toBeGreaterThan(0);
+      expect(screen.getAllByText((_content, element) => element?.textContent === "Hello").length).toBeGreaterThan(0);
     });
   });
 });

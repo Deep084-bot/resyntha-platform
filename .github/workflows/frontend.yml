@@ -42,7 +42,6 @@ jobs:
 
       - name: TypeScript check
         run: npx tsc -b
-        continue-on-error: true
 
       - name: Run tests with Vitest
         run: npx vitest run --coverage

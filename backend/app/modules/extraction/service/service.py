@@ -6,6 +6,7 @@ provider → parsing → persisting → creating a ``KNOWLEDGE_PACKAGE``
 artifact.
 """
 
+import asyncio
 import json
 import uuid
 from collections import Counter
@@ -102,31 +103,39 @@ class ExtractionService:
         knowledge: list[ExtractedKnowledge] = []
         failures: list[ExtractionFailure] = []
 
-        for paper in papers:
-            try:
-                result = await self._extract_single(
-                    paper,
-                    investigation_id,
-                    execution_id,
-                )
-                if isinstance(result, ExtractionFailure):
-                    failures.append(result)
-                else:
-                    knowledge.append(result)
-            except Exception as exc:
-                logger.exception(
-                    "extraction_failed",
-                    paper_id=str(paper.id),
-                    title=paper.title[:100],
-                )
-                failures.append(
-                    ExtractionFailure(
+        semaphore = asyncio.Semaphore(5)
+
+        async def extract_one(paper):
+            async with semaphore:
+                try:
+                    result = await self._extract_single(
+                        paper,
+                        investigation_id,
+                        execution_id,
+                    )
+                    return result
+                except Exception as exc:
+                    logger.exception(
+                        "extraction_failed",
+                        paper_id=str(paper.id),
+                        title=paper.title[:100],
+                    )
+                    return ExtractionFailure(
                         paper_id=paper.id,
                         title=getattr(paper, "title", "Untitled"),
                         reason=FailureReason.UNKNOWN,
                         detail=str(exc)[:500],
-                    ),
-                )
+                    )
+
+        results = await asyncio.gather(
+            *(extract_one(paper) for paper in papers),
+        )
+
+        for result in results:
+            if isinstance(result, ExtractionFailure):
+                failures.append(result)
+            else:
+                knowledge.append(result)
 
         reason_counts = Counter(f.reason.value for f in failures)
         stats = ExtractionStats(
@@ -248,6 +257,20 @@ class ExtractionService:
                 detail=str(exc)[:500],
             )
 
+        if self._is_low_quality(output):
+            logger.warning(
+                "extraction_low_quality",
+                paper_id=str(paper.id),
+                title=title[:100],
+                summary_length=len(output.summary),
+            )
+            return ExtractionFailure(
+                paper_id=paper.id,
+                title=title,
+                reason=FailureReason.LOW_QUALITY_CONTENT,
+                detail="LLM returned empty or near-empty content",
+            )
+
         authors_dicts = self._normalize_author_list(output.authors)
         institutions_dicts = self._normalize_institution_list(output.institutions)
         datasets_dicts = self._normalize_dataset_list(output.datasets_used)
@@ -317,6 +340,18 @@ class ExtractionService:
         )
 
         return self._repository.create(knowledge)
+
+    @staticmethod
+    def _is_low_quality(output: ExtractionOutput) -> bool:
+        if not output.summary or len(output.summary.strip()) < 20:
+            return True
+        if (
+            not output.research_questions
+            and not output.key_findings
+            and not output.methodology
+        ):
+            return True
+        return False
 
     # ── Normalization helpers ─────────────────────────────────────
 

@@ -2,13 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 
 import { fetchCopilotHistory, sendChatMessage, streamChatMessage } from "@/services/copilot";
-import type { ChatResponse, CopilotMessageDisplay, StreamingMessage } from "@/types";
+import type { ChatResponse, CopilotMessageDisplay, StreamChunk, StreamingMessage } from "@/types";
 import { queryKeys } from "@/types";
 
 export function useCopilotChat(investigationId: string | undefined) {
   const queryClient = useQueryClient();
 
-  return useMutation<ChatResponse, Error, string>({
+  return useMutation<ChatResponse, Error, string, { previousHistory: CopilotMessageDisplay[] }>({
     mutationFn: (question: string) =>
       sendChatMessage(investigationId!, { question }),
     onMutate: async (question) => {
@@ -135,7 +135,8 @@ export function useCopilotStream(investigationId: string | undefined) {
               prev ? { ...prev, content: prev.content + token } : null,
             );
           },
-          (done) => {
+          (done: StreamChunk) => {
+            if (done.type !== "done") return;
             const finalMessage: CopilotMessageDisplay = {
               id: done.message_id,
               role: "assistant",
@@ -170,8 +171,6 @@ export function useCopilotStream(investigationId: string | undefined) {
             setStreamError(errorMsg);
             setIsStreaming(false);
             setStreamingMessage(null);
-
-            queryClient.setQueryData(historyKey, previousHistory);
           },
         );
       } catch (err) {
@@ -187,7 +186,6 @@ export function useCopilotStream(investigationId: string | undefined) {
         setStreamError(message);
         setIsStreaming(false);
         setStreamingMessage(null);
-        queryClient.setQueryData(historyKey, previousHistory);
       }
     },
     [investigationId, queryClient],

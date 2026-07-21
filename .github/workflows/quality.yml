@@ -37,7 +37,6 @@ jobs:
       - name: Run pip-audit
         if: matrix.component == 'backend'
         run: pip-audit
-        continue-on-error: true
 
       # ── Frontend audit ───────────────────────────────────────────
       - name: Set up Node (frontend only)
@@ -55,7 +54,6 @@ jobs:
       - name: Run npm audit
         if: matrix.component == 'frontend'
         run: npm audit --audit-level=moderate
-        continue-on-error: true
 
   secrets:
     runs-on: ubuntu-latest
@@ -67,4 +65,3 @@ jobs:
 
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
-        continue-on-error: true

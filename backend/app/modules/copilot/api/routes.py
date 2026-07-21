@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -86,7 +87,7 @@ async def chat_stream(
                 yield f"data: {event.model_dump_json()}\n\n"
 
     return StreamingResponse(
-        event_generator(),
+        _with_timeout(event_generator()),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -94,3 +95,18 @@ async def chat_stream(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+async def _with_timeout(agen):
+    """Wrap an async generator with a 120-second timeout per yield."""
+    try:
+        while True:
+            try:
+                item = await asyncio.wait_for(agen.__anext__(), timeout=120)
+                yield item
+            except StopAsyncIteration:
+                return
+    except TimeoutError:
+        yield (
+            f"data: {StreamError(error='Stream timed out').model_dump_json()}\n\n"
+        )

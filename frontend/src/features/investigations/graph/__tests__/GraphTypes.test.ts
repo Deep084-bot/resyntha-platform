@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { GraphDTO, GraphEdgeDTO, GraphNodeDTO, GraphMetadataDTO, NodeType } from "../types/graph";
+import type { GraphDTO, GraphEdgeDTO, GraphNodeDTO, NodeType } from "../types/graph";
 
 describe("GraphDTO types", () => {
   it("validates a complete graph DTO shape", () => {
@@ -50,7 +50,7 @@ describe("GraphDTO types", () => {
       },
     };
     expect(node.metadata.year).toBe(2024);
-    expect(node.metadata.custom_field.nested).toBe(true);
+    expect((node.metadata.custom_field as { nested: boolean }).nested).toBe(true);
   });
 
   it("validates edge shape", () => {

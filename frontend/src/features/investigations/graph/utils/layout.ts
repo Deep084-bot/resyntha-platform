@@ -22,7 +22,6 @@ const COLUMN_X: Record<number, number> = {
 
 const NODE_HEIGHT = 80;
 const NODE_GAP = 30;
-const TYPE_GAP = 40;
 
 export function layoutGraph(dto: GraphDTO): { nodes: Node[]; edges: Edge[] } {
   const typeGroups: Record<string, { id: string; type: NodeType; label: string; metadata: Record<string, unknown> }[]> = {};
@@ -49,14 +48,15 @@ export function layoutGraph(dto: GraphDTO): { nodes: Node[]; edges: Edge[] } {
     if (col === 0) {
       typeOffsets[t] = currentY;
       for (let i = 0; i < items.length; i++) {
+        const item = items[i]!;
         nodes.push({
-          id: items[i].id,
+          id: item.id,
           type: "graphNode",
-          position: { x: COLUMN_X[col], y: currentY + i * (NODE_HEIGHT + NODE_GAP) },
+          position: { x: COLUMN_X[col] ?? 0, y: currentY + i * (NODE_HEIGHT + NODE_GAP) },
           data: {
-            label: items[i].label,
-            nodeType: items[i].type,
-            metadata: items[i].metadata,
+            label: item.label,
+            nodeType: item.type,
+            metadata: item.metadata,
             isHighlighted: false,
             isDimmed: false,
           },
@@ -80,14 +80,15 @@ export function layoutGraph(dto: GraphDTO): { nodes: Node[]; edges: Edge[] } {
 
     const startY = Math.max(currentY, maxEntityY - items.length * (NODE_HEIGHT + NODE_GAP) / 2);
     for (let i = 0; i < items.length; i++) {
+      const item = items[i]!;
       nodes.push({
-        id: items[i].id,
+        id: item.id,
         type: "graphNode",
-        position: { x: COLUMN_X[col], y: startY + i * (NODE_HEIGHT + NODE_GAP) },
+        position: { x: COLUMN_X[col] ?? 0, y: startY + i * (NODE_HEIGHT + NODE_GAP) },
         data: {
-          label: items[i].label,
-          nodeType: items[i].type,
-          metadata: items[i].metadata,
+          label: item.label,
+          nodeType: item.type,
+          metadata: item.metadata,
           isHighlighted: false,
           isDimmed: false,
         },

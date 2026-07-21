@@ -13,7 +13,7 @@ Full system health check. Returns status of all components.
 ```json
 {
   "status": "healthy",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "environment": "development",
   "checks": {
     "database": {"status": "healthy", "latency_ms": 2.3},
@@ -55,7 +55,7 @@ Build metadata.
 ```json
 {
   "application": "resyntha",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "environment": "development",
   "git_commit": "abc1234",
   "build_time": "2026-07-10T12:00:00Z",
@@ -741,7 +741,7 @@ Application metadata.
 ```json
 {
   "application": "resyntha",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "environment": "development",
   "git_commit": "abc1234",
   "build_time": "2026-07-10T12:00:00Z",

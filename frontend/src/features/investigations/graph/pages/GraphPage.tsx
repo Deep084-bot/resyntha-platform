@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { useGraph } from "../hooks/useGraph";
-import type { GraphNodeDTO, NodeType } from "../types/graph";
+import type { NodeType } from "../types/graph";
 import {
   GraphCanvas,
   GraphEmptyState,
@@ -77,7 +77,7 @@ export function GraphPage() {
     return <GraphEmptyState />;
   }
 
-  const filteredData = {
+  const filteredData = useMemo(() => ({
     ...data,
     nodes: filteredNodes,
     edges: data.edges.filter(
@@ -85,7 +85,7 @@ export function GraphPage() {
         filteredNodes.some((n) => n.id === e.source) &&
         filteredNodes.some((n) => n.id === e.target),
     ),
-  };
+  }), [data, filteredNodes]);
 
   return (
     <div className="flex h-full flex-col gap-4">

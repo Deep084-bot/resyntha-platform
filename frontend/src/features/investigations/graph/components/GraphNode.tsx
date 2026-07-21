@@ -34,7 +34,7 @@ interface GraphNodeData {
 }
 
 function GraphNode({ data, selected }: NodeProps) {
-  const { label, nodeType, isHighlighted, isDimmed } = data as GraphNodeData;
+  const { label, nodeType, isHighlighted, isDimmed } = data as unknown as GraphNodeData;
   const colors = NODE_COLORS[nodeType] ?? NODE_COLORS.paper;
   const typeLabel = NODE_LABELS[nodeType] ?? nodeType;
 

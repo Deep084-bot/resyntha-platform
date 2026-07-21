@@ -26,6 +26,7 @@ from app.modules.analysis.domain.landscape import (
 from app.modules.analysis.statistics.calculator import StatisticsCalculator
 from app.modules.extraction.domain.models import ExtractedKnowledge
 from app.modules.extraction.repository.repository import ExtractionRepository
+from app.modules.paper.domain.models import Paper
 from app.observability.logger import get_logger
 
 logger = get_logger(__name__)
@@ -145,14 +146,29 @@ class AnalysisService:
 
         venue_dist = VenueDistribution(
             venues=self._calculator.frequency_distribution(
-                self._flatten_field(records, "paper_title"),
+                self._flatten_field(records, "venue"),
                 normalize=False,
             ),
         )
 
-        year_dist = PublicationYearDistribution(years={})
+        paper_ids = [r.paper_id for r in records]
+        papers = (
+            self._session.query(Paper)
+            .filter(Paper.id.in_(paper_ids))
+            .all()
+        ) if paper_ids else []
 
-        citation_stats = CitationStats()
+        years = [str(p.year) for p in papers if p.year is not None]
+        year_dist = PublicationYearDistribution(
+            years=self._calculator.frequency_distribution(years, normalize=False),
+        )
+
+        citation_counts = [p.citation_count for p in papers if p.citation_count is not None]
+        total_citations = sum(citation_counts)
+        citation_stats = CitationStats(
+            total_citations=total_citations,
+            average_citations=total_citations / max(len(citation_counts), 1),
+        )
 
         return ResearchLandscape(
             paper_count=paper_count,

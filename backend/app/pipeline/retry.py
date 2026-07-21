@@ -24,6 +24,6 @@ class RetryPolicy:
         ``wait = backoff_seconds * 2 ** (attempt - 1)``.
     """
 
-    max_retries: int = 0
-    backoff_seconds: float = 0.0
-    exponential_backoff: bool = False
+    max_retries: int = 2
+    backoff_seconds: float = 1.0
+    exponential_backoff: bool = True

@@ -5,11 +5,9 @@ import {
   Controls,
   MiniMap,
   type Node,
-  type Edge,
   type NodeTypes,
   type EdgeTypes,
   SelectionMode,
-  type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -33,14 +31,15 @@ interface GraphCanvasProps {
 }
 
 export function GraphCanvas({ data, searchQuery, onNodeSelect }: GraphCanvasProps) {
-  const rfInstance = useRef<ReactFlowInstance | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rfInstance = useRef<any>(null);
 
   const { nodes: baseNodes, edges: baseEdges } = useMemo(
     () => layoutGraph(data),
     [data],
   );
 
-  const { nodes, edges } = useMemo(() => {
+  const { nodes, edges } = useMemo((): { nodes: Node[]; edges: typeof baseEdges } => {
     if (!searchQuery.trim()) {
       return {
         nodes: baseNodes.map((n) => ({
@@ -55,7 +54,7 @@ export function GraphCanvas({ data, searchQuery, onNodeSelect }: GraphCanvasProp
     const matchedIds = new Set<string>();
 
     for (const n of baseNodes) {
-      if (n.data.label?.toLowerCase().includes(q)) {
+      if (String(n.data.label ?? "").toLowerCase().includes(q)) {
         matchedIds.add(n.id);
       }
     }
@@ -84,10 +83,6 @@ export function GraphCanvas({ data, searchQuery, onNodeSelect }: GraphCanvasProp
     onNodeSelect(null);
   }, [onNodeSelect]);
 
-  const onInit = useCallback((instance: ReactFlowInstance) => {
-    rfInstance.current = instance;
-  }, []);
-
   return (
     <div className="h-full w-full" role="application" aria-label="Knowledge graph visualization">
       <ReactFlow
@@ -97,11 +92,12 @@ export function GraphCanvas({ data, searchQuery, onNodeSelect }: GraphCanvasProp
         edgeTypes={edgeTypes}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
-        onInit={onInit}
+        onInit={(instance) => { rfInstance.current = instance; }}
         selectionMode={SelectionMode.Partial}
         fitView
         minZoom={0.1}
         maxZoom={3}
+        onlyRenderVisibleElements
         attributionPosition="bottom-left"
       >
         <Background color="#e5e7eb" gap={20} size={1} />

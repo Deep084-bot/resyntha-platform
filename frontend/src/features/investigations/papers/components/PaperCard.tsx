@@ -226,7 +226,7 @@ export function PaperCard({
   );
 }
 
-const STATUS_ICONS: Record<string, typeof Circle> = {
+const STATUS_ICONS: Record<string, typeof Circle | undefined> = {
   unread: Circle,
   reading: BookOpenCheck,
   completed: CheckCircle2,
@@ -241,7 +241,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 function ReadingStatusBadge({ status }: { status?: ReadingStatusValue }) {
-  const Icon = STATUS_ICONS[status ?? "unread"];
+  const Icon = STATUS_ICONS[status ?? "unread"] ?? Circle;
   const color = STATUS_COLORS[status ?? "unread"];
   return <Icon className={cn("h-3 w-3", color)} />;
 }

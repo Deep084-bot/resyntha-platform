@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import {
@@ -20,12 +20,9 @@ export function NotesPage() {
   const autosave = useAutosave(id);
 
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSelect = useCallback((note: Note) => {
     setSelectedNote(note);
-    setIsCreating(false);
   }, []);
 
   const handleCreate = useCallback(() => {
@@ -34,7 +31,6 @@ export function NotesPage() {
       {
         onSuccess: (note) => {
           setSelectedNote(note);
-          setIsCreating(true);
         },
       },
     );
@@ -44,7 +40,6 @@ export function NotesPage() {
     (noteId: string) => {
       if (selectedNote?.id === noteId) {
         setSelectedNote(null);
-        setIsCreating(false);
       }
       deleteNote.mutate(noteId);
     },
@@ -62,7 +57,6 @@ export function NotesPage() {
 
   const handleClose = useCallback(() => {
     setSelectedNote(null);
-    setIsCreating(false);
   }, []);
 
   if (notes && notes.length === 0 && !isLoading) {

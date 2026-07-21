@@ -39,8 +39,8 @@ describe("layoutGraph", () => {
   it("creates React Flow edges", () => {
     const { edges } = layoutGraph(singlePaperGraph);
     expect(edges).toHaveLength(1);
-    expect(edges[0].source).toBe("paper:p1");
-    expect(edges[0].target).toBe("author:a1");
+    expect(edges[0]!.source).toBe("paper:p1");
+    expect(edges[0]!.target).toBe("author:a1");
   });
 
   it("assigns positions to nodes", () => {

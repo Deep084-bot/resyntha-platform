@@ -7,6 +7,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: resyntha
+    # Remove ports: in production — databases are internal to the compose network
     ports:
       - "5432:5432"
     volumes:
@@ -24,6 +25,7 @@ services:
     image: redis:7-alpine
     container_name: resyntha-redis
     restart: unless-stopped
+    # Remove ports: in production — Redis is internal to the compose network
     ports:
       - "6379:6379"
     volumes:

@@ -318,6 +318,9 @@ Trigger Pipeline (async)
 git clone https://github.com/anomalyco/resyntha.git
 cd resyntha
 
+# Set required environment variables
+export GROQ_API_KEY="gsk_your_key_here"
+
 # Start all services
 docker compose up --build
 
@@ -441,7 +444,7 @@ cd frontend && npx tsc -b
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| v0.1.0 | Core pipeline engine, copilot, investigation workspace | Released |
+| v1.0.0 | Core pipeline engine, copilot, investigation workspace | Released |
 | v0.2.0 | Docker deployment, open-source readiness | In Progress |
 | v0.3.0 | Visualization, institution intelligence, reports | Planned |
 | v0.4.0 | Collaboration, custom pipelines, integrations | Planned |

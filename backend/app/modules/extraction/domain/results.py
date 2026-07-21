@@ -23,6 +23,7 @@ class FailureReason(StrEnum):
     VALIDATION_ERROR = "validation_error"
     API_ERROR = "api_error"
     UNKNOWN = "unknown"
+    LOW_QUALITY_CONTENT = "low_quality_content"
 
 
 class ExtractionFailure(BaseModel):

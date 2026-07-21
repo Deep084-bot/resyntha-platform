@@ -1,5 +1,61 @@
 # Changelog
 
+## v1.0.0 — Launch Readiness & Release Candidate (Sprint P4)
+
+### Security
+- Fixed XSS vulnerability in MarkdownViewer — sanitized `href` attributes to block `javascript:` URLs
+- Added URL protocol validation for all rendered links
+- Added `rel="noopener noreferrer nofollow"` to all external links
+- Fixed `escapeHtml()` to escape single quotes (`'`)
+- Removed `backend/.env` file containing live API credentials from version control
+- Sanitized uploaded filenames with `os.path.basename()` to prevent path traversal
+- Suppressed raw API error messages in copilot streaming and error boundary UI
+- Removed redundant `invalidateQueries` after copilot stream success (data leak reduction)
+
+### Infrastructure
+- Multi-stage Dockerfiles with non-root users
+- Docker Compose health checks and dependency ordering
+- Security headers in nginx: X-Content-Type-Options, X-Frame-Options, HSTS, Referrer-Policy
+- Production environment variable validation at startup
+- Added per-stage pipeline timeout (360s default) to prevent hung workers
+- Added `.editorconfig` for consistent formatting across editors
+
+### Pipeline & Workflow
+- Empty extraction returns SKIPPED instead of SUCCESS
+- Added unique partial index on `extracted_knowledge(paper_id, execution_id)` for dedup
+- Added `has_active_execution()` guard on `create_execution` route (409 Conflict)
+- Added content-quality gate in extraction — rejects LLM output with empty summary
+- Added delete-during-execution guard on investigation deletion (409 Conflict)
+- Pipeline retry policy changed from 0 to 2 retries with exponential backoff
+- Parallel LLM extraction with `asyncio.Semaphore(5)` — 5x speedup for multi-paper investigations
+- Added 120-second timeout on copilot streaming endpoint
+
+### Analysis & Intelligence
+- Fixed venue distribution using `venue` field instead of `paper_title`
+- Populated `year_dist` and `citation_stats` from Paper database rows
+- Added missing DB indexes on `CopilotMessage.conversation_id` and `Bookmark.paper_id`
+
+### Frontend
+- Copilot stream error no longer rolls back optimistic user message
+- Added `onlyRenderVisibleElements` to ReactFlow for large graph performance
+- Memoized `filteredData` in GraphPage to prevent layout recomputation on unrelated state changes
+- Memoized `InvestigationRunContext` value to prevent cascading re-renders during polling
+- Removed raw `Error.message` rendering from error boundary UI
+- Replaced raw response body with generic error message in copilot stream error handler
+
+### Quality & Reliability
+- Added global `ErrorBoundary` to prevent blank-screen crashes on uncaught React errors
+- Fixed deprecated status code constants across backend and tests
+- Added database connection pool cleanup on shutdown (`engine.dispose()`)
+- Added per-environment SECRET_KEY validation
+- Removed dead `sync_wrapper` branches from cache decorators
+- Fixed `datetime.utcnow()` deprecation across all backend code
+- Replaced hardcoded `POSTGRES_PASSWORD` with environment variable reference
+- Fixed test health checks to LLM component availability
+
+### Version
+- All configuration files aligned to v1.0.0
+
 ## v0.2.0 — Production Engineering & Open Source Excellence (Sprint P2–P3)
 
 ### Sprint P2 — Production Engineering (Docker)
@@ -123,9 +179,12 @@
 | Milestone | Date | Description |
 |-----------|------|-------------|
 | v0.1.0 | — | Initial release with full pipeline and documentation |
+| v1.0.0 | — | Launch readiness, security hardening, production infrastructure |
 
 ## Version History
 
 | Version | Description |
 |---------|-------------|
-| 0.1.0   | Initial release |
+| 1.0.0   | Launch readiness — security audit, infrastructure hardening, XSS fixes, global error boundary |
+| 0.2.0   | Production Engineering & Open Source Excellence — Docker, community files, documentation |
+| 0.1.0   | Initial release — pipeline engine, copilot, investigation workspace, full test suite |

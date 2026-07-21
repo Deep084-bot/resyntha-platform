@@ -9,7 +9,7 @@ All configuration flows through a single pydantic-settings `Settings` singleton 
 | Variable | Type | Default | Required | Production Recommendation |
 |----------|------|---------|----------|--------------------------|
 | `APP_NAME` | `str` | `resyntha` | No | Keep default |
-| `APP_VERSION` | `str` | `0.1.0` | No | Match release tag |
+| `APP_VERSION` | `str` | `1.0.0` | No | Match release tag |
 | `ENVIRONMENT` | `enum` | `development` | No | Set to `production` |
 | `DEBUG` | `bool` | `false` | No | `false` |
 

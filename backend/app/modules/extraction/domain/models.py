@@ -7,7 +7,7 @@ they are queryable and reusable across investigations.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -18,6 +18,16 @@ class ExtractedKnowledge(Base):
     """Structured knowledge extracted from a single paper via LLM."""
 
     __tablename__ = "extracted_knowledge"
+
+    __table_args__ = (
+        Index(
+            "ix_extracted_knowledge_paper_execution",
+            "paper_id",
+            "execution_id",
+            unique=True,
+            postgresql_where=text("execution_id IS NOT NULL"),
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

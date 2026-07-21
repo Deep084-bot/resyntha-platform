@@ -29,15 +29,19 @@ class PipelineRunner:
         final = await runner.run(context)
     """
 
+    STAGE_TIMEOUT = 360.0
+
     def __init__(
         self,
         stages: Sequence[PipelineStage],
         retry_policy: RetryPolicy | None = None,
         stage_recorder: StageRecorder | None = None,
+        stage_timeout: float | None = None,
     ) -> None:
         self._stages = list(stages)
         self._retry_policy = retry_policy or RetryPolicy()
         self._stage_recorder = stage_recorder
+        self._stage_timeout = stage_timeout if stage_timeout is not None else self.STAGE_TIMEOUT
 
     async def run(self, context: PipelineContext) -> PipelineContext:
         """Execute every stage in order and return the updated context.
@@ -96,7 +100,22 @@ class PipelineRunner:
                 )
 
             try:
-                result = await stage.execute(context)
+                result = await asyncio.wait_for(
+                    stage.execute(context),
+                    timeout=self._stage_timeout,
+                )
+            except TimeoutError:
+                last_exception = TimeoutError(
+                    f"Stage '{stage.name()}' timed out after {self._stage_timeout}s",
+                )
+                context.add_error(stage.name(), str(last_exception), last_exception)
+                if self._stage_recorder and context.execution_id is not None:
+                    await self._stage_recorder.record_failed(
+                        context.execution_id,
+                        stage.name(),
+                        str(last_exception),
+                    )
+                return PipelineResult.FAILED
             except PipelineException:
                 raise
             except Exception as exc:

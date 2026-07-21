@@ -67,6 +67,13 @@ class ExtractStage(PipelineStage):
                 failed=stats.failed,
             )
 
+            if stats.total == 0:
+                logger.info(
+                    "extract_stage_skipped",
+                    investigation_id=str(investigation_id),
+                    reason="no papers to extract",
+                )
+                return PipelineResult.SKIPPED
             if stats.successful == stats.total:
                 return PipelineResult.SUCCESS
             if stats.successful > 0 and stats.failed > 0:

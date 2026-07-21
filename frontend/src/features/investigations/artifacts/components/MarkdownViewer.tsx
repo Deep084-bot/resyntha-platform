@@ -9,7 +9,16 @@ function escapeHtml(text: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
+const SAFE_PROTOCOLS = /^(https?:\/\/|mailto:)/i;
+const LINK_RE = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+function sanitizeLink(href: string): string {
+  if (SAFE_PROTOCOLS.test(href)) return href;
+  return "#";
 }
 
 function renderInline(text: string): string {
@@ -17,7 +26,8 @@ function renderInline(text: string): string {
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/`([^`]+)`/g, "<code class='rounded bg-surface-active px-1 text-xs text-accent-default'>$1</code>")
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "<a href='$2' class='text-accent-default underline' target='_blank' rel='noopener noreferrer'>$1</a>");
+    .replace(LINK_RE, (_match: string, text: string, href: string) =>
+      `<a href='${sanitizeLink(href)}' class='text-accent-default underline' target='_blank' rel='noopener noreferrer nofollow'>${text}</a>`);
 }
 
 export function MarkdownViewer({ content }: MarkdownViewerProps) {

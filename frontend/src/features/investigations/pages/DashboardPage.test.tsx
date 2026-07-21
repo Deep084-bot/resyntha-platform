@@ -154,7 +154,7 @@ describe("DashboardPage", () => {
       data: [],
       isLoading: false,
       isError: false,
-    } as ReturnType<typeof import("@/hooks/useInvestigations").useInvestigations>);
+    } as unknown as ReturnType<typeof import("@/hooks/useInvestigations").useInvestigations>);
     await renderPage();
     expect(
       screen.getByText(/recent activity will appear here/i),

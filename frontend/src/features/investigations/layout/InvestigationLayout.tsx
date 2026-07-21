@@ -192,16 +192,19 @@ function InvestigationWorkspaceContent({
     });
   }, [runInvestigation, investigation.topic, investigation.paper_limit]);
 
-  const runContextValue: InvestigationRunContextValue = {
-    running,
-    latestExecution,
-    stages,
-    run: handleRun,
-    isStarting: runInvestigation.isPending,
-    error: runInvestigation.isError
-      ? (runInvestigation.error?.message ?? "Failed to start pipeline")
-      : null,
-  };
+  const runContextValue = useMemo<InvestigationRunContextValue>(
+    () => ({
+      running,
+      latestExecution,
+      stages,
+      run: handleRun,
+      isStarting: runInvestigation.isPending,
+      error: runInvestigation.isError
+        ? (runInvestigation.error?.message ?? "Failed to start pipeline")
+        : null,
+    }),
+    [running, latestExecution, stages, handleRun, runInvestigation.isPending, runInvestigation.isError, runInvestigation.error?.message],
+  );
 
   return (
     <InvestigationRunContextProvider value={runContextValue}>
